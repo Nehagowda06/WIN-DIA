@@ -1,0 +1,81 @@
+/* ── Order Confirmation ────────────────────────────────────────── */
+.page { min-height: 100vh; background: var(--cream); padding-bottom: 80px; }
+
+/* Hero */
+.hero { background: linear-gradient(135deg, var(--coco) 0%, #5C3520 100%); padding: 60px 0; }
+.heroInner { text-align: center; }
+.checkIcon { font-size: 72px; color: var(--gold); display: flex; justify-content: center; margin-bottom: 20px; }
+.hero h1 { font-size: clamp(2.2rem, 5vw, 3.5rem); color: var(--cream); margin-bottom: 12px; }
+.heroSub { color: var(--coco-faint); font-size: 1rem; margin-bottom: 20px; }
+.orderBadge { display: inline-flex; align-items: center; gap: 8px; background: rgba(201,168,76,.2); color: var(--gold); border: 1px solid rgba(201,168,76,.3); border-radius: 24px; padding: 8px 20px; font-size: 0.95rem; font-weight: 700; }
+
+/* Layout */
+.layout { display: grid; grid-template-columns: 1fr 340px; gap: 32px; padding-top: 32px; }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+/* Card */
+.card { background: var(--white); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 28px; margin-bottom: 20px; }
+.card h2 { display: flex; align-items: center; gap: 10px; font-size: 1.3rem; color: var(--coco); margin-bottom: 20px; }
+
+/* Tracker */
+.tracker { display: flex; align-items: flex-start; gap: 0; overflow-x: auto; padding-bottom: 8px; }
+.trackerStep { display: flex; flex-direction: column; align-items: center; position: relative; flex: 1; min-width: 80px; }
+.trackerDot { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--border); background: var(--cream-warm); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; color: var(--coco-faint); z-index: 1; transition: all 0.3s; flex-shrink: 0; }
+.trackerDotDone { border-color: var(--gold); background: var(--gold); color: var(--coco); }
+.trackerDotActive { border-color: var(--coco); background: var(--coco); color: var(--cream); box-shadow: 0 0 0 4px rgba(59,31,15,.12); }
+.trackerLabel { font-size: 0.72rem; color: var(--coco-faint); text-align: center; margin-top: 8px; }
+.trackerLabelDone { color: var(--coco); font-weight: 600; }
+.trackerLine { position: absolute; top: 18px; left: 50%; width: calc(100% + 0px); height: 2px; background: var(--border); z-index: 0; transform: translateX(0); }
+.trackerLineDone { background: var(--gold); }
+
+/* Items */
+.itemsList { display: flex; flex-direction: column; gap: 14px; }
+.orderItem { display: grid; grid-template-columns: 64px 1fr auto; gap: 14px; align-items: center; padding: 12px; background: var(--cream-warm); border-radius: var(--radius-md); }
+.itemImg { width: 64px; height: 64px; border-radius: var(--radius-sm); overflow: hidden; background: var(--border); display: flex; align-items: center; justify-content: center; color: var(--coco-faint); font-size: 24px; flex-shrink: 0; }
+.itemImg img { width: 100%; height: 100%; object-fit: cover; }
+.itemName { font-weight: 700; color: var(--coco); font-size: 0.9rem; }
+.itemFlavor { font-size: 0.78rem; color: var(--coco-light); }
+.itemQty { font-size: 0.78rem; color: var(--coco-faint); margin-top: 2px; }
+.itemPrice { font-weight: 800; color: var(--coco); font-size: 0.95rem; }
+
+/* Address */
+.addrBlock { background: var(--cream-warm); border-radius: var(--radius-md); padding: 16px; }
+.addrName { font-weight: 700; color: var(--coco); font-size: 0.95rem; margin-bottom: 4px; }
+.addrBlock p { font-size: 0.88rem; color: var(--coco-light); line-height: 1.6; }
+
+/* Sidebar */
+.summaryCard { background: var(--white); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 24px; box-shadow: var(--shadow-md); margin-bottom: 16px; position: sticky; top: 24px; }
+.summaryCard h3 { font-size: 1.3rem; color: var(--coco); }
+.breakdown { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.bRow { display: flex; justify-content: space-between; font-size: 0.88rem; color: var(--coco-light); }
+.bGreen { color: var(--success); }
+.free { color: var(--success); font-weight: 700; }
+.totalRow { display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: 800; color: var(--coco); border-top: 2px solid var(--border); padding-top: 14px; margin-bottom: 16px; }
+
+/* Payment info */
+.payInfo { display: flex; align-items: center; gap: 12px; background: var(--cream-warm); border-radius: var(--radius-md); padding: 12px; margin-bottom: 12px; font-size: 20px; color: var(--gold); }
+.payLabel { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--coco-faint); letter-spacing: 0.5px; }
+.payValue { font-size: 0.88rem; color: var(--coco); font-weight: 600; }
+.payStatus { font-size: 0.78rem; font-weight: 700; }
+.payPaid { color: var(--success); }
+.payPending { color: var(--gold-dk); }
+
+/* ETA */
+.etaBox { display: flex; align-items: center; gap: 12px; background: rgba(201,168,76,.08); border: 1px solid rgba(201,168,76,.2); border-radius: var(--radius-md); padding: 12px; font-size: 20px; color: var(--gold); }
+.etaLabel { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--coco-faint); letter-spacing: 0.5px; }
+.etaValue { font-size: 0.9rem; color: var(--coco); font-weight: 700; }
+
+/* CTA */
+.ctaCard { display: flex; flex-direction: column; gap: 10px; }
+.shopBtn { display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, var(--gold), var(--gold-dk)); color: var(--coco); border-radius: var(--radius-md); padding: 14px; font-weight: 700; font-size: 0.95rem; transition: all 0.2s; }
+.shopBtn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(201,168,76,.35); }
+.ordersBtn { display: flex; align-items: center; justify-content: center; gap: 8px; background: none; color: var(--coco-light); border: 1.5px solid var(--border); border-radius: var(--radius-md); padding: 13px; font-weight: 600; font-size: 0.9rem; transition: all 0.2s; }
+.ordersBtn:hover { border-color: var(--coco); color: var(--coco); }
+
+/* Loading */
+.loadWrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--cream); }
+.loadCard { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.loadCard h2 { font-size: 1.6rem; }
+.loadSpinner { width: 48px; height: 48px; border: 3px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.homeBtn { background: var(--coco); color: var(--cream); padding: 12px 24px; border-radius: var(--radius-md); font-weight: 700; }

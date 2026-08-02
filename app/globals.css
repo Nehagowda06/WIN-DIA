@@ -47,3 +47,19 @@ a {
     color-scheme: dark;
   }
 }
+
+/* -- WIN-DIA Design Tokens (added by payment/cart team) -- */
+:root {
+  --cream: #FDF6EC; --cream-warm: #FAF0E0; --cream-border: #EDE0CC;
+  --coco: #3B1F0F; --coco-mid: #5C3520; --coco-light: #7A5C44; --coco-faint: #C4A882;
+  --gold: #C9A84C; --gold-lt: #E8D08A; --gold-dk: #A68930;
+  --white: #FFFFFF; --success: #4A9E6B; --error: #C0392B;
+  --border: #EDE0CC; --bg: #FDF6EC;
+  --shadow-sm: 0 2px 8px rgba(59,31,15,.06); --shadow-md: 0 8px 24px rgba(59,31,15,.10); --shadow-lg: 0 20px 60px rgba(59,31,15,.14);
+  --radius-sm: 8px; --radius-md: 16px; --radius-lg: 24px; --radius-xl: 32px;
+}
+.gold-text { color: var(--gold); }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+.gold-divider { width: 48px; height: 2px; background: var(--gold); border-radius: 2px; }
+.spin { animation: wd-spin 1s linear infinite; }
+@keyframes wd-spin { to { transform: rotate(360deg); } }
