@@ -1,8 +1,9 @@
 .header {
-  grid-area: 1 / 1;
-  align-self: start;
-  position: relative;
-  z-index: 1;
+  --navbar-foreground: #fff3e9;
+
+  position: fixed;
+  z-index: 10;
+  inset: 0 0 auto;
   display: grid;
   grid-template-columns: minmax(10rem, 1fr) auto minmax(10rem, 1fr);
   align-items: center;
@@ -11,12 +12,17 @@
   padding: clamp(1.25rem, 2.5vw, 2rem) clamp(2rem, 3vw, 3.75rem);
 }
 
+.header[data-navbar-theme="gluten-free"],
+.header[data-navbar-theme="everyday"] {
+  --navbar-foreground: #5a341a;
+}
+
 .brand {
   justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: clamp(0.5rem, 1vw, 0.9rem);
-  color: #fff3e9;
+  color: var(--navbar-foreground);
   line-height: 1;
   transition: transform 180ms ease;
 
@@ -26,7 +32,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid #fff3e9;
+    outline: 2px solid var(--navbar-foreground);
     outline-offset: 0.35rem;
   }
 }
@@ -72,7 +78,7 @@
 
 .navigationLink {
   position: relative;
-  color: #fff3e9;
+  color: var(--navbar-foreground);
   font-family: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
 
   /* ↓ Smaller than before */
@@ -135,7 +141,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid #fff3e9;
+    outline: 2px solid var(--navbar-foreground);
     outline-offset: 0.3rem;
   }
 }

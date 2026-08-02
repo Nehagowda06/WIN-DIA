@@ -1,21 +1,18 @@
-import StoreNav from "@/src/frontend/components/StoreNav";
-import ProductGrid from "@/src/frontend/components/ProductGrid";
-import { localProducts } from "@/src/frontend/data/products";
-import styles from "../storefront.module.css";
+import { Catalogue } from "@/src/frontend/components/shop/Catalogue";
+import { Hero, Navbar } from "@/src/frontend/components/shop/Hero";
+import { Everyday } from "@/src/frontend/components/shop/products/Everyday";
+import { GlutenFree } from "@/src/frontend/components/shop/products/GlutenFree";
 
 export default function ShopPage() {
   return (
-    <main className={styles.shell}>
-      <StoreNav />
-      <section className={styles.section}>
-        <div className={styles.sectionTop}>
-          <div>
-            <h2>Shop WIN-DIA</h2>
-            <p className={styles.muted}>Add products to cart, save favourites, and checkout with Razorpay or COD.</p>
-          </div>
-        </div>
-        <ProductGrid initialProducts={localProducts} />
-      </section>
-    </main>
+    <>
+      <Navbar />
+      <main>
+        <Hero />
+        <Catalogue />
+        <GlutenFree />
+        <Everyday />
+      </main>
+    </>
   );
 }
