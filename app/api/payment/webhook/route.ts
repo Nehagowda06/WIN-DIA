@@ -4,6 +4,8 @@ import { PaymentService } from '@/src/backend/services/payment.service';
 import { handleServiceResult } from '@/src/backend/utils/route-helper.util';
 import { createErrorResponse } from '@/src/backend/types/api-response.types';
 
+export const runtime = 'nodejs';
+
 export async function POST(request: Request) {
   try {
     const signature = request.headers.get('x-razorpay-signature') || '';

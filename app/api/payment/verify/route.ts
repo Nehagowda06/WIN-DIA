@@ -7,6 +7,8 @@ import { OrderStatus } from '@/src/backend/enums/entity.enums';
 import { getAuthUserContext, handleServiceResult } from '@/src/backend/utils/route-helper.util';
 import { createErrorResponse } from '@/src/backend/types/api-response.types';
 
+export const runtime = 'nodejs';
+
 export async function POST(request: Request) {
   try {
     const authRes = await getAuthUserContext(request);

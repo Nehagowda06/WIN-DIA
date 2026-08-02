@@ -151,12 +151,13 @@ export class PaymentServiceImpl implements PaymentService {
       return failure(new ValidationError('Missing webhook signature'));
     }
 
-    const event = payload.event as string;
+    const event = (payload.event as string) || 'payment.event';
     const eventId = (payload.event_id || payload.id || `evt_${Date.now()}`) as string;
 
+    // Enhanced Idempotency Check: search for existing event payload containing eventId
     const existingEventsRes = await this.paymentEventRepo.findAll({ event_type: event });
-    if (existingEventsRes.success && existingEventsRes.value.some((e) => e.payload && (e.payload as any).event_id === eventId)) {
-      logger.info(`[PaymentService.handleWebhook] Duplicate webhook event ${eventId} ignored (idempotent)`);
+    if (existingEventsRes.success && existingEventsRes.value.some((e) => e.payload && ((e.payload as any).event_id === eventId || (e.payload as any).id === eventId))) {
+      logger.info(`[PaymentService.handleWebhook] Duplicate webhook event ${eventId} ignored (idempotent DB check)`);
       return success(true);
     }
 
