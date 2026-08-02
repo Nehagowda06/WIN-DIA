@@ -1,6 +1,5 @@
 import { BaseRepository, IBaseRepository } from './base.repository';
 import { Order } from '../models/domain-models.types';
-import { CreateOrderDTO } from '../types/dto.types';
 import { Result, failure, success } from '../types/result.types';
 import { AppError } from '../errors/app-error';
 
@@ -8,6 +7,13 @@ export interface OrderRepository extends IBaseRepository<Order, string, Partial<
   findByOrderNumber(orderNumber: string): Promise<Result<Order | null, AppError>>;
   findByUserId(userId: string): Promise<Result<Order[], AppError>>;
   findWithDetails(orderId: string): Promise<Result<Record<string, unknown> | null, AppError>>;
+  createCheckoutTransaction(
+    userId: string,
+    orderData: Record<string, unknown>,
+    orderItems: Record<string, unknown>[],
+    paymentData: Record<string, unknown>,
+    shipmentData: Record<string, unknown>
+  ): Promise<Result<Record<string, unknown>, AppError>>;
 }
 
 export class SupabaseOrderRepository
@@ -62,6 +68,33 @@ export class SupabaseOrderRepository
       return success(data || null);
     } catch (err) {
       return failure(this.handleError(err, 'findWithDetails'));
+    }
+  }
+
+  public async createCheckoutTransaction(
+    userId: string,
+    orderData: Record<string, unknown>,
+    orderItems: Record<string, unknown>[],
+    paymentData: Record<string, unknown>,
+    shipmentData: Record<string, unknown>
+  ): Promise<Result<Record<string, unknown>, AppError>> {
+    try {
+      const client = this.getClient();
+      const { data, error } = await client.rpc('create_checkout_order_transaction', {
+        p_user_id: userId,
+        p_order_data: orderData,
+        p_order_items: orderItems,
+        p_payment_data: paymentData,
+        p_shipment_data: shipmentData,
+      });
+
+      if (error) {
+        return failure(this.handleError(error, 'createCheckoutTransaction'));
+      }
+
+      return success(data as Record<string, unknown>);
+    } catch (err) {
+      return failure(this.handleError(err, 'createCheckoutTransaction'));
     }
   }
 }
