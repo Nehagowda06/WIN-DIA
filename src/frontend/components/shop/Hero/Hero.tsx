@@ -1,5 +1,4 @@
 import { HeroContent } from "./HeroContent";
-import { HeroNavbar } from "./HeroNavbar";
 import styles from "./Hero.module.scss";
 
 /**
@@ -10,7 +9,11 @@ import styles from "./Hero.module.scss";
  */
 export function Hero() {
   return (
-    <section className={styles.hero} aria-labelledby="shop-hero-heading">
+    <section
+      className={styles.hero}
+      aria-labelledby="shop-hero-heading"
+      data-navbar-theme="brown"
+    >
       <video
         className={styles.video}
         autoPlay
@@ -24,7 +27,6 @@ export function Hero() {
       </video>
       <div className={styles.overlay} aria-hidden="true" />
 
-      <HeroNavbar />
       <HeroContent
         heading={
           <>

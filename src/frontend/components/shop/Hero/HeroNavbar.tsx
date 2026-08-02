@@ -1,9 +1,15 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
-import cartIcon from "@/src/frontend/assets/icons/cart.png";
-import heartIcon from "@/src/frontend/assets/icons/heart.png";
-import profileIcon from "@/src/frontend/assets/icons/profile.png";
+import brownCartIcon from "@/src/frontend/assets/icons/cart.png";
+import offWhiteCartIcon from "@/src/frontend/assets/icons/cart-offwhite.png";
+import brownHeartIcon from "@/src/frontend/assets/icons/heart.png";
+import offWhiteHeartIcon from "@/src/frontend/assets/icons/heart-offwhite.png";
+import brownProfileIcon from "@/src/frontend/assets/icons/profile.png";
+import offWhiteProfileIcon from "@/src/frontend/assets/icons/profile-offwhite.png";
 import windiaLogo from "@/src/frontend/assets/logos/windia-logo.png";
 
 import styles from "./HeroNavbar.module.scss";
@@ -22,15 +28,72 @@ const navigationItems: readonly NavigationItem[] = [
 ];
 
 const utilityLinks = [
-  { href: "/wishlist", icon: heartIcon, label: "Wishlist" },
-  { href: "/cart", icon: cartIcon, label: "Shopping cart" },
-  { href: "/account", icon: profileIcon, label: "Your account" },
+  {
+    href: "/wishlist",
+    icons: { brown: brownHeartIcon, "off-white": offWhiteHeartIcon },
+    label: "Wishlist",
+  },
+  {
+    href: "/cart",
+    icons: { brown: brownCartIcon, "off-white": offWhiteCartIcon },
+    label: "Shopping cart",
+  },
+  {
+    href: "/account",
+    icons: { brown: brownProfileIcon, "off-white": offWhiteProfileIcon },
+    label: "Your account",
+  },
 ] as const;
 
-/** Navigation that is visually layered over the shop hero. */
-export function HeroNavbar() {
+/** Fixed site navigation whose theme follows the visible page section. */
+export function Navbar() {
+  const [theme, setTheme] = useState("brown");
+  const utilityIconVariant = theme === "off-white" ? "off-white" : "brown";
+
+  useEffect(() => {
+    const sections = Array.from(
+      document.querySelectorAll<HTMLElement>("main > section[data-navbar-theme]"),
+    );
+
+    const updateTheme = () => {
+      const activeSection = sections
+        .map((section) => {
+          const bounds = section.getBoundingClientRect();
+          const visibleHeight = Math.max(
+            0,
+            Math.min(bounds.bottom, window.innerHeight) - Math.max(bounds.top, 0),
+          );
+
+          return { section, visibleHeight };
+        })
+        .sort((first, second) => second.visibleHeight - first.visibleHeight)[0]?.section;
+      const activeTheme = activeSection?.getAttribute("data-navbar-theme");
+
+      if (activeTheme) {
+        setTheme(activeTheme);
+      }
+    };
+
+    updateTheme();
+    window.addEventListener("scroll", updateTheme, { passive: true });
+    window.addEventListener("resize", updateTheme);
+
+    const observer =
+      typeof IntersectionObserver === "undefined"
+        ? undefined
+        : new IntersectionObserver(updateTheme, { threshold: [0.2, 0.5, 0.8] });
+
+    sections.forEach((section) => observer?.observe(section));
+
+    return () => {
+      window.removeEventListener("scroll", updateTheme);
+      window.removeEventListener("resize", updateTheme);
+      observer?.disconnect();
+    };
+  }, []);
+
   return (
-    <header className={styles.header}>
+    <header className={styles.header} data-navbar-theme={theme}>
       <Link className={styles.brand} href="/" aria-label="Windia home">
         <Image
           className={styles.logo}
@@ -59,9 +122,9 @@ export function HeroNavbar() {
       </nav>
 
       <div className={styles.utilities}>
-        {utilityLinks.map(({ href, icon, label }) => (
+        {utilityLinks.map(({ href, icons, label }) => (
           <Link key={href} className={styles.utilityLink} href={href} aria-label={label}>
-            <Image src={icon} alt="" sizes="(max-width: 640px) 25px, 32px" />
+            <Image src={icons[utilityIconVariant]} alt="" sizes="(max-width: 640px) 25px, 32px" />
           </Link>
         ))}
       </div>

@@ -1,0 +1,208 @@
+[1mdiff --git a/app/shop/page.tsx b/app/shop/page.tsx[m
+[1mindex 13cf9ea..610b75a 100644[m
+[1m--- a/app/shop/page.tsx[m
+[1m+++ b/app/shop/page.tsx[m
+[36m@@ -1,21 +1,18 @@[m
+[31m-import StoreNav from "@/src/frontend/components/StoreNav";[m
+[31m-import ProductGrid from "@/src/frontend/components/ProductGrid";[m
+[31m-import { localProducts } from "@/src/frontend/data/products";[m
+[31m-import styles from "../storefront.module.css";[m
+[32m+[m[32mimport { Catalogue } from "@/src/frontend/components/shop/Catalogue";[m
+[32m+[m[32mimport { Hero, Navbar } from "@/src/frontend/components/shop/Hero";[m
+[32m+[m[32mimport { Everyday } from "@/src/frontend/components/shop/products/Everyday";[m
+[32m+[m[32mimport { GlutenFree } from "@/src/frontend/components/shop/products/GlutenFree";[m
+ [m
+ export default function ShopPage() {[m
+   return ([m
+[31m-    <main className={styles.shell}>[m
+[31m-      <StoreNav />[m
+[31m-      <section className={styles.section}>[m
+[31m-        <div className={styles.sectionTop}>[m
+[31m-          <div>[m
+[31m-            <h2>Shop WIN-DIA</h2>[m
+[31m-            <p className={styles.muted}>Add products to cart, save favourites, and checkout with Razorpay or COD.</p>[m
+[31m-          </div>[m
+[31m-        </div>[m
+[31m-        <ProductGrid initialProducts={localProducts} />[m
+[31m-      </section>[m
+[31m-    </main>[m
+[32m+[m[32m    <>[m
+[32m+[m[32m      <Navbar />[m
+[32m+[m[32m      <main>[m
+[32m+[m[32m        <Hero />[m
+[32m+[m[32m        <Catalogue />[m
+[32m+[m[32m        <GlutenFree />[m
+[32m+[m[32m        <Everyday />[m
+[32m+[m[32m      </main>[m
+[32m+[m[32m    </>[m
+   );[m
+ }[m
+[1mdiff --git a/src/frontend/data/products.ts b/src/frontend/data/products.ts[m
+[1mindex 4721d67..ec22e23 100644[m
+[1m--- a/src/frontend/data/products.ts[m
+[1m+++ b/src/frontend/data/products.ts[m
+[36m@@ -1,88 +1,84 @@[m
+[31m-export const localProducts = [[m
+[32m+[m[32mimport curryLeafImage from "@/src/frontend/assets/images/products/gluten-free/curryleaf.png";[m
+[32m+[m[32mimport garlicImage from "@/src/frontend/assets/images/products/gluten-free/garlic.png";[m
+[32m+[m[32mimport onionImage from "@/src/frontend/assets/images/products/gluten-free/onion.png";[m
+[32m+[m[32mimport everydayCurryLeafImage from "@/src/frontend/assets/images/products/everyday/curryleaf.png";[m
+[32m+[m[32mimport everydayGarlicImage from "@/src/frontend/assets/images/products/everyday/garlic.png";[m
+[32m+[m[32mimport everydayOnionImage from "@/src/frontend/assets/images/products/everyday/onion.png";[m
+[32m+[m
+[32m+[m[32mexport const glutenFreeProducts = [[m
+   {[m
+[31m-    id: "11111111-1111-4111-8111-111111111111",[m
+[31m-    _id: "11111111-1111-4111-8111-111111111111",[m
+[31m-    name: "Methi Khakhra",[m
+[31m-    slug: "methi-khakhra",[m
+[31m-    description: "Classic roasted khakhra with methi and gentle spices.",[m
+[31m-    price: 149,[m
+[31m-    originalPrice: 179,[m
+[31m-    image: "/images/product-methi.jpg",[m
+[31m-    category: "Everyday",[m
+[31m-    countInStock: 25,[m
+[31m-    count_in_stock: 25,[m
+[31m-    netWeight: 200,[m
+[31m-    isLowGI: true,[m
+[31m-    isGlutenFree: false,[m
+[31m-    isVegan: true,[m
+[31m-    is_active: true,[m
+[32m+[m[32m    id: "onion",[m
+[32m+[m[32m    title: "Fiber Rich Thins",[m
+[32m+[m[32m    name: "Onion Flavour",[m
+[32m+[m[32m    flavour: "Onion",[m
+[32m+[m[32m    image: onionImage,[m
+[32m+[m[32m    description: "A crisp, fibre-rich snack with the mellow sweetness of roasted onion.",[m
+[32m+[m[32m    price: "₹99",[m
+[32m+[m[32m    rating: "4.8",[m
+[32m+[m[32m    reviews: "120",[m
+[32m+[m[32m    reviewList: ["Perfectly crisp with a balanced onion flavour.", "A deliciously light snack for my afternoon break.", "Great texture and a very satisfying crunch."],[m
+   },[m
+   {[m
+[31m-    id: "22222222-2222-4222-8222-222222222222",[m
+[31m-    _id: "22222222-2222-4222-8222-222222222222",[m
+[31m-    name: "Garlic Khakhra",[m
+[31m-    slug: "garlic-khakhra",[m
+[31m-    description: "Bold garlic flavour in a crisp, light roasted snack.",[m
+[31m-    price: 159,[m
+[31m-    originalPrice: 189,[m
+[31m-    image: "/images/product-garlic.png",[m
+[31m-    category: "Everyday",[m
+[31m-    countInStock: 20,[m
+[31m-    count_in_stock: 20,[m
+[31m-    netWeight: 200,[m
+[31m-    isLowGI: true,[m
+[31m-    isGlutenFree: false,[m
+[31m-    isVegan: true,[m
+[31m-    is_active: true,[m
+[32m+[m[32m    id: "garlic",[m
+[32m+[m[32m    title: "Fiber Rich Thins",[m
+[32m+[m[32m    name: "Garlic Flavour",[m
+[32m+[m[32m    flavour: "Garlic",[m
+[32m+[m[32m    image: garlicImage,[m
+[32m+[m[32m    description: "A bold, savoury crunch layered with warm roasted garlic notes.",[m
+[32m+[m[32m    price: "₹99",[m
+[32m+[m[32m    rating: "4.8",[m
+[32m+[m[32m    reviews: "120",[m
+[32m+[m[32m    reviewList: ["The garlic flavour is rich without being overpowering.", "Crisp, savoury and wonderfully moreish.", "An easy everyday snack with a lovely finish."],[m
+   },[m
+   {[m
+[31m-    id: "33333333-3333-4333-8333-333333333333",[m
+[31m-    _id: "33333333-3333-4333-8333-333333333333",[m
+[31m-    name: "Moringa Khakhra",[m
+[31m-    slug: "moringa-khakhra",[m
+[31m-    description: "A wholesome moringa khakhra for clean daily snacking.",[m
+[31m-    price: 179,[m
+[31m-    originalPrice: 219,[m
+[31m-    image: "/images/product-moringa.png",[m
+[31m-    category: "Wellness",[m
+[31m-    countInStock: 18,[m
+[31m-    count_in_stock: 18,[m
+[31m-    netWeight: 200,[m
+[31m-    isLowGI: true,[m
+[31m-    isGlutenFree: true,[m
+[31m-    isVegan: true,[m
+[31m-    is_active: true,[m
+[32m+[m[32m    id: "curry-leaf",[m
+[32m+[m[32m    title: "Fiber Rich Thins",[m
+[32m+[m[32m    name: "Curry Leaf Flavour",[m
+[32m+[m[32m    flavour: "Curry Leaf",[m
+[32m+[m[32m    image: curryLeafImage,[m
+[32m+[m[32m    description: "A fragrant, savoury bite finished with aromatic curry leaf.",[m
+[32m+[m[32m    price: "₹99",[m
+[32m+[m[32m    rating: "4.8",[m
+[32m+[m[32m    reviews: "120",[m
+[32m+[m[32m    reviewList: ["The curry leaf aroma is beautifully fresh.", "A uniquely flavourful, crunchy snack.", "I love the savoury seasoning and light texture."],[m
+   },[m
+[32m+[m[32m] as const;[m
+[32m+[m
+[32m+[m[32mexport const everydayProducts = [[m
+   {[m
+[31m-    id: "44444444-4444-4444-8444-444444444444",[m
+[31m-    _id: "44444444-4444-4444-8444-444444444444",[m
+[31m-    name: "Curry Leaf Khakhra",[m
+[31m-    slug: "curry-leaf-khakhra",[m
+[31m-    description: "Crisp khakhra with curry leaf aroma and homestyle masala.",[m
+[31m-    price: 169,[m
+[31m-    originalPrice: 199,[m
+[31m-    image: "/images/product-curry.jpg",[m
+[31m-    category: "Wellness",[m
+[31m-    countInStock: 16,[m
+[31m-    count_in_stock: 16,[m
+[31m-    netWeight: 200,[m
+[31m-    isLowGI: true,[m
+[31m-    isGlutenFree: true,[m
+[31m-    isVegan: true,[m
+[31m-    is_active: true,[m
+[32m+[m[32m    id: "onion",[m
+[32m+[m[32m    title: "Everyday Thins",[m
+[32m+[m[32m    name: "Onion Flavour",[m
+[32m+[m[32m    flavour: "Onion",[m
+[32m+[m[32m    image: everydayOnionImage,[m
+[32m+[m[32m    description: "A satisfying daily crunch with naturally savoury onion flavour.",[m
+[32m+[m[32m    price: "₹99",[m
+[32m+[m[32m    rating: "4.8",[m
+[32m+[m[32m    reviews: "120",[m
+[32m+[m[32m    reviewList: ["My go-to snack when I want something savoury.", "Light, crisp and full of gentle onion flavour.", "Perfect with a cup of tea in the afternoon."],[m
+   },[m
+[31m-];[m
+[31m-[m
+[31m-type ProductRecord = Record<string, string | number | boolean | null | undefined>;[m
+[31m-[m
+[31m-export function normalizeProduct(product: ProductRecord) {[m
+[31m-  return {[m
+[31m-    ...product,[m
+[31m-    id: product.id,[m
+[31m-    _id: product.id,[m
+[31m-    image: product.image || product.image_url || "/images/product-methi.jpg",[m
+[31m-    countInStock: product.count_in_stock ?? product.countInStock ?? 0,[m
+[31m-    netWeight: product.net_weight ?? product.weight ?? product.netWeight ?? 200,[m
+[31m-    originalPrice: product.original_price ?? product.originalPrice,[m
+[31m-  };[m
+[31m-}[m
+[32m+[m[32m  {[m
+[32m+[m[32m    id: "garlic",[m
+[32m+[m[32m    title: "Everyday Thins",[m
+[32m+[m[32m    name: "Garlic Flavour",[m
+[32m+[m[32m    flavour: "Garlic",[m
+[32m+[m[32m    image: everydayGarlicImage,[m
+[32m+[m[32m    description: "A comforting garlic-forward snack for everyday moments.",[m
+[32m+[m[32m    price: "₹99",[m
+[32m+[m[32m    rating: "4.8",[m
+[32m+[m[32m    reviews: "120",[m
+[32m+[m[32m    reviewList: ["A warm garlic flavour with a wonderfully crisp bite.", "Simple, delicious and very easy to share.", "The pack never lasts long in our home."],[m
+[32m+[m[32m  },[m
+[32m+[m[32m  {[m
+[32m+[m[32m    id: "curry-leaf",[m
+[32m+[m[32m    title: "Everyday Thins",[m
+[32m+[m[32m    name: "Curry Leaf Flavour",[m
+[32m+[m[32m    flavour: "Curry Leaf",[m
+[32m+[m[32m    image: everydayCurryLeafImage,[m
+[32m+[m[32m    description: "A light, flavourful crunch with a herbaceous curry leaf finish.",[m
+[32m+[m[32m    price: "₹99",[m
+[32m+[m[32m    rating: "4.8",[m
+[32m+[m[32m    reviews: "120",[m
+[32m+[m[32m    reviewList: ["A fresh curry leaf flavour that feels distinct.", "Crisp, light and a great pantry staple.", "The savoury seasoning is just right."],[m
+[32m+[m[32m  },[m
+[32m+[m[32m] as const;[m
