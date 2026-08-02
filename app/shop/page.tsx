@@ -1,5 +1,5 @@
-import { Catalogue } from "@/src/frontend/components/shop/Catalogue";
-import { Hero, Navbar } from "@/src/frontend/components/shop/Hero";
+import { Catalogue } from "@/src/frontend/components/shop/catalogue";
+import { Hero, Navbar } from "@/src/frontend/components/shop/hero";
 import { Everyday } from "@/src/frontend/components/shop/products/Everyday";
 import { GlutenFree } from "@/src/frontend/components/shop/products/GlutenFree";
 
