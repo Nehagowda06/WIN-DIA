@@ -19,7 +19,8 @@
       "@/src/*": ["./src/*"],
       "@/src/frontend/*": ["./src/frontend/*"],
       "@/hooks/*": ["./src/frontend/hooks/*"],
-      "@/lib/*": ["./src/frontend/lib/*"]
+      "@/lib/*": ["./src/frontend/lib/*"],
+      "@/backend/*": ["./src/backend/*"]
     }
   },
   "include": [
@@ -30,5 +31,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "src/backend"]
+  "exclude": ["node_modules"]
 }
