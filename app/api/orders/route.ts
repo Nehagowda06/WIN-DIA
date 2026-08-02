@@ -3,7 +3,7 @@ import { container, ServiceTokens } from '@/src/backend/providers/container.prov
 import { CheckoutService } from '@/src/backend/services/checkout.service';
 import { OrderService } from '@/src/backend/services/order.service';
 import { getAuthUserContext, handleServiceResult } from '@/src/backend/utils/route-helper.util';
-import { createErrorResponse, createSuccessResponse } from '@/src/backend/types/api-response.types';
+import { createErrorResponse } from '@/src/backend/types/api-response.types';
 import { formatGlobalError } from '@/src/backend/middleware/error-handler.middleware';
 import { getEnv } from '@/src/backend/config/env.config';
 
@@ -25,12 +25,15 @@ export async function POST(request: Request) {
     const { order, items, payment, razorpayOrderId, pricing } = result.value;
     const isCod = body.paymentMethod === 'cod' || body.payment_method === 'cod';
     const env = getEnv();
+    const razorpayKeyId = env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
     const legacyPayload = {
       success: true,
       order: {
         ...order,
         order_items: items,
+        total_price: pricing.total,
+        order_status: order.status || 'placed',
       },
       requiresPayment: !isCod,
       razorpay: !isCod
@@ -38,7 +41,7 @@ export async function POST(request: Request) {
             orderId: razorpayOrderId,
             amount: Math.round(pricing.total * 100),
             currency: 'INR',
-            keyId: env.RAZORPAY_KEY_ID || '',
+            keyId: razorpayKeyId,
           }
         : null,
       data: result.value,
@@ -63,7 +66,7 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
-    const pageSize = parseInt(searchParams.get('pageSize') || '20', 10);
+    const pageSize = parseInt(searchParams.get('pageSize') || '50', 10);
 
     const orderService = container.resolve<OrderService>(ServiceTokens.OrderService);
     const result = await orderService.getUserOrders(authRes.value.id, { page, pageSize });
@@ -74,8 +77,8 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-      orders: result.value.items,
-      total: result.value.total,
+      orders: result.value.items || [],
+      total: result.value.total || 0,
       data: result.value,
     });
   } catch (err: any) {
