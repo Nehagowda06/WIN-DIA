@@ -21,6 +21,23 @@ import { SupabaseSettingsRepository } from '../repositories/settings.repository'
 import { SupabasePageContentRepository } from '../repositories/page-content.repository';
 import { SupabaseBannerRepository } from '../repositories/banner.repository';
 
+import { AuthServiceImpl } from '../services/auth.service';
+import { UserServiceImpl } from '../services/user.service';
+import { CategoryServiceImpl } from '../services/category.service';
+import { ProductServiceImpl } from '../services/product.service';
+import { CartServiceImpl } from '../services/cart.service';
+import { WishlistServiceImpl } from '../services/wishlist.service';
+import { InventoryServiceImpl } from '../services/inventory.service';
+import { CouponServiceImpl } from '../services/coupon.service';
+import { CheckoutServiceImpl } from '../services/checkout.service';
+import { OrderServiceImpl } from '../services/order.service';
+import { PaymentServiceImpl } from '../services/payment.service';
+import { ShipmentServiceImpl } from '../services/shipment.service';
+import { ReviewServiceImpl } from '../services/review.service';
+import { ContactServiceImpl } from '../services/contact.service';
+import { CMSServiceImpl } from '../services/cms.service';
+import { SettingsServiceImpl } from '../services/settings.service';
+
 export type Factory<T> = (container: ServiceContainer) => T;
 
 export const RepositoryTokens = {
@@ -48,6 +65,25 @@ export const RepositoryTokens = {
   BannerRepository: 'BannerRepository',
 } as const;
 
+export const ServiceTokens = {
+  AuthService: 'AuthService',
+  UserService: 'UserService',
+  CategoryService: 'CategoryService',
+  ProductService: 'ProductService',
+  CartService: 'CartService',
+  WishlistService: 'WishlistService',
+  InventoryService: 'InventoryService',
+  CouponService: 'CouponService',
+  CheckoutService: 'CheckoutService',
+  OrderService: 'OrderService',
+  PaymentService: 'PaymentService',
+  ShipmentService: 'ShipmentService',
+  ReviewService: 'ReviewService',
+  ContactService: 'ContactService',
+  CMSService: 'CMSService',
+  SettingsService: 'SettingsService',
+} as const;
+
 export class ServiceContainer {
   private static instance: ServiceContainer | null = null;
   private services = new Map<string | symbol, unknown>();
@@ -57,6 +93,7 @@ export class ServiceContainer {
     if (!ServiceContainer.instance) {
       ServiceContainer.instance = new ServiceContainer();
       ServiceContainer.instance.registerRepositories();
+      ServiceContainer.instance.registerServices();
     }
     return ServiceContainer.instance;
   }
@@ -116,6 +153,25 @@ export class ServiceContainer {
     this.registerFactory(RepositoryTokens.SettingsRepository, () => new SupabaseSettingsRepository());
     this.registerFactory(RepositoryTokens.PageContentRepository, () => new SupabasePageContentRepository());
     this.registerFactory(RepositoryTokens.BannerRepository, () => new SupabaseBannerRepository());
+  }
+
+  private registerServices(): void {
+    this.registerFactory(ServiceTokens.AuthService, () => new AuthServiceImpl());
+    this.registerFactory(ServiceTokens.UserService, () => new UserServiceImpl());
+    this.registerFactory(ServiceTokens.CategoryService, () => new CategoryServiceImpl());
+    this.registerFactory(ServiceTokens.ProductService, () => new ProductServiceImpl());
+    this.registerFactory(ServiceTokens.CartService, () => new CartServiceImpl());
+    this.registerFactory(ServiceTokens.WishlistService, () => new WishlistServiceImpl());
+    this.registerFactory(ServiceTokens.InventoryService, () => new InventoryServiceImpl());
+    this.registerFactory(ServiceTokens.CouponService, () => new CouponServiceImpl());
+    this.registerFactory(ServiceTokens.OrderService, () => new OrderServiceImpl());
+    this.registerFactory(ServiceTokens.PaymentService, () => new PaymentServiceImpl());
+    this.registerFactory(ServiceTokens.ShipmentService, () => new ShipmentServiceImpl());
+    this.registerFactory(ServiceTokens.ReviewService, () => new ReviewServiceImpl());
+    this.registerFactory(ServiceTokens.ContactService, () => new ContactServiceImpl());
+    this.registerFactory(ServiceTokens.CMSService, () => new CMSServiceImpl());
+    this.registerFactory(ServiceTokens.SettingsService, () => new SettingsServiceImpl());
+    this.registerFactory(ServiceTokens.CheckoutService, () => new CheckoutServiceImpl());
   }
 }
 
