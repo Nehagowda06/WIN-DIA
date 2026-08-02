@@ -1,35 +1,102 @@
+import { NextResponse } from "next/server";
+import { createSupabaseServerClient } from "@/src/frontend/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/src/frontend/lib/supabase/admin";
 import { supabase } from "@/src/frontend/lib/supabase";
-import { supabaseAdmin } from "@/src/frontend/lib/supabase-admin";
-import { getAuthedUser, errorResponse, successResponse } from "@/src/frontend/lib/security";
+import { getAuthedUser } from "@/src/frontend/lib/security";
 
-export async function GET(req) {
-  const user = await getAuthedUser(req, supabase);
-  if (!user) return errorResponse("Please sign in", 401);
-  const { data, error } = await supabaseAdmin.from("addresses").select("*").eq("user_id", user.id).order("is_default", { ascending: false });
-  if (error) return errorResponse("Could not load addresses", 500);
-  return successResponse({ addresses: (data || []).map((address) => ({
+async function getCurrentUser(request) {
+  const serverSupabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await serverSupabase.auth.getUser();
+
+  if (user) return user;
+  return getAuthedUser(request, supabase);
+}
+
+function normalizeAddress(address) {
+  if (!address) return address;
+  return {
     ...address,
-    name: address.full_name,
-    street: address.address_line1,
-  })) });
+    name: address.name || address.full_name || "",
+    street: address.street || address.address_line1 || "",
+    full_name: address.full_name || address.name || "",
+    address_line1: address.address_line1 || address.street || "",
+    type: address.type || "home",
+    isDefault: Boolean(address.is_default),
+  };
 }
 
-export async function POST(req) {
-  const user = await getAuthedUser(req, supabase);
-  if (!user) return errorResponse("Please sign in", 401);
-  const body = await req.json().catch(() => ({}));
-  const { name, street, city, state, pincode, phone, type = "home", isDefault = false } = body;
-  if (!name || !street || !city || !state || !pincode || !phone)
-    return errorResponse("All address fields are required", 400);
+export async function GET(request) {
+  try {
+    const user = await getCurrentUser(request);
+    if (!user) {
+      return NextResponse.json({ success: false, error: "Not authenticated." }, { status: 401 });
+    }
 
-  if (isDefault) await supabaseAdmin.from("addresses").update({ is_default: false }).eq("user_id", user.id);
+    const supabaseAdmin = createSupabaseAdminClient();
+    const { data: addresses, error } = await supabaseAdmin
+      .from("addresses")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("is_default", { ascending: false })
+      .order("created_at", { ascending: false });
 
-  const { data, error } = await supabaseAdmin.from("addresses").insert({
-    user_id: user.id, full_name: name, address_line1: street, city, state,
-    pincode: String(pincode), phone: String(phone), type, is_default: isDefault,
-  }).select().single();
+    if (error) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    }
 
-  if (error) return errorResponse("Could not save address", 500);
-  return successResponse({ address: { ...data, name: data.full_name, street: data.address_line1 } }, 201);
+    return NextResponse.json({ success: true, addresses: (addresses || []).map(normalizeAddress) });
+  } catch (err) {
+    console.error("Addresses GET error:", err);
+    return NextResponse.json({ success: false, error: err.message || "Something went wrong." }, { status: 500 });
+  }
 }
 
+export async function POST(request) {
+  try {
+    const user = await getCurrentUser(request);
+    if (!user) {
+      return NextResponse.json({ success: false, error: "Not authenticated." }, { status: 401 });
+    }
+
+    const body = await request.json().catch(() => ({}));
+    const full_name = body.full_name || body.name || "";
+    const address_line1 = body.address_line1 || body.street || "";
+    const is_default = Boolean(body.is_default ?? body.isDefault);
+
+    if (!full_name || !address_line1 || !body.city || !body.state || !body.pincode || !body.phone) {
+      return NextResponse.json({ success: false, error: "All address fields are required" }, { status: 400 });
+    }
+
+    const supabaseAdmin = createSupabaseAdminClient();
+    if (is_default) {
+      await supabaseAdmin.from("addresses").update({ is_default: false }).eq("user_id", user.id);
+    }
+
+    const { data: address, error } = await supabaseAdmin
+      .from("addresses")
+      .insert({
+        user_id: user.id,
+        full_name,
+        phone: String(body.phone),
+        address_line1,
+        address_line2: body.address_line2 || null,
+        city: body.city,
+        state: body.state,
+        pincode: String(body.pincode),
+        is_default,
+      })
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true, address: normalizeAddress(address) }, { status: 201 });
+  } catch (err) {
+    console.error("Addresses POST error:", err);
+    return NextResponse.json({ success: false, error: err.message || "Something went wrong." }, { status: 500 });
+  }
+}

@@ -65,14 +65,14 @@ export default function CheckoutPage() {
       return;
     }
 
+    localStorage.removeItem(LOCAL_ADDRESS_KEY);
+    setAddresses([]);
+    setSelectedAddr(null);
     authFetch("/api/addresses").then((r) => r.json()).then((d) => {
       if (d.success) {
         const normalized = (d.addresses || []).map((a) => ({ ...a, _id: a.id, isDefault: a.is_default }));
-        const merged = localAddress && !normalized.some((a) => a._id === localAddress._id)
-          ? [localAddress, ...normalized]
-          : normalized;
-        setAddresses(merged);
-        const def = merged.find((a) => a.isDefault) || merged[0];
+        setAddresses(normalized);
+        const def = normalized.find((a) => a.isDefault) || normalized[0];
         if (def) setSelectedAddr(def._id);
       }
     }).catch(() => toast.error("Could not load addresses"));
@@ -123,7 +123,6 @@ export default function CheckoutPage() {
         return;
       }
       const saved = { ...data.address, _id: data.address.id, isDefault: data.address.is_default };
-      localStorage.setItem(LOCAL_ADDRESS_KEY, JSON.stringify(saved));
       setAddresses((prev) => [saved, ...prev]);
       setSelectedAddr(saved._id);
       setShowForm(false);

@@ -295,6 +295,20 @@
   &:focus-visible { outline: 2px solid #fff3e9; outline-offset: 0.2rem; }
 }
 
+.buyNowButton {
+  display: block;
+  width: fit-content;
+  margin-top: 0.75rem;
+  background: #fff3e9;
+  color: #5a341a;
+
+  &:hover,
+  &:focus-visible {
+    color: #5a341a;
+    background: #ffffff;
+  }
+}
+
 .quantityControl {
   display: inline-grid;
   grid-template-columns: repeat(3, 2.4rem);

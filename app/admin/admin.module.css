@@ -1,0 +1,347 @@
+.shell {
+  min-height: 100vh;
+  background: var(--cream);
+  color: var(--coco);
+  font-family: "DM Sans", Arial, sans-serif;
+}
+
+.adminShell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  background: var(--cream);
+  color: var(--coco);
+  font-family: "DM Sans", Arial, sans-serif;
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  padding: 24px 16px;
+  background: var(--coco);
+  color: var(--cream);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.adminBrand {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 28px;
+  font-weight: 800;
+  padding: 0 10px 8px;
+}
+
+.adminBrand span {
+  color: var(--gold);
+}
+
+.adminNav {
+  display: grid;
+  gap: 6px;
+}
+
+.navLink {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 0 12px;
+  color: rgba(253, 246, 236, .78);
+  font-weight: 800;
+}
+
+.navLink:hover,
+.active {
+  background: rgba(255, 255, 255, .1);
+  color: var(--cream);
+}
+
+.adminEmail {
+  margin-top: auto;
+  border-top: 1px solid rgba(255, 255, 255, .12);
+  padding: 14px 10px 0;
+  color: rgba(253, 246, 236, .68);
+  font-size: 12px;
+  word-break: break-word;
+}
+
+.adminContent {
+  padding: 34px 34px 56px;
+  overflow-x: hidden;
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: end;
+  margin-bottom: 24px;
+}
+
+.top h1 {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 46px;
+  margin: 0 0 6px;
+}
+
+.topTitle {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 42px;
+  margin: 0 0 6px;
+}
+
+.muted {
+  color: var(--coco-light);
+  line-height: 1.6;
+}
+
+.badge {
+  background: var(--coco);
+  color: var(--cream);
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.card,
+.panel,
+.notice {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+}
+
+.card {
+  padding: 18px;
+}
+
+.value {
+  font-size: 30px;
+  font-weight: 900;
+  color: var(--coco);
+}
+
+.label {
+  margin-top: 5px;
+  color: var(--coco-light);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-weight: 800;
+}
+
+.panel {
+  overflow: hidden;
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panelHeader h2 {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 30px;
+  margin: 0;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.table th {
+  color: var(--coco-light);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.status {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: var(--cream-warm);
+  color: var(--coco-mid);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.button {
+  border: 0;
+  min-height: 40px;
+  border-radius: 8px;
+  padding: 0 14px;
+  background: var(--coco);
+  color: var(--cream);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.buttonSecondary {
+  background: var(--white);
+  color: var(--coco);
+  border: 1px solid var(--border);
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--coco);
+  font: inherit;
+  padding: 9px 11px;
+}
+
+.select {
+  min-height: 40px;
+}
+
+.textarea {
+  resize: vertical;
+}
+
+.form {
+  padding: 20px;
+  margin-bottom: 18px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  color: var(--coco-light);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.span2 {
+  grid-column: span 2;
+}
+
+.span4 {
+  grid-column: 1 / -1;
+}
+
+.empty {
+  padding: 44px 18px;
+  text-align: center;
+  color: var(--coco-light);
+}
+
+.notice {
+  max-width: 640px;
+  margin: 72px auto;
+  padding: 28px;
+  text-align: center;
+}
+
+.notice h1 {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 38px;
+  margin-bottom: 10px;
+}
+
+.action {
+  display: inline-flex;
+  margin-top: 18px;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border-radius: 8px;
+  background: var(--gold);
+  color: var(--coco);
+  font-weight: 900;
+}
+
+@media (max-width: 940px) {
+  .adminShell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+  }
+
+  .adminNav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .formGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .top {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .formGrid,
+  .span2 {
+    grid-template-columns: 1fr;
+    grid-column: 1 / -1;
+  }
+
+  .adminNav {
+    grid-template-columns: 1fr;
+  }
+}

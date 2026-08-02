@@ -23,8 +23,8 @@ type NavigationItem = {
 const navigationItems: readonly NavigationItem[] = [
   { href: "/", label: "Home" },
   { href: "/shop", label: "Shop", isActive: true },
-  { href: "/#our-story", label: "Our Story" },
-  { href: "/#health-benefits", label: "Health Benefits" },
+  { href: "/our-story", label: "Our Story" },
+  { href: "/health-benefits", label: "Health Benefits" },
 ];
 
 const utilityLinks = [
@@ -39,9 +39,9 @@ const utilityLinks = [
     label: "Shopping cart",
   },
   {
-    href: "/account",
+    href: "/profile",
     icons: { brown: brownProfileIcon, "off-white": offWhiteProfileIcon },
-    label: "Your account",
+    label: "Your profile",
   },
 ] as const;
 
