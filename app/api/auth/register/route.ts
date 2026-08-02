@@ -7,7 +7,7 @@ import { createErrorResponse } from '@/src/backend/types/api-response.types';
 
 export async function POST(request: Request) {
   try {
-    const rateLimitResponse = applyRateLimit(request, 'auth_register', 5, 60000);
+    const rateLimitResponse = await applyRateLimit(request, 'auth_register', 5, 60);
     if (rateLimitResponse) return rateLimitResponse;
 
     const body = await request.json().catch(() => ({}));
