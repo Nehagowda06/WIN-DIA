@@ -82,3 +82,63 @@ export const everydayProducts = [
     reviewList: ["A fresh curry leaf flavour that feels distinct.", "Crisp, light and a great pantry staple.", "The savoury seasoning is just right."],
   },
 ] as const;
+
+type StoreProduct = {
+  readonly id: string;
+  readonly _id: string;
+  readonly slug: string;
+  readonly name: string;
+  readonly category: string;
+  readonly flavor: string;
+  readonly description: string;
+  readonly price: number;
+  readonly image: string;
+  readonly countInStock: number;
+  readonly netWeight: number;
+};
+
+const asStoreProduct = (
+  product: (typeof glutenFreeProducts)[number] | (typeof everydayProducts)[number],
+  collection: "gluten-free" | "everyday",
+): StoreProduct => {
+  const id = `${collection}-${product.id}`;
+
+  return {
+    id,
+    _id: id,
+    slug: id,
+    name: product.name,
+    category: collection,
+    flavor: product.flavour,
+    description: product.description,
+    price: Number(product.price.replace(/[^0-9.]/g, "")),
+    image: product.image.src,
+    countInStock: 100,
+    netWeight: 200,
+  };
+};
+
+/** Storefront fallback data used when Supabase has no active products yet. */
+export const localProducts = [
+  ...glutenFreeProducts.map((product) => asStoreProduct(product, "gluten-free")),
+  ...everydayProducts.map((product) => asStoreProduct(product, "everyday")),
+];
+
+/** Normalizes the planned Supabase product shape for the existing storefront. */
+export const normalizeProduct = (product: Record<string, unknown>): StoreProduct => {
+  const id = String(product.id ?? product._id ?? "");
+
+  return {
+    id,
+    _id: String(product._id ?? id),
+    slug: String(product.slug ?? id),
+    name: String(product.name ?? "WIN-DIA Product"),
+    category: String(product.category ?? "snacks"),
+    flavor: String(product.flavor ?? product.flavour ?? ""),
+    description: String(product.description ?? ""),
+    price: Number(product.price ?? 0),
+    image: String(product.image ?? product.image_url ?? ""),
+    countInStock: Number(product.countInStock ?? product.count_in_stock ?? 0),
+    netWeight: Number(product.netWeight ?? product.net_weight ?? product.weight ?? 0),
+  };
+};
