@@ -1,0 +1,37 @@
+.content {
+  grid-area: 1 / 1;
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  justify-self: center;
+  width: min(100% - 2rem, 60rem);
+  margin-top: clamp(-9.625rem, calc(-9vh - 3.125rem), -6.125rem);
+  text-align: center;
+}
+
+.heading {
+  color: #fff3e9;
+  font-family: "The Seasons", "Bodoni MT", Didot, "Iowan Old Style", serif;
+  font-size: clamp(3.4rem, 7.05vw, 6.65rem);
+  font-weight: 400;
+  letter-spacing: -0.055em;
+  line-height: 0.82;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.action {
+  margin-top: clamp(1.5rem, 3.5vh, 2.7rem);
+}
+
+@media (max-width: 640px) {
+  .content {
+    align-self: start;
+    margin-top: clamp(5rem, 16vh, 9rem);
+  }
+
+  .heading {
+    font-size: clamp(3.4rem, 16vw, 5.2rem);
+    line-height: 0.9;
+  }
+}

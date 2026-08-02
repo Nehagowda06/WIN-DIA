@@ -1,0 +1,28 @@
+.hero {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  min-height: 100svh;
+  overflow: hidden;
+  color: #fff3e9;
+  background: #a7733d;
+}
+
+.video,
+.overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.video {
+  z-index: -2;
+  object-fit: cover;
+  object-position: center;
+}
+
+.overlay {
+  z-index: -1;
+  background: rgba(67, 37, 14, 0.02);
+}
