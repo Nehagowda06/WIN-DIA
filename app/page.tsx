@@ -1,66 +1,41 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import Link from "next/link";
+import StoreNav from "@/src/frontend/components/StoreNav";
+import ProductGrid from "@/src/frontend/components/ProductGrid";
+import { localProducts } from "@/src/frontend/data/products";
+import styles from "./storefront.module.css";
 
 export default function Home() {
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className={styles.shell}>
+      <StoreNav />
+      <section className={styles.hero}>
+        <div>
+          <h1>The divine healthy crunch.</h1>
+          <p className={styles.lead}>
+            Premium khakhra snacks made for everyday cravings, gifting, office breaks, and guilt-light late night hunger.
           </p>
+          <div className={styles.actions}>
+            <Link href="/shop" className={styles.goldBtn}>Shop Khakhra</Link>
+            <Link href="/register" className={styles.ghost}>Create Account</Link>
+          </div>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className={styles.heroImage}>
+          <img src="/images/hero-bg.png" alt="WIN-DIA khakhra collection" />
         </div>
-      </main>
-    </div>
+      </section>
+
+      <section className={styles.band}>
+        <div className={styles.section}>
+          <div className={styles.sectionTop}>
+            <div>
+              <h2>Best Sellers</h2>
+              <p className={styles.muted}>Start with the flavours customers ask for most.</p>
+            </div>
+            <Link href="/shop" className={styles.ghost}>View all</Link>
+          </div>
+          <ProductGrid initialProducts={localProducts.slice(0, 4)} />
+        </div>
+      </section>
+    </main>
   );
 }
