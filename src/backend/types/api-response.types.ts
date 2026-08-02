@@ -40,7 +40,8 @@ export interface ErrorDetails {
 
 export interface ErrorApiResponse {
   success: false;
-  error: ErrorDetails;
+  error: string;
+  errorDetails?: ErrorDetails;
   meta?: ResponseMeta;
 }
 
@@ -90,7 +91,8 @@ export function createErrorResponse(
 ): ErrorApiResponse {
   return {
     success: false,
-    error: {
+    error: message,
+    errorDetails: {
       code,
       message,
       details,

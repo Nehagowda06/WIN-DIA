@@ -1,6 +1,6 @@
 import { Result, failure, success } from '../types/result.types';
 import { AppError } from '../errors/app-error';
-import { NotFoundError } from '../errors/domain-errors';
+import { NotFoundError, ValidationError } from '../errors/domain-errors';
 import { Address, Profile } from '../models/domain-models.types';
 import { CreateAddressDTO, UpdateProfileDTO } from '../types/dto.types';
 import { ProfileRepository } from '../repositories/profile.repository';
@@ -12,7 +12,7 @@ export interface UserService {
   getProfile(userId: string): Promise<Result<Profile, AppError>>;
   updateProfile(userId: string, dto: UpdateProfileDTO): Promise<Result<Profile, AppError>>;
   getUserAddresses(userId: string): Promise<Result<Address[], AppError>>;
-  addAddress(userId: string, dto: CreateAddressDTO): Promise<Result<Address, AppError>>;
+  addAddress(userId: string, dto: any): Promise<Result<Address, AppError>>;
   updateAddress(addressId: string, userId: string, dto: Partial<CreateAddressDTO>): Promise<Result<Address, AppError>>;
   deleteAddress(addressId: string, userId: string): Promise<Result<boolean, AppError>>;
   setDefaultAddress(addressId: string, userId: string): Promise<Result<boolean, AppError>>;
@@ -28,10 +28,11 @@ export class UserServiceImpl implements UserService {
   }
 
   public async getProfile(userId: string): Promise<Result<Profile, AppError>> {
+    logger.info(`[UserService.getProfile] Fetching profile for ${userId}`);
     const res = await this.profileRepo.findById(userId);
     if (!res.success) return res;
     if (!res.value) {
-      return failure(new NotFoundError(`Profile not found for user ID ${userId}`));
+      return failure(new NotFoundError(`Profile for user ${userId} not found`));
     }
     return success(res.value);
   }
@@ -48,17 +49,34 @@ export class UserServiceImpl implements UserService {
     return this.addressRepo.findByUserId(userId);
   }
 
-  public async addAddress(userId: string, dto: CreateAddressDTO): Promise<Result<Address, AppError>> {
+  public async addAddress(userId: string, dto: any): Promise<Result<Address, AppError>> {
     logger.info(`[UserService.addAddress] Adding new address for ${userId}`);
     const addressesRes = await this.addressRepo.findByUserId(userId);
     const hasExisting = addressesRes.success && addressesRes.value.length > 0;
 
-    const newAddress: CreateAddressDTO = {
-      ...dto,
-      is_default: dto.is_default !== undefined ? dto.is_default : !hasExisting,
+    const postalCode = String(dto.pincode || dto.postal_code || '');
+    const addressLine1 = dto.address_line1 || dto.street || '';
+
+    if (!addressLine1 || !dto.city || !postalCode) {
+      return failure(new ValidationError('Street address, city, and pincode are required'));
+    }
+
+    const payload: any = {
+      user_id: userId,
+      full_name: dto.full_name || dto.name || 'Valued Customer',
+      phone: String(dto.phone || ''),
+      address_line1: addressLine1,
+      address_line2: dto.address_line2 || null,
+      city: dto.city || '',
+      state: dto.state || '',
+      pincode: postalCode,
+      postal_code: postalCode,
+      country: dto.country || 'India',
+      address_type: dto.address_type || dto.type || 'shipping',
+      is_default: dto.is_default !== undefined ? Boolean(dto.is_default) : (dto.isDefault !== undefined ? Boolean(dto.isDefault) : !hasExisting),
     };
 
-    return this.addressRepo.create({ ...newAddress, user_id: userId } as any);
+    return this.addressRepo.create(payload);
   }
 
   public async updateAddress(addressId: string, userId: string, dto: Partial<CreateAddressDTO>): Promise<Result<Address, AppError>> {

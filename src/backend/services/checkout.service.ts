@@ -74,11 +74,28 @@ export class CheckoutServiceImpl implements CheckoutService {
     const userRes = await this.userService.getProfile(userId);
     if (!userRes.success) return failure(userRes.error);
 
-    // Step 2: Validate Address
-    const addrRes = await this.userService.getUserAddresses(userId);
-    if (!addrRes.success) return failure(addrRes.error);
-    const selectedAddress = addrRes.value.find((a) => a.id === dto.shipping_address_id) || addrRes.value[0];
-    if (!selectedAddress) {
+    // Step 2: Validate & Normalize Address
+    let selectedAddress: any = null;
+    const rawAddr = (dto as any).shippingAddress || (dto as any).shipping_address;
+    if (rawAddr) {
+      selectedAddress = {
+        full_name: rawAddr.name || rawAddr.full_name || 'Valued Customer',
+        phone: String(rawAddr.phone || ''),
+        address_line1: rawAddr.street || rawAddr.address_line1 || '',
+        address_line2: rawAddr.address_line2 || null,
+        city: rawAddr.city || '',
+        state: rawAddr.state || '',
+        pincode: String(rawAddr.pincode || rawAddr.postal_code || ''),
+        country: rawAddr.country || 'India',
+      };
+    } else {
+      const addrRes = await this.userService.getUserAddresses(userId);
+      if (addrRes.success && addrRes.value.length > 0) {
+        selectedAddress = addrRes.value.find((a) => a.id === dto.shipping_address_id) || addrRes.value[0];
+      }
+    }
+
+    if (!selectedAddress || !selectedAddress.address_line1 || !selectedAddress.city) {
       return failure(new ValidationError('Valid shipping address is required for checkout'));
     }
 
@@ -143,7 +160,6 @@ export class CheckoutServiceImpl implements CheckoutService {
     const total = Math.round((taxableAmount + tax + shipping) * 100) / 100;
 
     // Step 9: 100% Atomic PostgreSQL Transaction Execution via RPC
-    // Either Order, Order Items, Payment, and Shipment Placeholder ALL commit OR NONE commit.
     const mockRazorpayOrderId = `order_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
     const txRes = await this.orderRepo.createCheckoutTransaction(

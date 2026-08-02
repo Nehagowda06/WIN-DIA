@@ -14,7 +14,23 @@ export async function GET(request: Request) {
     const userService = container.resolve<UserService>(ServiceTokens.UserService);
     const result = await userService.getUserAddresses(authRes.value.id);
 
-    return handleServiceResult(result);
+    if (!result.success) {
+      return handleServiceResult(result);
+    }
+
+    const normalizedAddresses = (result.value || []).map((a: any) => ({
+      ...a,
+      _id: a.id,
+      name: a.full_name || a.name || '',
+      street: a.address_line1 || a.street || '',
+      isDefault: Boolean(a.is_default),
+    }));
+
+    return NextResponse.json({
+      success: true,
+      addresses: normalizedAddresses,
+      data: normalizedAddresses,
+    });
   } catch (err: any) {
     return NextResponse.json(
       createErrorResponse('INTERNAL_SERVER_ERROR', err.message || 'An unexpected error occurred'),
@@ -34,7 +50,27 @@ export async function POST(request: Request) {
     const userService = container.resolve<UserService>(ServiceTokens.UserService);
     const result = await userService.addAddress(authRes.value.id, body);
 
-    return handleServiceResult(result, 201);
+    if (!result.success) {
+      return handleServiceResult(result);
+    }
+
+    const addr = result.value as any;
+    const normalized = {
+      ...addr,
+      _id: addr.id,
+      name: addr.full_name || addr.name || '',
+      street: addr.address_line1 || addr.street || '',
+      isDefault: Boolean(addr.is_default),
+    };
+
+    return NextResponse.json(
+      {
+        success: true,
+        address: normalized,
+        data: normalized,
+      },
+      { status: 201 }
+    );
   } catch (err: any) {
     return NextResponse.json(
       createErrorResponse('INTERNAL_SERVER_ERROR', err.message || 'An unexpected error occurred'),
