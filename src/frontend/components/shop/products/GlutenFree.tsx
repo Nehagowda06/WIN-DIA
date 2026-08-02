@@ -1,11 +1,16 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import type { StaticImageData } from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
+import { useDispatch } from "react-redux";
 
 import { glutenFreeProducts } from "@/src/frontend/data/products";
+import { addToCart } from "@/src/frontend/redux/slices/cartSlice";
+import { addToWishlist, removeFromWishlist } from "@/src/frontend/redux/slices/wishlistSlice";
 
 import styles from "./GlutenFree.module.scss";
 
@@ -35,12 +40,32 @@ type ProductInteraction = {
   readonly reviewsOpen: boolean;
 };
 
+function toStoreProduct(product: Product, collection: ProductRangeProps["theme"]) {
+  const id = `${collection}-${product.id}`;
+
+  return {
+    id,
+    _id: id,
+    slug: id,
+    name: product.name,
+    category: collection,
+    flavor: product.flavour,
+    description: product.description,
+    price: Number(product.price.replace(/[^0-9.]/g, "")),
+    image: product.image.src,
+    countInStock: 100,
+    netWeight: 200,
+  };
+}
+
 type ShowcasePhase = "idle" | "opening" | "expanded" | "closing" | "returning";
 
 const layoutTransition = { type: "spring", stiffness: 240, damping: 28 } as const;
 
 /** Reusable product range layout for the two shop collections. */
 export function ProductRange({ heading, headingId, products, theme }: ProductRangeProps) {
+  const dispatch = useDispatch();
+  const router = useRouter();
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [phase, setPhase] = useState<ShowcasePhase>("idle");
   const [interactions, setInteractions] = useState<Record<string, ProductInteraction>>(() =>
@@ -143,13 +168,26 @@ export function ProductRange({ heading, headingId, products, theme }: ProductRan
               onBack={closeProduct}
               onToggleWishlist={() => {
                 const nextWishlisted = !interactions[product.id].isWishlisted;
+                const storeProduct = toStoreProduct(product, theme);
+                if (nextWishlisted) {
+                  dispatch(addToWishlist(storeProduct));
+                  toast.success("Saved to wishlist");
+                } else {
+                  dispatch(removeFromWishlist(storeProduct.id));
+                  toast("Removed from wishlist");
+                }
                 updateInteraction(product.id, { isWishlisted: nextWishlisted });
                 if (nextWishlisted) pulse(product.id, "wishlist");
               }}
               onToggleReviews={() => updateInteraction(product.id, { reviewsOpen: !interactions[product.id].reviewsOpen })}
               onQuantityChange={(quantity) => {
                 const nextQuantity = Math.max(0, quantity);
+                const currentQuantity = interactions[product.id].quantity;
                 const isFirstItem = interactions[product.id].quantity === 0 && nextQuantity === 1;
+                if (nextQuantity > currentQuantity) {
+                  dispatch(addToCart(toStoreProduct(product, theme), nextQuantity - currentQuantity));
+                  toast.success("Added to cart");
+                }
                 if (isFirstItem) {
                   pulse(product.id, "cart");
                   schedule(() => updateInteraction(product.id, { quantity: nextQuantity }), 280);
@@ -157,6 +195,11 @@ export function ProductRange({ heading, headingId, products, theme }: ProductRan
                 }
 
                 updateInteraction(product.id, { quantity: nextQuantity });
+              }}
+              onBuyNow={() => {
+                dispatch(addToCart(toStoreProduct(product, theme), 1));
+                toast.success("Added to cart");
+                router.push("/checkout");
               }}
             />
           );
@@ -191,6 +234,7 @@ type ProductCardProps = {
   readonly onToggleWishlist: () => void;
   readonly onToggleReviews: () => void;
   readonly onQuantityChange: (quantity: number) => void;
+  readonly onBuyNow: () => void;
 };
 
 function ProductCard({
@@ -212,6 +256,7 @@ function ProductCard({
   onToggleWishlist,
   onToggleReviews,
   onQuantityChange,
+  onBuyNow,
 }: ProductCardProps) {
   const detailsOnLeft = productOnRight;
 
@@ -374,6 +419,19 @@ function ProductCard({
                     </motion.div>
                   )}
                 </AnimatePresence>
+                <motion.button
+                  className={`${styles.addToCartButton} ${styles.buyNowButton}`}
+                  type="button"
+                  initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: prefersReducedMotion ? 0 : -8 }}
+                  transition={{ duration: 0.24, delay: 0.42, ease: "easeOut" }}
+                  whileHover={prefersReducedMotion ? undefined : { y: -2 }}
+                  whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
+                  onClick={onBuyNow}
+                >
+                  Buy Now
+                </motion.button>
               </motion.div>
             </motion.aside>
           )}

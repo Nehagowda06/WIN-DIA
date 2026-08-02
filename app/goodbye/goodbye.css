@@ -1,0 +1,60 @@
+.goodbye-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(120deg, #F9F7F3, #F3EADD, #EFE1CC, #F9F7F3);
+  background-size: 300% 300%;
+  animation: goodbyeBgDrift 8s ease infinite;
+  padding: 24px;
+}
+
+@keyframes goodbyeBgDrift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.goodbye-card {
+  text-align: center;
+  animation: goodbyeRise 0.5s ease-out;
+}
+
+@keyframes goodbyeRise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.goodbye-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #EFE8DE;
+  margin: 0 auto 20px;
+  animation: goodbyePulse 2s ease-in-out infinite;
+}
+
+@keyframes goodbyePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+.goodbye-title {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 26px;
+  color: #5A4030;
+  margin: 0 0 10px;
+  font-weight: 500;
+}
+
+.goodbye-message {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  color: #7A5A44;
+  opacity: 0.75;
+  line-height: 1.6;
+  margin: 0;
+}

@@ -6,9 +6,42 @@ import { rateLimit, getClientIp } from "@/src/frontend/lib/rateLimit";
 import { getRazorpayClient } from "@/src/frontend/lib/razorpay";
 import { sendOrderConfirmationEmail, sendAdminNewOrderAlert } from "@/src/frontend/lib/email";
 import { localProducts } from "@/src/frontend/data/products";
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
 
 export const runtime = "nodejs";
+
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function stableProductUuid(value) {
+  const text = String(value || "");
+  if (uuidPattern.test(text)) return text;
+
+  const hex = createHash("sha1").update(`windia-product:${text}`).digest("hex");
+  const variant = ((parseInt(hex.slice(16, 18), 16) & 0x3f) | 0x80).toString(16).padStart(2, "0");
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    `5${hex.slice(13, 16)}`,
+    `${variant}${hex.slice(18, 20)}`,
+    hex.slice(20, 32),
+  ].join("-");
+}
+
+function productKey(item) {
+  return String(item.productId || item.id || item._id || "");
+}
+
+function productSnapshot(product, sourceId = product.id || product._id) {
+  return {
+    id: stableProductUuid(sourceId),
+    name: product.name || "WIN-DIA Product",
+    price: Number(product.price || 1),
+    image: product.image || product.image_url || null,
+    count_in_stock: Number(product.countInStock ?? product.count_in_stock ?? 999),
+    is_active: product.is_active ?? true,
+    net_weight: Number(product.netWeight ?? product.net_weight ?? product.weight ?? 200),
+  };
+}
 
 export async function POST(req) {
   const user = await getAuthedUser(req, supabase);
@@ -29,84 +62,68 @@ export async function POST(req) {
   if (Object.keys(addrErrors).length > 0) return errorResponse("Invalid address", 400, { fieldErrors: addrErrors });
 
   const rawProductIds = [...new Set(items.map((i) => i.productId || i.id || i._id).filter(Boolean))];
-  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  const productIds = rawProductIds.filter((id) => uuidPattern.test(String(id)));
+  const productIds = rawProductIds.map(stableProductUuid);
 
   let products = [];
   if (productIds.length) {
     const result = await supabaseAdmin
       .from("products")
-      .select("id,name,price,image,image_url,count_in_stock,is_active,net_weight,weight")
+      .select("id,name,price,image,image_url,count_in_stock,is_active,net_weight")
       .in("id", productIds);
     if (!result.error) products = result.data || [];
   }
 
-  const productMap = new Map((products || []).map((p) => [p.id, p]));
+  const productMap = new Map((products || []).flatMap((p) => [[p.id, p], [String(p.id), p]]));
   const legacyProductAliases = {
     "prod-test-001": "11111111-1111-4111-8111-111111111111",
     "prod-test-002": "22222222-2222-4222-8222-222222222222",
     "prod-test-003": "33333333-3333-4333-8333-333333333333",
   };
   const findFallbackForItem = (item) => {
-    const rawId = item.productId || item.id || item._id;
+    const rawId = productKey(item);
     const rawName = String(item.name || "").toLowerCase();
     const aliasId = legacyProductAliases[rawId];
     return localProducts.find((p) => p.id === rawId || p._id === rawId || p.id === aliasId || p.name.toLowerCase() === rawName);
   };
   const fallbackProducts = [
-    ...new Map(items.map(findFallbackForItem).filter(Boolean).map((p) => [p.id, p])).values(),
+    ...new Map(items.map((item) => {
+      const fallback = findFallbackForItem(item);
+      return fallback ? [productKey(item), { fallback, sourceId: productKey(item) }] : null;
+    }).filter(Boolean)).values(),
   ];
-  const missingProducts = fallbackProducts.filter((p) => !productMap.has(p.id));
+  const missingProducts = fallbackProducts
+    .map(({ fallback, sourceId }) => productSnapshot(fallback, sourceId))
+    .filter((p) => !productMap.has(p.id));
   if (missingProducts.length) {
-    await supabaseAdmin.from("products").upsert(missingProducts.map((p) => ({
-      id: p.id,
-      name: p.name,
-      price: p.price,
-      image: p.image,
-      count_in_stock: p.countInStock,
-      is_active: true,
-      net_weight: p.netWeight,
-    }))).select();
-    missingProducts.forEach((p) => productMap.set(p.id, {
-      id: p.id,
-      name: p.name,
-      price: p.price,
-      image: p.image,
-      count_in_stock: p.countInStock,
-      is_active: true,
-      net_weight: p.netWeight,
-    }));
+    const { error: productUpsertErr } = await supabaseAdmin.from("products").upsert(missingProducts).select();
+    if (productUpsertErr) {
+      console.error("Product upsert failed:", productUpsertErr);
+      return errorResponse("Could not verify products", 500);
+    }
+    missingProducts.forEach((p) => productMap.set(p.id, p));
   }
   for (const raw of items) {
-    const rawId = raw.productId || raw.id || raw._id;
-    if (productMap.has(rawId)) continue;
+    const rawId = productKey(raw);
+    const normalizedId = stableProductUuid(rawId);
+    if (productMap.has(normalizedId)) {
+      productMap.set(rawId, productMap.get(normalizedId));
+      continue;
+    }
     const fallback = findFallbackForItem(raw);
-    if (fallback) productMap.set(rawId, productMap.get(fallback.id) || {
-      id: fallback.id,
-      name: fallback.name,
-      price: fallback.price,
-      image: fallback.image,
-      count_in_stock: fallback.countInStock,
-      is_active: true,
-      net_weight: fallback.netWeight,
-    });
+    if (fallback) productMap.set(rawId, productMap.get(normalizedId) || productSnapshot(fallback, rawId));
   }
 
   for (const raw of items) {
-    const rawId = raw.productId || raw.id || raw._id;
+    const rawId = productKey(raw);
     if (productMap.has(rawId)) continue;
 
-    const snapshotProduct = {
-      id: uuidPattern.test(String(rawId)) ? rawId : randomUUID(),
-      name: raw.name || "WIN-DIA Product",
-      price: Number(raw.price || 1),
-      image: raw.image || null,
-      count_in_stock: 999,
-      is_active: true,
-      net_weight: raw.netWeight || raw.net_weight || raw.weight || 200,
-    };
+    const snapshotProduct = productSnapshot(raw, rawId || randomUUID());
 
-    await supabaseAdmin.from("products").upsert(snapshotProduct).select();
+    const { error: snapshotErr } = await supabaseAdmin.from("products").upsert(snapshotProduct).select();
+    if (snapshotErr) {
+      console.error("Snapshot product upsert failed:", snapshotErr);
+      return errorResponse("Could not verify products", 500);
+    }
     productMap.set(rawId, snapshotProduct);
     productMap.set(snapshotProduct.id, snapshotProduct);
   }
@@ -114,12 +131,12 @@ export async function POST(req) {
   let itemsPrice = 0;
 
   for (const raw of items) {
-    const product = productMap.get(raw.productId || raw.id || raw._id);
+    const product = productMap.get(productKey(raw));
     const qty = Math.max(1, Math.min(20, parseInt(raw.qty) || 1));
     if (!product || product.is_active === false) return errorResponse("A product is no longer available", 409);
     if (product.count_in_stock < qty) return errorResponse(`"${product.name}" only has ${product.count_in_stock} left`, 409);
     itemsPrice += Number(product.price) * qty;
-    orderItems.push({ product_id: product.id, name: product.name, image: product.image || product.image_url || null, price: Number(product.price), qty, flavor: raw.flavor || null, net_weight_grams: Number(product.net_weight ?? product.weight ?? 0) });
+    orderItems.push({ product_id: product.id, name: product.name, image: product.image || product.image_url || null, price: Number(product.price), qty, flavor: raw.flavor || null, net_weight_grams: Number(product.net_weight ?? 0) });
   }
 
   const shippingPrice = itemsPrice >= 499 ? 0 : 50;
@@ -149,10 +166,17 @@ export async function POST(req) {
     payment_method: paymentMethod, payment_status: "pending", order_status: "placed",
   }).select().single();
 
-  if (orderErr) return errorResponse("Could not create order", 500);
+  if (orderErr) {
+    console.error("Order insert failed:", orderErr);
+    return errorResponse("Could not create order", 500);
+  }
 
   const { error: itemsErr } = await supabaseAdmin.from("order_items").insert(orderItems.map((i) => ({ ...i, order_id: order.id })));
-  if (itemsErr) { await supabaseAdmin.from("orders").delete().eq("id", order.id); return errorResponse("Could not create order", 500); }
+  if (itemsErr) {
+    console.error("Order items insert failed:", itemsErr);
+    await supabaseAdmin.from("orders").delete().eq("id", order.id);
+    return errorResponse("Could not create order", 500);
+  }
 
   for (const item of orderItems) {
     const product = productMap.get(item.product_id);

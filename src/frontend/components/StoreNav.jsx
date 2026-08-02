@@ -18,10 +18,13 @@ export default function StoreNav() {
           <span>WIN-DIA</span>
         </Link>
         <div className={styles.links}>
+          <Link href="/">Home</Link>
           <Link href="/shop">Shop</Link>
+          <Link href="/our-story">Our Story</Link>
+          <Link href="/health-benefits">Health Benefits</Link>
           <Link href="/wishlist"><FiHeart /> {wishCount}</Link>
           <Link href="/cart"><FiShoppingCart /> {cartCount}</Link>
-          <Link href={user ? "/account" : "/login"} className={styles.pill}><FiUser /> {user ? "Account" : "Login"}</Link>
+          <Link href={user ? "/profile" : "/login"} className={styles.pill}><FiUser /> {user ? "Profile" : "Login"}</Link>
         </div>
       </div>
     </nav>
