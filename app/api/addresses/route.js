@@ -7,7 +7,11 @@ export async function GET(req) {
   if (!user) return errorResponse("Please sign in", 401);
   const { data, error } = await supabaseAdmin.from("addresses").select("*").eq("user_id", user.id).order("is_default", { ascending: false });
   if (error) return errorResponse("Could not load addresses", 500);
-  return successResponse({ addresses: data || [] });
+  return successResponse({ addresses: (data || []).map((address) => ({
+    ...address,
+    name: address.full_name,
+    street: address.address_line1,
+  })) });
 }
 
 export async function POST(req) {
@@ -21,10 +25,11 @@ export async function POST(req) {
   if (isDefault) await supabaseAdmin.from("addresses").update({ is_default: false }).eq("user_id", user.id);
 
   const { data, error } = await supabaseAdmin.from("addresses").insert({
-    user_id: user.id, name, street, city, state, pincode: String(pincode), phone: String(phone), type, is_default: isDefault,
+    user_id: user.id, full_name: name, address_line1: street, city, state,
+    pincode: String(pincode), phone: String(phone), type, is_default: isDefault,
   }).select().single();
 
   if (error) return errorResponse("Could not save address", 500);
-  return successResponse({ address: data }, 201);
+  return successResponse({ address: { ...data, name: data.full_name, street: data.address_line1 } }, 201);
 }
 
