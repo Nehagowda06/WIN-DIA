@@ -30,23 +30,11 @@ export class UserServiceImpl implements UserService {
   public async getProfile(userId: string): Promise<Result<Profile, AppError>> {
     logger.info(`[UserService.getProfile] Fetching profile for ${userId}`);
     const res = await this.profileRepo.findById(userId);
-    if (res.success && res.value) {
-      return success(res.value);
+    if (!res.success) return res;
+    if (!res.value) {
+      return failure(new NotFoundError(`Profile for user ${userId} not found`));
     }
-
-    // Auto-create missing profile gracefully to prevent checkout / user profile errors
-    const createRes = await this.profileRepo.create({
-      id: userId,
-      full_name: 'Valued Customer',
-      phone: '',
-      avatar_url: null,
-    } as any);
-
-    if (createRes.success) {
-      return success(createRes.value);
-    }
-
-    return failure(new NotFoundError(`Profile for user ${userId} not found`));
+    return success(res.value);
   }
 
   public async updateProfile(userId: string, dto: UpdateProfileDTO): Promise<Result<Profile, AppError>> {
@@ -82,9 +70,7 @@ export class UserServiceImpl implements UserService {
       city: dto.city || '',
       state: dto.state || '',
       pincode: postalCode,
-      postal_code: postalCode,
-      country: dto.country || 'India',
-      address_type: dto.address_type || dto.type || 'shipping',
+      type: dto.type || dto.address_type || 'shipping',
       is_default: dto.is_default !== undefined ? Boolean(dto.is_default) : (dto.isDefault !== undefined ? Boolean(dto.isDefault) : !hasExisting),
     };
 

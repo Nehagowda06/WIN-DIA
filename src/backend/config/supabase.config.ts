@@ -39,6 +39,7 @@ export function getServerClient(authHeader?: string): SupabaseClient {
 
 /**
  * Creates or gets elevated Admin Supabase client using Service Role Key
+ * Use ONLY for explicit admin or system tasks requiring RLS bypass.
  */
 export function getAdminClient(): SupabaseClient {
   if (adminClient) {

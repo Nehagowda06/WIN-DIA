@@ -2,7 +2,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { Result, failure, success } from '../types/result.types';
 import { AppError } from '../errors/app-error';
 import { ErrorCode, HttpStatus } from '../constants/http-status.constants';
-import { getAdminClient, getServerClient } from '../config/supabase.config';
+import { getServerClient } from '../config/supabase.config';
 import { logger } from '../utils/logger.util';
 import { calculatePagination } from '../utils/pagination.util';
 
@@ -33,7 +33,7 @@ export abstract class BaseRepository<T extends { id?: string }, ID = string, Cre
   protected readonly tableName: string;
   protected getClient: () => SupabaseClient;
 
-  constructor(tableName: string, clientGetter: () => SupabaseClient = () => getAdminClient()) {
+  constructor(tableName: string, clientGetter: () => SupabaseClient = () => getServerClient()) {
     this.tableName = tableName;
     this.getClient = clientGetter;
   }
