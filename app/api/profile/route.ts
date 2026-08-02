@@ -14,7 +14,15 @@ export async function GET(request: Request) {
     const userService = container.resolve<UserService>(ServiceTokens.UserService);
     const result = await userService.getProfile(authRes.value.id);
 
-    return handleServiceResult(result);
+    if (!result.success) {
+      return handleServiceResult(result);
+    }
+
+    return NextResponse.json({
+      success: true,
+      profile: result.value,
+      data: result.value,
+    });
   } catch (err: any) {
     return NextResponse.json(
       createErrorResponse('INTERNAL_SERVER_ERROR', err.message || 'An unexpected error occurred'),
@@ -34,7 +42,15 @@ export async function PUT(request: Request) {
     const userService = container.resolve<UserService>(ServiceTokens.UserService);
     const result = await userService.updateProfile(authRes.value.id, body);
 
-    return handleServiceResult(result);
+    if (!result.success) {
+      return handleServiceResult(result);
+    }
+
+    return NextResponse.json({
+      success: true,
+      profile: result.value,
+      data: result.value,
+    });
   } catch (err: any) {
     return NextResponse.json(
       createErrorResponse('INTERNAL_SERVER_ERROR', err.message || 'An unexpected error occurred'),
