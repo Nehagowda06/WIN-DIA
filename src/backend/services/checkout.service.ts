@@ -138,7 +138,7 @@ export class CheckoutServiceImpl implements CheckoutService {
     const tax = Math.round(taxableAmount * 0.05 * 100) / 100;
     const total = Math.round((taxableAmount + tax + shipping) * 100) / 100;
 
-    // Step 9: OrderService.createOrder()
+    // Step 9: Order Creation (Atomic Rollback Safety)
     const orderRes = await this.orderService.createOrder(userId, {
       subtotal_amount: subtotal,
       discount_amount: discount,
@@ -152,17 +152,29 @@ export class CheckoutServiceImpl implements CheckoutService {
     if (!orderRes.success) return failure(orderRes.error);
     const order = orderRes.value;
 
-    // Step 10: OrderService.createOrderItems()
+    // Step 10: Order Items Creation (With Rollback on Failure)
     const itemsRes = await this.orderService.createOrderItems(order.id, preparedOrderItems);
-    if (!itemsRes.success) return failure(itemsRes.error);
+    if (!itemsRes.success) {
+      logger.error(`[CheckoutService] Item creation failed for order ${order.id}. Rolling back order.`);
+      await this.orderService.cancelOrder(order.id, userId, 'Item creation failed during checkout');
+      return failure(itemsRes.error);
+    }
 
-    // Step 11: PaymentService.initiateRazorpayPayment()
+    // Step 11: Payment Initiation (With Rollback on Failure)
     const paymentRes = await this.paymentService.initiateRazorpayPayment(order.id, total, order.order_number);
-    if (!paymentRes.success) return failure(paymentRes.error);
+    if (!paymentRes.success) {
+      logger.error(`[CheckoutService] Payment initiation failed for order ${order.id}. Rolling back order.`);
+      await this.orderService.cancelOrder(order.id, userId, 'Payment gateway initiation failed');
+      return failure(paymentRes.error);
+    }
 
-    // Step 12: ShipmentService.createShipmentPlaceholder()
+    // Step 12: Shipment Placeholder Creation (With Rollback on Failure)
     const shipmentRes = await this.shipmentService.createShipmentPlaceholder(order.id);
-    if (!shipmentRes.success) return failure(shipmentRes.error);
+    if (!shipmentRes.success) {
+      logger.error(`[CheckoutService] Shipment placeholder failed for order ${order.id}. Rolling back order.`);
+      await this.orderService.cancelOrder(order.id, userId, 'Shipment creation failed');
+      return failure(shipmentRes.error);
+    }
 
     // Step 13: Clear user cart
     await this.cartService.clearCart(cartRes.value.cart.id);

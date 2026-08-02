@@ -129,13 +129,24 @@ export class CartServiceImpl implements CartService {
   }
 
   public async calculateSubtotal(items: CartItem[]): Promise<Result<number, AppError>> {
+    if (!items || items.length === 0) {
+      return success(0);
+    }
+
+    // Batched query avoiding N+1 individual queries
+    const variantsRes = await this.variantRepo.findAll({ is_active: true });
+    if (!variantsRes.success) return failure(variantsRes.error);
+
+    const variantMap = new Map(variantsRes.value.map((v) => [v.id, v]));
     let total = 0;
+
     for (const item of items) {
-      const vRes = await this.variantRepo.findById(item.variant_id);
-      if (vRes.success && vRes.value) {
-        total += Number(vRes.value.price) * item.quantity;
+      const variant = variantMap.get(item.variant_id);
+      if (variant) {
+        total += Number(variant.price) * item.quantity;
       }
     }
-    return success(total);
+
+    return success(Math.round(total * 100) / 100);
   }
 }
