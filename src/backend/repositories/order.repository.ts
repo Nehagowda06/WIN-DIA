@@ -1,7 +1,9 @@
+import { SupabaseClient } from '@supabase/supabase-js';
 import { BaseRepository, IBaseRepository } from './base.repository';
 import { Order } from '../models/domain-models.types';
 import { Result, failure, success } from '../types/result.types';
 import { AppError } from '../errors/app-error';
+import { getServerClient } from '../config/supabase.config';
 
 export interface OrderRepository extends IBaseRepository<Order, string, Partial<Order>, Partial<Order>> {
   findByOrderNumber(orderNumber: string): Promise<Result<Order | null, AppError>>;
@@ -19,8 +21,8 @@ export interface OrderRepository extends IBaseRepository<Order, string, Partial<
 export class SupabaseOrderRepository
   extends BaseRepository<Order, string, Partial<Order>, Partial<Order>>
   implements OrderRepository {
-  constructor() {
-    super('orders');
+  constructor(clientOrGetter?: SupabaseClient | (() => SupabaseClient)) {
+    super('orders', clientOrGetter || (() => getServerClient()));
   }
 
   public async findByOrderNumber(orderNumber: string): Promise<Result<Order | null, AppError>> {
@@ -80,13 +82,15 @@ export class SupabaseOrderRepository
   ): Promise<Result<Record<string, unknown>, AppError>> {
     try {
       const client = this.getClient();
-      const { data, error } = await client.rpc('create_checkout_order_transaction', {
+      const rpcParams = {
         p_user_id: userId,
         p_order_data: orderData,
         p_order_items: orderItems,
         p_payment_data: paymentData,
         p_shipment_data: shipmentData,
-      });
+      };
+
+      const { data, error } = await client.rpc('create_checkout_order_transaction', rpcParams);
 
       if (error) {
         return failure(this.handleError(error, 'createCheckoutTransaction'));

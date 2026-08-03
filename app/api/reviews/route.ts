@@ -16,7 +16,9 @@ export async function GET(request: Request) {
       );
     }
 
-    const reviewService = container.resolve<ReviewService>(ServiceTokens.ReviewService);
+    const authHeader = request.headers.get('authorization');
+    const scope = container.createRequestScope(authHeader || undefined);
+    const reviewService = scope.resolve<ReviewService>(ServiceTokens.ReviewService);
     const result = await reviewService.getProductReviews(productId);
 
     return handleServiceResult(result);
@@ -36,7 +38,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const reviewService = container.resolve<ReviewService>(ServiceTokens.ReviewService);
+    const reviewService = authRes.value.scope.resolve<ReviewService>(ServiceTokens.ReviewService);
     const result = await reviewService.submitReview(authRes.value.id, body);
 
     return handleServiceResult(result, 201);
@@ -65,7 +67,7 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const reviewService = container.resolve<ReviewService>(ServiceTokens.ReviewService);
+    const reviewService = adminRes.value.scope.resolve<ReviewService>(ServiceTokens.ReviewService);
     const result = action === 'reject'
       ? await reviewService.rejectReview(reviewId)
       : await reviewService.approveReview(reviewId);

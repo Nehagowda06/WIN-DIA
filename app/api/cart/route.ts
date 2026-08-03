@@ -6,13 +6,15 @@ import { createErrorResponse } from '@/src/backend/types/api-response.types';
 
 export async function GET(request: Request) {
   try {
+    const authHeader = request.headers.get('authorization');
     const authRes = await getAuthUserContext(request);
     const userId = authRes.success ? authRes.value.id : undefined;
 
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId') || undefined;
 
-    const cartService = container.resolve<CartService>(ServiceTokens.CartService);
+    const scope = authRes.success ? authRes.value.scope : container.createRequestScope(authHeader || undefined);
+    const cartService = scope.resolve<CartService>(ServiceTokens.CartService);
     const result = await cartService.getCart(userId, sessionId);
 
     return handleServiceResult(result);
@@ -26,6 +28,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const authHeader = request.headers.get('authorization');
     const body = await request.json().catch(() => ({}));
     const { cart_id, variant_id, quantity } = body;
 
@@ -36,7 +39,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const cartService = container.resolve<CartService>(ServiceTokens.CartService);
+    const scope = container.createRequestScope(authHeader || undefined);
+    const cartService = scope.resolve<CartService>(ServiceTokens.CartService);
     const result = await cartService.addItem(cart_id, {
       variant_id,
       quantity: parseInt(quantity || '1', 10),
@@ -53,6 +57,7 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    const authHeader = request.headers.get('authorization');
     const body = await request.json().catch(() => ({}));
     const { cart_id, variant_id, quantity } = body;
 
@@ -63,7 +68,8 @@ export async function PUT(request: Request) {
       );
     }
 
-    const cartService = container.resolve<CartService>(ServiceTokens.CartService);
+    const scope = container.createRequestScope(authHeader || undefined);
+    const cartService = scope.resolve<CartService>(ServiceTokens.CartService);
     const result = await cartService.updateItemQuantity(cart_id, variant_id, {
       quantity: parseInt(quantity, 10),
     });
@@ -79,6 +85,7 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const authHeader = request.headers.get('authorization');
     const { searchParams } = new URL(request.url);
     const cartId = searchParams.get('cartId') || searchParams.get('cart_id');
     const variantId = searchParams.get('variantId') || searchParams.get('variant_id');
@@ -90,7 +97,8 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const cartService = container.resolve<CartService>(ServiceTokens.CartService);
+    const scope = container.createRequestScope(authHeader || undefined);
+    const cartService = scope.resolve<CartService>(ServiceTokens.CartService);
     if (variantId) {
       const result = await cartService.removeItem(cartId, variantId);
       return handleServiceResult(result);

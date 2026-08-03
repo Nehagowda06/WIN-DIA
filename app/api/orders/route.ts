@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { container, ServiceTokens } from '@/src/backend/providers/container.provider';
+import { ServiceTokens } from '@/src/backend/providers/container.provider';
 import { CheckoutService } from '@/src/backend/services/checkout.service';
 import { OrderService } from '@/src/backend/services/order.service';
 import { getAuthUserContext, handleServiceResult } from '@/src/backend/utils/route-helper.util';
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const checkoutService = container.resolve<CheckoutService>(ServiceTokens.CheckoutService);
+    const checkoutService = authRes.value.scope.resolve<CheckoutService>(ServiceTokens.CheckoutService);
 
     const result = await checkoutService.processCheckout(authRes.value.id, body);
     if (!result.success) {
@@ -68,7 +68,7 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const pageSize = parseInt(searchParams.get('pageSize') || '50', 10);
 
-    const orderService = container.resolve<OrderService>(ServiceTokens.OrderService);
+    const orderService = authRes.value.scope.resolve<OrderService>(ServiceTokens.OrderService);
     const result = await orderService.getUserOrders(authRes.value.id, { page, pageSize });
 
     if (!result.success) {

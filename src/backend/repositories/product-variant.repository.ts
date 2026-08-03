@@ -1,19 +1,20 @@
+import { SupabaseClient } from '@supabase/supabase-js';
 import { BaseRepository, IBaseRepository } from './base.repository';
 import { ProductVariant } from '../models/domain-models.types';
-import { CreateVariantDTO } from '../types/dto.types';
-import { Result, failure, success } from '../types/result.types';
+import { Result, success, failure } from '../types/result.types';
 import { AppError } from '../errors/app-error';
+import { getServerClient } from '../config/supabase.config';
 
-export interface ProductVariantRepository extends IBaseRepository<ProductVariant, string, CreateVariantDTO, Partial<CreateVariantDTO>> {
+export interface ProductVariantRepository extends IBaseRepository<ProductVariant, string, Partial<ProductVariant>, Partial<ProductVariant>> {
   findByProductId(productId: string): Promise<Result<ProductVariant[], AppError>>;
   findBySku(sku: string): Promise<Result<ProductVariant | null, AppError>>;
 }
 
 export class SupabaseProductVariantRepository
-  extends BaseRepository<ProductVariant, string, CreateVariantDTO, Partial<CreateVariantDTO>>
+  extends BaseRepository<ProductVariant, string, Partial<ProductVariant>, Partial<ProductVariant>>
   implements ProductVariantRepository {
-  constructor() {
-    super('product_variants');
+  constructor(clientOrGetter?: SupabaseClient | (() => SupabaseClient)) {
+    super('product_variants', clientOrGetter || (() => getServerClient()));
   }
 
   public async findByProductId(productId: string): Promise<Result<ProductVariant[], AppError>> {
@@ -21,21 +22,8 @@ export class SupabaseProductVariantRepository
   }
 
   public async findBySku(sku: string): Promise<Result<ProductVariant | null, AppError>> {
-    try {
-      const client = this.getClient();
-      const { data, error } = await client
-        .from(this.tableName)
-        .select('*')
-        .eq('sku', sku)
-        .maybeSingle();
-
-      if (error) {
-        return failure(this.handleError(error, 'findBySku'));
-      }
-
-      return success((data as ProductVariant) || null);
-    } catch (err) {
-      return failure(this.handleError(err, 'findBySku'));
-    }
+    const res = await this.findAll({ sku });
+    if (!res.success) return failure(res.error);
+    return success(res.value[0] || null);
   }
 }

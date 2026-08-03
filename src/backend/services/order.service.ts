@@ -2,46 +2,48 @@ import { Result, failure, success } from '../types/result.types';
 import { AppError } from '../errors/app-error';
 import { NotFoundError, ValidationError } from '../errors/domain-errors';
 import { Order, OrderItem, OrderStatusHistory } from '../models/domain-models.types';
-import { CreateOrderDTO, PaginationQueryDTO } from '../types/dto.types';
 import { OrderStatus, PaymentStatus, ShippingStatus } from '../enums/entity.enums';
 import { OrderRepository } from '../repositories/order.repository';
 import { OrderItemRepository } from '../repositories/order-item.repository';
 import { OrderStatusHistoryRepository } from '../repositories/order-status-history.repository';
-import { generateOrderNumber } from '../utils/helpers.util';
 import { logger } from '../utils/logger.util';
 import { container, RepositoryTokens } from '../providers/container.provider';
+
+function generateOrderNumber(): string {
+  return `WIN-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+}
 
 export interface OrderService {
   createOrder(userId: string, orderData: Partial<Order>): Promise<Result<Order, AppError>>;
   createOrderItems(orderId: string, items: Partial<OrderItem>[]): Promise<Result<OrderItem[], AppError>>;
   getOrderById(orderId: string, userId?: string): Promise<Result<Order, AppError>>;
   getOrderByNumber(orderNumber: string, userId?: string): Promise<Result<Order, AppError>>;
-  getUserOrders(userId: string, query?: PaginationQueryDTO): Promise<Result<{ items: Order[]; total: number }, AppError>>;
-  updateOrderStatus(orderId: string, status: OrderStatus, notes?: string, createdBy?: string): Promise<Result<Order, AppError>>;
-  cancelOrder(orderId: string, userId: string, reason?: string): Promise<Result<Order, AppError>>;
-  writeStatusHistory(orderId: string, status: OrderStatus, notes?: string, createdBy?: string): Promise<Result<OrderStatusHistory, AppError>>;
+  getUserOrders(userId: string, options?: { page?: number; pageSize?: number }): Promise<Result<{ items: Order[]; total: number }, AppError>>;
+  updateOrderStatus(orderId: string, status: OrderStatus, note?: string, updatedBy?: string): Promise<Result<Order, AppError>>;
+  writeStatusHistory(orderId: string, status: OrderStatus, note?: string, createdBy?: string): Promise<Result<OrderStatusHistory, AppError>>;
 }
 
 export class OrderServiceImpl implements OrderService {
   private orderRepo: OrderRepository;
   private orderItemRepo: OrderItemRepository;
-  private historyRepo: OrderStatusHistoryRepository;
+  private statusHistoryRepo: OrderStatusHistoryRepository;
 
   constructor(
     orderRepo?: OrderRepository,
     orderItemRepo?: OrderItemRepository,
-    historyRepo?: OrderStatusHistoryRepository
+    statusHistoryRepo?: OrderStatusHistoryRepository
   ) {
     this.orderRepo = orderRepo || container.resolve<OrderRepository>(RepositoryTokens.OrderRepository);
     this.orderItemRepo = orderItemRepo || container.resolve<OrderItemRepository>(RepositoryTokens.OrderItemRepository);
-    this.historyRepo = historyRepo || container.resolve<OrderStatusHistoryRepository>(RepositoryTokens.OrderStatusHistoryRepository);
+    this.statusHistoryRepo = statusHistoryRepo || container.resolve<OrderStatusHistoryRepository>(RepositoryTokens.OrderStatusHistoryRepository);
   }
 
   public async createOrder(userId: string, orderData: Partial<Order>): Promise<Result<Order, AppError>> {
+    const start = Date.now();
     logger.info(`[OrderService.createOrder] Creating order for user ${userId}`);
     const orderNumber = orderData.order_number || generateOrderNumber();
 
-    const newOrderRes = await this.orderRepo.create({
+    const payload: any = {
       order_number: orderNumber,
       user_id: userId,
       status: OrderStatus.PENDING,
@@ -58,18 +60,48 @@ export class OrderServiceImpl implements OrderService {
       billing_address: orderData.billing_address || orderData.shipping_address || {},
       customer_notes: orderData.customer_notes || null,
       metadata: orderData.metadata || {},
-    } as any);
+    };
 
-    if (!newOrderRes.success) return newOrderRes;
+    console.log(`[OrderService.createOrder] Repository: OrderRepository | Method: create | Payload:`, payload);
+    const newOrderRes = await this.orderRepo.create(payload);
+    const elapsed = Date.now() - start;
 
+    if (!newOrderRes.success) {
+      console.error(`[OrderService.createOrder] FAILURE | Time: ${elapsed}ms | Repository Error:`, {
+        name: newOrderRes.error.name,
+        message: newOrderRes.error.message,
+        stack: newOrderRes.error.stack,
+        details: newOrderRes.error.details,
+      });
+      return newOrderRes;
+    }
+
+    console.log(`[OrderService.createOrder] SUCCESS | Time: ${elapsed}ms | Created Order ID: ${newOrderRes.value.id}`);
     await this.writeStatusHistory(newOrderRes.value.id, OrderStatus.PENDING, 'Order created in pending state', userId);
     return success(newOrderRes.value);
   }
 
   public async createOrderItems(orderId: string, items: Partial<OrderItem>[]): Promise<Result<OrderItem[], AppError>> {
+    const start = Date.now();
     logger.info(`[OrderService.createOrderItems] Adding ${items.length} items to order ${orderId}`);
     const prepared = items.map((i) => ({ ...i, order_id: orderId }));
-    return this.orderItemRepo.createMany(prepared);
+
+    console.log(`[OrderService.createOrderItems] Repository: OrderItemRepository | Method: createMany | Items:`, prepared);
+    const res = await this.orderItemRepo.createMany(prepared);
+    const elapsed = Date.now() - start;
+
+    if (!res.success) {
+      console.error(`[OrderService.createOrderItems] FAILURE | Time: ${elapsed}ms | Repository Error:`, {
+        name: res.error.name,
+        message: res.error.message,
+        stack: res.error.stack,
+        details: res.error.details,
+      });
+      return res;
+    }
+
+    console.log(`[OrderService.createOrderItems] SUCCESS | Time: ${elapsed}ms | Items Count: ${res.value.length}`);
+    return res;
   }
 
   public async getOrderById(orderId: string, userId?: string): Promise<Result<Order, AppError>> {
@@ -88,54 +120,34 @@ export class OrderServiceImpl implements OrderService {
     const res = await this.orderRepo.findByOrderNumber(orderNumber);
     if (!res.success) return res;
     if (!res.value) {
-      return failure(new NotFoundError(`Order number ${orderNumber} not found`));
+      return failure(new NotFoundError(`Order Number ${orderNumber} not found`));
     }
     if (userId && res.value.user_id !== userId) {
-      return failure(new NotFoundError(`Order number ${orderNumber} not found for this user`));
+      return failure(new NotFoundError(`Order Number ${orderNumber} not found for this user`));
     }
     return success(res.value);
   }
 
-  public async getUserOrders(userId: string, query?: PaginationQueryDTO): Promise<Result<{ items: Order[]; total: number }, AppError>> {
-    return this.orderRepo.findWithPagination(query?.page, query?.pageSize, { user_id: userId }, query?.sortBy, query?.sortOrder);
+  public async getUserOrders(userId: string, options?: { page?: number; pageSize?: number }): Promise<Result<{ items: Order[]; total: number }, AppError>> {
+    return this.orderRepo.findWithPagination(options?.page || 1, options?.pageSize || 20, { user_id: userId }, 'created_at', 'desc');
   }
 
-  public async updateOrderStatus(orderId: string, status: OrderStatus, notes?: string, createdBy?: string): Promise<Result<Order, AppError>> {
-    logger.info(`[OrderService.updateOrderStatus] Order ${orderId} status transitioning to ${status}`);
+  public async updateOrderStatus(orderId: string, status: OrderStatus, note?: string, updatedBy?: string): Promise<Result<Order, AppError>> {
     const existing = await this.getOrderById(orderId);
     if (!existing.success) return existing;
 
     const updateRes = await this.orderRepo.update(orderId, { status });
     if (!updateRes.success) return updateRes;
 
-    await this.writeStatusHistory(orderId, status, notes || `Status updated to ${status}`, createdBy);
+    await this.writeStatusHistory(orderId, status, note || `Status updated to ${status}`, updatedBy);
     return success(updateRes.value);
   }
 
-  public async cancelOrder(orderId: string, userId: string, reason?: string): Promise<Result<Order, AppError>> {
-    logger.info(`[OrderService.cancelOrder] Cancelling order ${orderId} for user ${userId}`);
-    const existingRes = await this.getOrderById(orderId, userId);
-    if (!existingRes.success) return existingRes;
-
-    const order = existingRes.value;
-    if (order.status === OrderStatus.DELIVERED || order.status === OrderStatus.CANCELLED) {
-      return failure(new ValidationError(`Order ${order.order_number} cannot be cancelled in status ${order.status}`));
-    }
-
-    const cancelRes = await this.orderRepo.update(orderId, {
-      status: OrderStatus.CANCELLED,
-    });
-    if (!cancelRes.success) return cancelRes;
-
-    await this.writeStatusHistory(orderId, OrderStatus.CANCELLED, reason || 'Order cancelled by customer', userId);
-    return success(cancelRes.value);
-  }
-
-  public async writeStatusHistory(orderId: string, status: OrderStatus, notes?: string, createdBy?: string): Promise<Result<OrderStatusHistory, AppError>> {
-    return this.historyRepo.create({
+  public async writeStatusHistory(orderId: string, status: OrderStatus, note?: string, createdBy?: string): Promise<Result<OrderStatusHistory, AppError>> {
+    return this.statusHistoryRepo.create({
       order_id: orderId,
       status,
-      notes: notes || null,
+      notes: note || null,
       created_by: createdBy || null,
     });
   }

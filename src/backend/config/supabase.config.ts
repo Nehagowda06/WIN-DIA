@@ -17,7 +17,7 @@ export function getBrowserClient(): SupabaseClient {
 }
 
 /**
- * Creates server-side Supabase client instance using request authorization header
+ * Creates request-scoped server Supabase client instance using request authorization header
  */
 export function getServerClient(authHeader?: string): SupabaseClient {
   const env = getEnv();
@@ -39,7 +39,7 @@ export function getServerClient(authHeader?: string): SupabaseClient {
 
 /**
  * Creates or gets elevated Admin Supabase client using Service Role Key
- * Use ONLY for explicit admin or system tasks requiring RLS bypass.
+ * Use ONLY for explicit admin or system tasks requiring RLS bypass (webhooks, migrations, admin tasks).
  */
 export function getAdminClient(): SupabaseClient {
   if (adminClient) {

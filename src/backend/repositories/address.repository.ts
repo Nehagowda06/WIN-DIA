@@ -1,8 +1,10 @@
+import { SupabaseClient } from '@supabase/supabase-js';
 import { BaseRepository, IBaseRepository } from './base.repository';
 import { Address } from '../models/domain-models.types';
 import { CreateAddressDTO } from '../types/dto.types';
 import { Result, failure, success } from '../types/result.types';
 import { AppError } from '../errors/app-error';
+import { getServerClient } from '../config/supabase.config';
 
 export interface AddressRepository extends IBaseRepository<Address, string, CreateAddressDTO, Partial<CreateAddressDTO>> {
   findByUserId(userId: string): Promise<Result<Address[], AppError>>;
@@ -12,8 +14,8 @@ export interface AddressRepository extends IBaseRepository<Address, string, Crea
 export class SupabaseAddressRepository
   extends BaseRepository<Address, string, CreateAddressDTO, Partial<CreateAddressDTO>>
   implements AddressRepository {
-  constructor() {
-    super('addresses');
+  constructor(clientOrGetter?: SupabaseClient | (() => SupabaseClient)) {
+    super('addresses', clientOrGetter || (() => getServerClient()));
   }
 
   public async findByUserId(userId: string): Promise<Result<Address[], AppError>> {

@@ -1,7 +1,9 @@
+import { SupabaseClient } from '@supabase/supabase-js';
 import { BaseRepository, IBaseRepository } from './base.repository';
 import { Banner } from '../models/domain-models.types';
-import { Result, failure, success } from '../types/result.types';
+import { Result, success } from '../types/result.types';
 import { AppError } from '../errors/app-error';
+import { getServerClient } from '../config/supabase.config';
 
 export interface BannerRepository extends IBaseRepository<Banner, string, Partial<Banner>, Partial<Banner>> {
   findActive(): Promise<Result<Banner[], AppError>>;
@@ -10,26 +12,11 @@ export interface BannerRepository extends IBaseRepository<Banner, string, Partia
 export class SupabaseBannerRepository
   extends BaseRepository<Banner, string, Partial<Banner>, Partial<Banner>>
   implements BannerRepository {
-  constructor() {
-    super('banners');
+  constructor(clientOrGetter?: SupabaseClient | (() => SupabaseClient)) {
+    super('banners', clientOrGetter || (() => getServerClient()));
   }
 
   public async findActive(): Promise<Result<Banner[], AppError>> {
-    try {
-      const client = this.getClient();
-      const { data, error } = await client
-        .from(this.tableName)
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
-
-      if (error) {
-        return failure(this.handleError(error, 'findActive'));
-      }
-
-      return success((data as Banner[]) || []);
-    } catch (err) {
-      return failure(this.handleError(err, 'findActive'));
-    }
+    return this.findAll({ is_active: true });
   }
 }

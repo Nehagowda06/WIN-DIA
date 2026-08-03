@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { container, ServiceTokens } from '@/src/backend/providers/container.provider';
+import { ServiceTokens } from '@/src/backend/providers/container.provider';
 import { WishlistService } from '@/src/backend/services/wishlist.service';
 import { getAuthUserContext, handleServiceResult } from '@/src/backend/utils/route-helper.util';
 import { createErrorResponse } from '@/src/backend/types/api-response.types';
@@ -11,10 +11,26 @@ export async function GET(request: Request) {
       return handleServiceResult(authRes);
     }
 
-    const wishlistService = container.resolve<WishlistService>(ServiceTokens.WishlistService);
+    const wishlistService = authRes.value.scope.resolve<WishlistService>(ServiceTokens.WishlistService);
     const result = await wishlistService.getWishlist(authRes.value.id);
 
-    return handleServiceResult(result);
+    if (!result.success) {
+      return handleServiceResult(result);
+    }
+
+    const items = result.value || [];
+    const normalizedWishlist = items.map((item: any) => ({
+      ...item,
+      _id: item.id,
+      productId: item.product_id || item.productId,
+      product: item.product || item,
+    }));
+
+    return NextResponse.json({
+      success: true,
+      wishlist: normalizedWishlist,
+      data: normalizedWishlist,
+    });
   } catch (err: any) {
     return NextResponse.json(
       createErrorResponse('INTERNAL_SERVER_ERROR', err.message || 'An unexpected error occurred'),
@@ -40,7 +56,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const wishlistService = container.resolve<WishlistService>(ServiceTokens.WishlistService);
+    const wishlistService = authRes.value.scope.resolve<WishlistService>(ServiceTokens.WishlistService);
     const result = await wishlistService.addToWishlist(authRes.value.id, productId);
 
     return handleServiceResult(result, 201);
@@ -69,7 +85,7 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const wishlistService = container.resolve<WishlistService>(ServiceTokens.WishlistService);
+    const wishlistService = authRes.value.scope.resolve<WishlistService>(ServiceTokens.WishlistService);
     const result = await wishlistService.removeFromWishlist(authRes.value.id, productId);
 
     return handleServiceResult(result);

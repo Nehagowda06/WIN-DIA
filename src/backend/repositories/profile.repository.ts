@@ -1,8 +1,10 @@
+import { SupabaseClient } from '@supabase/supabase-js';
 import { BaseRepository, IBaseRepository } from './base.repository';
 import { Profile } from '../models/domain-models.types';
 import { UpdateProfileDTO } from '../types/dto.types';
 import { Result, failure, success } from '../types/result.types';
 import { AppError } from '../errors/app-error';
+import { getServerClient } from '../config/supabase.config';
 
 export interface ProfileRepository extends IBaseRepository<Profile, string, Partial<Profile>, UpdateProfileDTO> {
   findByEmail(email: string): Promise<Result<Profile | null, AppError>>;
@@ -12,8 +14,8 @@ export interface ProfileRepository extends IBaseRepository<Profile, string, Part
 export class SupabaseProfileRepository
   extends BaseRepository<Profile, string, Partial<Profile>, UpdateProfileDTO>
   implements ProfileRepository {
-  constructor() {
-    super('profiles');
+  constructor(clientOrGetter?: SupabaseClient | (() => SupabaseClient)) {
+    super('profiles', clientOrGetter || (() => getServerClient()));
   }
 
   public async findByEmail(email: string): Promise<Result<Profile | null, AppError>> {

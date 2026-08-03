@@ -33,9 +33,13 @@ export abstract class BaseRepository<T extends { id?: string }, ID = string, Cre
   protected readonly tableName: string;
   protected getClient: () => SupabaseClient;
 
-  constructor(tableName: string, clientGetter: () => SupabaseClient = () => getServerClient()) {
+  constructor(tableName: string, clientOrGetter: SupabaseClient | (() => SupabaseClient)) {
     this.tableName = tableName;
-    this.getClient = clientGetter;
+    if (typeof clientOrGetter === 'function') {
+      this.getClient = clientOrGetter;
+    } else {
+      this.getClient = () => clientOrGetter;
+    }
   }
 
   /**

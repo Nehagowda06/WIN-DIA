@@ -6,13 +6,31 @@ import { formatGlobalError } from '../middleware/error-handler.middleware';
 import { authenticateToken } from '../middleware/auth.middleware';
 import { requireAdmin } from '../middleware/admin-auth.middleware';
 import { UserContext } from '../types/common.types';
+import { container, RequestScopedContainer } from '../providers/container.provider';
 
-export async function getAuthUserContext(request: Request): Promise<Result<UserContext, AppError>> {
-  const authHeader = request.headers.get('authorization');
-  return authenticateToken(authHeader);
+export interface RequestAuthContext extends UserContext {
+  authHeader?: string;
+  scope: RequestScopedContainer;
 }
 
-export async function getAdminUserContext(request: Request): Promise<Result<UserContext, AppError>> {
+export async function getAuthUserContext(request: Request): Promise<Result<RequestAuthContext, AppError>> {
+  const authHeader = request.headers.get('authorization');
+  const authRes = await authenticateToken(authHeader);
+
+  if (!authRes.success) {
+    return failure(authRes.error);
+  }
+
+  const scope = container.createRequestScope(authHeader || undefined);
+
+  return success({
+    ...authRes.value,
+    authHeader: authHeader || undefined,
+    scope,
+  });
+}
+
+export async function getAdminUserContext(request: Request): Promise<Result<RequestAuthContext, AppError>> {
   const authRes = await getAuthUserContext(request);
   if (!authRes.success) return authRes;
 

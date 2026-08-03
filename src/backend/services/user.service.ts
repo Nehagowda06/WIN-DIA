@@ -28,12 +28,18 @@ export class UserServiceImpl implements UserService {
   }
 
   public async getProfile(userId: string): Promise<Result<Profile, AppError>> {
-    logger.info(`[UserService.getProfile] Fetching profile for ${userId}`);
+    console.log(`[TRACE UserService.getProfile] Entering getProfile for userId: ${userId}`);
     const res = await this.profileRepo.findById(userId);
-    if (!res.success) return res;
+    console.log(`[TRACE UserService.getProfile] profileRepo.findById result success:`, res.success);
+    if (!res.success) {
+      console.log(`[TRACE UserService.getProfile] findById returned error:`, res.error);
+      return res;
+    }
     if (!res.value) {
+      console.log(`[TRACE UserService.getProfile] Profile row is NULL for userId: ${userId}. Throwing NotFoundError.`);
       return failure(new NotFoundError(`Profile for user ${userId} not found`));
     }
+    console.log(`[TRACE UserService.getProfile] Found profile:`, res.value);
     return success(res.value);
   }
 

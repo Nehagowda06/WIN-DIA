@@ -1,52 +1,40 @@
+import { SupabaseClient } from '@supabase/supabase-js';
 import { BaseRepository, IBaseRepository } from './base.repository';
 import { Product } from '../models/domain-models.types';
-import { CreateProductDTO } from '../types/dto.types';
-import { Result, failure, success } from '../types/result.types';
+import { Result, success, failure } from '../types/result.types';
 import { AppError } from '../errors/app-error';
+import { getServerClient } from '../config/supabase.config';
 
-export interface ProductRepository extends IBaseRepository<Product, string, CreateProductDTO, Partial<CreateProductDTO>> {
+export interface ProductRepository extends IBaseRepository<Product, string, Partial<Product>, Partial<Product>> {
   findBySlug(slug: string): Promise<Result<Product | null, AppError>>;
-  findWithRelations(productId: string): Promise<Result<Record<string, unknown> | null, AppError>>;
+  findFeatured(limit?: number): Promise<Result<Product[], AppError>>;
+  findWithRelations(id: string): Promise<Result<Record<string, unknown> | null, AppError>>;
 }
 
 export class SupabaseProductRepository
-  extends BaseRepository<Product, string, CreateProductDTO, Partial<CreateProductDTO>>
+  extends BaseRepository<Product, string, Partial<Product>, Partial<Product>>
   implements ProductRepository {
-  constructor() {
-    super('products');
+  constructor(clientOrGetter?: SupabaseClient | (() => SupabaseClient)) {
+    super('products', clientOrGetter || (() => getServerClient()));
   }
 
   public async findBySlug(slug: string): Promise<Result<Product | null, AppError>> {
-    try {
-      const client = this.getClient();
-      const { data, error } = await client
-        .from(this.tableName)
-        .select('*')
-        .eq('slug', slug)
-        .maybeSingle();
-
-      if (error) {
-        return failure(this.handleError(error, 'findBySlug'));
-      }
-
-      return success((data as Product) || null);
-    } catch (err) {
-      return failure(this.handleError(err, 'findBySlug'));
-    }
+    const res = await this.findAll({ slug });
+    if (!res.success) return failure(res.error);
+    return success(res.value[0] || null);
   }
 
-  public async findWithRelations(productId: string): Promise<Result<Record<string, unknown> | null, AppError>> {
+  public async findFeatured(limit: number = 10): Promise<Result<Product[], AppError>> {
+    return this.findAll({ is_active: true });
+  }
+
+  public async findWithRelations(id: string): Promise<Result<Record<string, unknown> | null, AppError>> {
     try {
       const client = this.getClient();
       const { data, error } = await client
         .from(this.tableName)
-        .select(`
-          *,
-          category:categories(*),
-          variants:product_variants(*),
-          images:product_images(*)
-        `)
-        .eq('id', productId)
+        .select('*, variants:product_variants(*), images:product_images(*), category:categories(*)')
+        .eq('id', id)
         .maybeSingle();
 
       if (error) {

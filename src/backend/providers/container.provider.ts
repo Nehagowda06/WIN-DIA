@@ -1,3 +1,5 @@
+import { SupabaseClient } from '@supabase/supabase-js';
+import { getServerClient } from '../config/supabase.config';
 import { SupabaseProfileRepository } from '../repositories/profile.repository';
 import { SupabaseAddressRepository } from '../repositories/address.repository';
 import { SupabaseCategoryRepository } from '../repositories/category.repository';
@@ -84,94 +86,197 @@ export const ServiceTokens = {
   SettingsService: 'SettingsService',
 } as const;
 
+/**
+ * Request-Scoped DI Container Instance.
+ * Encapsulates the request's authenticated SupabaseClient instance and reuses it
+ * across every repository and service participating in the request execution.
+ */
+export class RequestScopedContainer {
+  private client: SupabaseClient;
+  private cache = new Map<string | symbol, unknown>();
+
+  constructor(client: SupabaseClient) {
+    this.client = client;
+  }
+
+  public getClient(): SupabaseClient {
+    return this.client;
+  }
+
+  public resolve<T>(key: string | symbol): T {
+    if (this.cache.has(key)) {
+      return this.cache.get(key) as T;
+    }
+
+    const instance = this.createInstance<T>(key);
+    this.cache.set(key, instance);
+    return instance;
+  }
+
+  private createInstance<T>(key: string | symbol): T {
+    switch (key) {
+      // Repositories (Injected with Request-Scoped Authenticated SupabaseClient)
+      case RepositoryTokens.ProfileRepository:
+        return new SupabaseProfileRepository(this.client) as any;
+      case RepositoryTokens.AddressRepository:
+        return new SupabaseAddressRepository(this.client) as any;
+      case RepositoryTokens.CategoryRepository:
+        return new SupabaseCategoryRepository(this.client) as any;
+      case RepositoryTokens.ProductRepository:
+        return new SupabaseProductRepository(this.client) as any;
+      case RepositoryTokens.ProductVariantRepository:
+        return new SupabaseProductVariantRepository(this.client) as any;
+      case RepositoryTokens.ProductImageRepository:
+        return new SupabaseProductImageRepository(this.client) as any;
+      case RepositoryTokens.WishlistRepository:
+        return new SupabaseWishlistRepository(this.client) as any;
+      case RepositoryTokens.CartRepository:
+        return new SupabaseCartRepository(this.client) as any;
+      case RepositoryTokens.CartItemRepository:
+        return new SupabaseCartItemRepository(this.client) as any;
+      case RepositoryTokens.OrderRepository:
+        return new SupabaseOrderRepository(this.client) as any;
+      case RepositoryTokens.OrderItemRepository:
+        return new SupabaseOrderItemRepository(this.client) as any;
+      case RepositoryTokens.OrderStatusHistoryRepository:
+        return new SupabaseOrderStatusHistoryRepository(this.client) as any;
+      case RepositoryTokens.ShipmentRepository:
+        return new SupabaseShipmentRepository(this.client) as any;
+      case RepositoryTokens.ShipmentTrackingEventRepository:
+        return new SupabaseShipmentTrackingEventRepository(this.client) as any;
+      case RepositoryTokens.PaymentRepository:
+        return new SupabasePaymentRepository(this.client) as any;
+      case RepositoryTokens.PaymentEventRepository:
+        return new SupabasePaymentEventRepository(this.client) as any;
+      case RepositoryTokens.ProductReviewRepository:
+        return new SupabaseProductReviewRepository(this.client) as any;
+      case RepositoryTokens.CouponRepository:
+        return new SupabaseCouponRepository(this.client) as any;
+      case RepositoryTokens.ContactMessageRepository:
+        return new SupabaseContactMessageRepository(this.client) as any;
+      case RepositoryTokens.SettingsRepository:
+        return new SupabaseSettingsRepository(this.client) as any;
+      case RepositoryTokens.PageContentRepository:
+        return new SupabasePageContentRepository(this.client) as any;
+      case RepositoryTokens.BannerRepository:
+        return new SupabaseBannerRepository(this.client) as any;
+
+      // Services (Injected with Request-Scoped Repositories & Dependent Services)
+      case ServiceTokens.AuthService:
+        return new AuthServiceImpl() as any;
+      case ServiceTokens.UserService:
+        return new UserServiceImpl(
+          this.resolve(RepositoryTokens.ProfileRepository),
+          this.resolve(RepositoryTokens.AddressRepository)
+        ) as any;
+      case ServiceTokens.CategoryService:
+        return new CategoryServiceImpl(
+          this.resolve(RepositoryTokens.CategoryRepository)
+        ) as any;
+      case ServiceTokens.ProductService:
+        return new ProductServiceImpl(
+          this.resolve(RepositoryTokens.ProductRepository),
+          this.resolve(RepositoryTokens.ProductVariantRepository),
+          this.resolve(RepositoryTokens.CategoryRepository)
+        ) as any;
+      case ServiceTokens.CartService:
+        return new CartServiceImpl(
+          this.resolve(RepositoryTokens.CartRepository),
+          this.resolve(RepositoryTokens.CartItemRepository),
+          this.resolve(RepositoryTokens.ProductVariantRepository)
+        ) as any;
+      case ServiceTokens.WishlistService:
+        return new WishlistServiceImpl(
+          this.resolve(RepositoryTokens.WishlistRepository),
+          this.resolve(RepositoryTokens.ProductVariantRepository)
+        ) as any;
+      case ServiceTokens.InventoryService:
+        return new InventoryServiceImpl(
+          this.resolve(RepositoryTokens.ProductVariantRepository)
+        ) as any;
+      case ServiceTokens.CouponService:
+        return new CouponServiceImpl(
+          this.resolve(RepositoryTokens.CouponRepository)
+        ) as any;
+      case ServiceTokens.OrderService:
+        return new OrderServiceImpl(
+          this.resolve(RepositoryTokens.OrderRepository),
+          this.resolve(RepositoryTokens.OrderItemRepository),
+          this.resolve(RepositoryTokens.OrderStatusHistoryRepository)
+        ) as any;
+      case ServiceTokens.PaymentService:
+        return new PaymentServiceImpl(
+          this.resolve(RepositoryTokens.PaymentRepository),
+          this.resolve(RepositoryTokens.PaymentEventRepository),
+          this.resolve(RepositoryTokens.OrderRepository)
+        ) as any;
+      case ServiceTokens.ShipmentService:
+        return new ShipmentServiceImpl(
+          this.resolve(RepositoryTokens.ShipmentRepository),
+          this.resolve(RepositoryTokens.ShipmentTrackingEventRepository)
+        ) as any;
+      case ServiceTokens.ReviewService:
+        return new ReviewServiceImpl(
+          this.resolve(RepositoryTokens.ProductReviewRepository)
+        ) as any;
+      case ServiceTokens.ContactService:
+        return new ContactServiceImpl(
+          this.resolve(RepositoryTokens.ContactMessageRepository)
+        ) as any;
+      case ServiceTokens.CMSService:
+        return new CMSServiceImpl(
+          this.resolve(RepositoryTokens.PageContentRepository),
+          this.resolve(RepositoryTokens.BannerRepository)
+        ) as any;
+      case ServiceTokens.SettingsService:
+        return new SettingsServiceImpl(
+          this.resolve(RepositoryTokens.SettingsRepository)
+        ) as any;
+      case ServiceTokens.CheckoutService:
+        return new CheckoutServiceImpl(
+          this.resolve(ServiceTokens.UserService),
+          this.resolve(ServiceTokens.CartService),
+          this.resolve(RepositoryTokens.ProductVariantRepository),
+          this.resolve(RepositoryTokens.OrderRepository),
+          this.resolve(ServiceTokens.InventoryService),
+          this.resolve(ServiceTokens.CouponService),
+          this.resolve(ServiceTokens.OrderService),
+          this.resolve(ServiceTokens.PaymentService),
+          this.resolve(ServiceTokens.ShipmentService)
+        ) as any;
+
+      default:
+        throw new Error(`ServiceContainer: Unknown key "${String(key)}"`);
+    }
+  }
+}
+
 export class ServiceContainer {
   private static instance: ServiceContainer | null = null;
-  private services = new Map<string | symbol, unknown>();
-  private factories = new Map<string | symbol, Factory<unknown>>();
 
   public static getInstance(): ServiceContainer {
     if (!ServiceContainer.instance) {
       ServiceContainer.instance = new ServiceContainer();
-      ServiceContainer.instance.registerRepositories();
-      ServiceContainer.instance.registerServices();
     }
     return ServiceContainer.instance;
   }
 
-  public register<T>(key: string | symbol, instance: T): void {
-    this.services.set(key, instance);
+  /**
+   * Creates a request-scoped dependency container for an incoming HTTP request.
+   * Initializes the authenticated SupabaseClient ONCE using the request's Authorization header,
+   * and injects the SAME client instance into all repositories and services resolved for that request.
+   */
+  public createRequestScope(authHeader?: string | SupabaseClient): RequestScopedContainer {
+    const client = typeof authHeader === 'string'
+      ? getServerClient(authHeader)
+      : (authHeader || getServerClient());
+
+    return new RequestScopedContainer(client);
   }
 
-  public registerFactory<T>(key: string | symbol, factory: Factory<T>): void {
-    this.factories.set(key, factory as Factory<unknown>);
-  }
-
-  public resolve<T>(key: string | symbol): T {
-    if (this.services.has(key)) {
-      return this.services.get(key) as T;
-    }
-
-    if (this.factories.has(key)) {
-      const factory = this.factories.get(key) as Factory<T>;
-      const instance = factory(this);
-      this.services.set(key, instance);
-      return instance;
-    }
-
-    throw new Error(`ServiceContainer: No service registered for key "${String(key)}"`);
-  }
-
-  public has(key: string | symbol): boolean {
-    return this.services.has(key) || this.factories.has(key);
-  }
-
-  public clear(): void {
-    this.services.clear();
-    this.factories.clear();
-  }
-
-  private registerRepositories(): void {
-    this.registerFactory(RepositoryTokens.ProfileRepository, () => new SupabaseProfileRepository());
-    this.registerFactory(RepositoryTokens.AddressRepository, () => new SupabaseAddressRepository());
-    this.registerFactory(RepositoryTokens.CategoryRepository, () => new SupabaseCategoryRepository());
-    this.registerFactory(RepositoryTokens.ProductRepository, () => new SupabaseProductRepository());
-    this.registerFactory(RepositoryTokens.ProductVariantRepository, () => new SupabaseProductVariantRepository());
-    this.registerFactory(RepositoryTokens.ProductImageRepository, () => new SupabaseProductImageRepository());
-    this.registerFactory(RepositoryTokens.WishlistRepository, () => new SupabaseWishlistRepository());
-    this.registerFactory(RepositoryTokens.CartRepository, () => new SupabaseCartRepository());
-    this.registerFactory(RepositoryTokens.CartItemRepository, () => new SupabaseCartItemRepository());
-    this.registerFactory(RepositoryTokens.OrderRepository, () => new SupabaseOrderRepository());
-    this.registerFactory(RepositoryTokens.OrderItemRepository, () => new SupabaseOrderItemRepository());
-    this.registerFactory(RepositoryTokens.OrderStatusHistoryRepository, () => new SupabaseOrderStatusHistoryRepository());
-    this.registerFactory(RepositoryTokens.ShipmentRepository, () => new SupabaseShipmentRepository());
-    this.registerFactory(RepositoryTokens.ShipmentTrackingEventRepository, () => new SupabaseShipmentTrackingEventRepository());
-    this.registerFactory(RepositoryTokens.PaymentRepository, () => new SupabasePaymentRepository());
-    this.registerFactory(RepositoryTokens.PaymentEventRepository, () => new SupabasePaymentEventRepository());
-    this.registerFactory(RepositoryTokens.ProductReviewRepository, () => new SupabaseProductReviewRepository());
-    this.registerFactory(RepositoryTokens.CouponRepository, () => new SupabaseCouponRepository());
-    this.registerFactory(RepositoryTokens.ContactMessageRepository, () => new SupabaseContactMessageRepository());
-    this.registerFactory(RepositoryTokens.SettingsRepository, () => new SupabaseSettingsRepository());
-    this.registerFactory(RepositoryTokens.PageContentRepository, () => new SupabasePageContentRepository());
-    this.registerFactory(RepositoryTokens.BannerRepository, () => new SupabaseBannerRepository());
-  }
-
-  private registerServices(): void {
-    this.registerFactory(ServiceTokens.AuthService, () => new AuthServiceImpl());
-    this.registerFactory(ServiceTokens.UserService, () => new UserServiceImpl());
-    this.registerFactory(ServiceTokens.CategoryService, () => new CategoryServiceImpl());
-    this.registerFactory(ServiceTokens.ProductService, () => new ProductServiceImpl());
-    this.registerFactory(ServiceTokens.CartService, () => new CartServiceImpl());
-    this.registerFactory(ServiceTokens.WishlistService, () => new WishlistServiceImpl());
-    this.registerFactory(ServiceTokens.InventoryService, () => new InventoryServiceImpl());
-    this.registerFactory(ServiceTokens.CouponService, () => new CouponServiceImpl());
-    this.registerFactory(ServiceTokens.OrderService, () => new OrderServiceImpl());
-    this.registerFactory(ServiceTokens.PaymentService, () => new PaymentServiceImpl());
-    this.registerFactory(ServiceTokens.ShipmentService, () => new ShipmentServiceImpl());
-    this.registerFactory(ServiceTokens.ReviewService, () => new ReviewServiceImpl());
-    this.registerFactory(ServiceTokens.ContactService, () => new ContactServiceImpl());
-    this.registerFactory(ServiceTokens.CMSService, () => new CMSServiceImpl());
-    this.registerFactory(ServiceTokens.SettingsService, () => new SettingsServiceImpl());
-    this.registerFactory(ServiceTokens.CheckoutService, () => new CheckoutServiceImpl());
+  public resolve<T>(key: string | symbol, authHeader?: string | SupabaseClient): T {
+    const scope = this.createRequestScope(authHeader);
+    return scope.resolve<T>(key);
   }
 }
 

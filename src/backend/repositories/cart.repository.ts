@@ -1,22 +1,28 @@
+import { SupabaseClient } from '@supabase/supabase-js';
 import { BaseRepository, IBaseRepository } from './base.repository';
 import { Cart } from '../models/domain-models.types';
 import { Result, failure, success } from '../types/result.types';
 import { AppError } from '../errors/app-error';
+import { getServerClient } from '../config/supabase.config';
 
 export interface CartRepository extends IBaseRepository<Cart, string, Partial<Cart>, Partial<Cart>> {
   findByUserId(userId: string): Promise<Result<Cart | null, AppError>>;
+  findActiveByUserId(userId: string): Promise<Result<Cart | null, AppError>>;
   findBySessionId(sessionId: string): Promise<Result<Cart | null, AppError>>;
-  findWithItems(cartId: string): Promise<Result<Record<string, unknown> | null, AppError>>;
 }
 
 export class SupabaseCartRepository
   extends BaseRepository<Cart, string, Partial<Cart>, Partial<Cart>>
   implements CartRepository {
-  constructor() {
-    super('carts');
+  constructor(clientOrGetter?: SupabaseClient | (() => SupabaseClient)) {
+    super('cart', clientOrGetter || (() => getServerClient()));
   }
 
   public async findByUserId(userId: string): Promise<Result<Cart | null, AppError>> {
+    return this.findActiveByUserId(userId);
+  }
+
+  public async findActiveByUserId(userId: string): Promise<Result<Cart | null, AppError>> {
     try {
       const client = this.getClient();
       const { data, error } = await client
@@ -26,12 +32,12 @@ export class SupabaseCartRepository
         .maybeSingle();
 
       if (error) {
-        return failure(this.handleError(error, 'findByUserId'));
+        return failure(this.handleError(error, 'findActiveByUserId'));
       }
 
       return success((data as Cart) || null);
     } catch (err) {
-      return failure(this.handleError(err, 'findByUserId'));
+      return failure(this.handleError(err, 'findActiveByUserId'));
     }
   }
 
@@ -51,34 +57,6 @@ export class SupabaseCartRepository
       return success((data as Cart) || null);
     } catch (err) {
       return failure(this.handleError(err, 'findBySessionId'));
-    }
-  }
-
-  public async findWithItems(cartId: string): Promise<Result<Record<string, unknown> | null, AppError>> {
-    try {
-      const client = this.getClient();
-      const { data, error } = await client
-        .from(this.tableName)
-        .select(`
-          *,
-          items:cart_items(
-            *,
-            variant:product_variants(
-              *,
-              product:products(*)
-            )
-          )
-        `)
-        .eq('id', cartId)
-        .maybeSingle();
-
-      if (error) {
-        return failure(this.handleError(error, 'findWithItems'));
-      }
-
-      return success(data || null);
-    } catch (err) {
-      return failure(this.handleError(err, 'findWithItems'));
     }
   }
 }
