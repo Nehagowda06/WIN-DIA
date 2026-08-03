@@ -33,7 +33,7 @@ export async function POST(request: Request) {
         ...order,
         order_items: items,
         total_price: pricing.total,
-        order_status: order.status || 'placed',
+        order_status: order.order_status || 'placed',
       },
       requiresPayment: !isCod,
       razorpay: !isCod

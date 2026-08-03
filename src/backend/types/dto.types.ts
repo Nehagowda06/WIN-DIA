@@ -1,4 +1,4 @@
-import { AddressType, CouponType, ProductStatus, UserRole } from '../enums/entity.enums';
+import { CouponType } from '../enums/entity.enums';
 
 export interface BaseDTO {}
 
@@ -11,14 +11,14 @@ export interface PaginationQueryDTO extends BaseDTO {
 }
 
 export interface CreateAddressDTO extends BaseDTO {
+  full_name: string;
+  phone: string;
   address_line1: string;
   address_line2?: string;
   city: string;
   state: string;
-  postal_code: string;
-  country: string;
+  pincode: string;
   is_default?: boolean;
-  address_type: AddressType;
 }
 
 export interface UpdateProfileDTO extends BaseDTO {
@@ -31,10 +31,8 @@ export interface CreateProductDTO extends BaseDTO {
   name: string;
   description?: string;
   category_id?: string;
-  status?: ProductStatus;
+  is_active?: boolean;
   is_featured?: boolean;
-  meta_title?: string;
-  meta_description?: string;
 }
 
 export interface CreateVariantDTO extends BaseDTO {
@@ -50,7 +48,7 @@ export interface CreateVariantDTO extends BaseDTO {
 }
 
 export interface AddToCartDTO extends BaseDTO {
-  variant_id: string;
+  product_id: string;
   quantity: number;
 }
 
@@ -60,13 +58,12 @@ export interface UpdateCartItemDTO extends BaseDTO {
 
 export interface CreateOrderDTO extends BaseDTO {
   items: Array<{
-    variant_id: string;
+    product_id: string;
     quantity: number;
   }>;
   shipping_address_id: string;
-  billing_address_id?: string;
   coupon_code?: string;
-  customer_notes?: string;
+  order_notes?: string;
 }
 
 export interface CreateReviewDTO extends BaseDTO {

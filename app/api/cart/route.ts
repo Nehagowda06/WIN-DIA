@@ -30,11 +30,14 @@ export async function POST(request: Request) {
   try {
     const authHeader = request.headers.get('authorization');
     const body = await request.json().catch(() => ({}));
-    const { cart_id, variant_id, quantity } = body;
+    // Accept product_id directly; fall back to variant_id for backwards-compat
+    // (cart_items.variant_id physically stores product_id in this architecture)
+    const { cart_id, product_id, variant_id, quantity } = body;
+    const resolvedProductId = product_id ?? variant_id;
 
-    if (!cart_id || !variant_id) {
+    if (!cart_id || !resolvedProductId) {
       return NextResponse.json(
-        createErrorResponse('VALIDATION_ERROR', 'cart_id and variant_id are required'),
+        createErrorResponse('VALIDATION_ERROR', 'cart_id and product_id are required'),
         { status: 400 }
       );
     }
@@ -42,7 +45,7 @@ export async function POST(request: Request) {
     const scope = container.createRequestScope(authHeader || undefined);
     const cartService = scope.resolve<CartService>(ServiceTokens.CartService);
     const result = await cartService.addItem(cart_id, {
-      variant_id,
+      product_id: resolvedProductId,
       quantity: parseInt(quantity || '1', 10),
     });
 
@@ -59,18 +62,20 @@ export async function PUT(request: Request) {
   try {
     const authHeader = request.headers.get('authorization');
     const body = await request.json().catch(() => ({}));
-    const { cart_id, variant_id, quantity } = body;
+    // Accept product_id directly; fall back to variant_id for backwards-compat
+    const { cart_id, product_id, variant_id, quantity } = body;
+    const resolvedProductId = product_id ?? variant_id;
 
-    if (!cart_id || !variant_id || quantity === undefined) {
+    if (!cart_id || !resolvedProductId || quantity === undefined) {
       return NextResponse.json(
-        createErrorResponse('VALIDATION_ERROR', 'cart_id, variant_id and quantity are required'),
+        createErrorResponse('VALIDATION_ERROR', 'cart_id, product_id and quantity are required'),
         { status: 400 }
       );
     }
 
     const scope = container.createRequestScope(authHeader || undefined);
     const cartService = scope.resolve<CartService>(ServiceTokens.CartService);
-    const result = await cartService.updateItemQuantity(cart_id, variant_id, {
+    const result = await cartService.updateItemQuantity(cart_id, resolvedProductId, {
       quantity: parseInt(quantity, 10),
     });
 
@@ -88,7 +93,9 @@ export async function DELETE(request: Request) {
     const authHeader = request.headers.get('authorization');
     const { searchParams } = new URL(request.url);
     const cartId = searchParams.get('cartId') || searchParams.get('cart_id');
-    const variantId = searchParams.get('variantId') || searchParams.get('variant_id');
+    // Accept product_id or variant_id (backwards-compat) — both identify the product in this architecture
+    const productId = searchParams.get('productId') || searchParams.get('product_id')
+      || searchParams.get('variantId') || searchParams.get('variant_id');
 
     if (!cartId) {
       return NextResponse.json(
@@ -99,8 +106,8 @@ export async function DELETE(request: Request) {
 
     const scope = container.createRequestScope(authHeader || undefined);
     const cartService = scope.resolve<CartService>(ServiceTokens.CartService);
-    if (variantId) {
-      const result = await cartService.removeItem(cartId, variantId);
+    if (productId) {
+      const result = await cartService.removeItem(cartId, productId);
       return handleServiceResult(result);
     }
 

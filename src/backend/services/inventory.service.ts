@@ -1,59 +1,66 @@
 import { Result, failure, success } from '../types/result.types';
 import { AppError } from '../errors/app-error';
 import { InventoryError, NotFoundError } from '../errors/domain-errors';
-import { ProductVariant } from '../models/domain-models.types';
-import { ProductVariantRepository } from '../repositories/product-variant.repository';
+import { Product } from '../models/domain-models.types';
+import { ProductRepository } from '../repositories/product.repository';
 import { logger } from '../utils/logger.util';
 import { container, RepositoryTokens } from '../providers/container.provider';
 
 export interface InventoryService {
-  validateStock(variantId: string, requiredQuantity: number): Promise<Result<ProductVariant, AppError>>;
-  deductStockAfterSuccessfulPayment(variantId: string, quantity: number): Promise<Result<ProductVariant, AppError>>;
-  restoreStockAfterCancellation(variantId: string, quantity: number): Promise<Result<ProductVariant, AppError>>;
+  validateStock(productId: string, requiredQuantity: number): Promise<Result<Product, AppError>>;
+  deductStockAfterSuccessfulPayment(productId: string, quantity: number): Promise<Result<Product, AppError>>;
+  restoreStockAfterCancellation(productId: string, quantity: number): Promise<Result<Product, AppError>>;
 }
 
 export class InventoryServiceImpl implements InventoryService {
-  private variantRepo: ProductVariantRepository;
+  private productRepo: ProductRepository;
 
-  constructor(variantRepo?: ProductVariantRepository) {
-    this.variantRepo = variantRepo || container.resolve<ProductVariantRepository>(RepositoryTokens.ProductVariantRepository);
+  constructor(productRepo?: ProductRepository) {
+    this.productRepo = productRepo || container.resolve<ProductRepository>(RepositoryTokens.ProductRepository);
   }
 
-  public async validateStock(variantId: string, requiredQuantity: number): Promise<Result<ProductVariant, AppError>> {
-    const variantRes = await this.variantRepo.findById(variantId);
-    if (!variantRes.success) return variantRes;
-    if (!variantRes.value || !variantRes.value.is_active) {
-      return failure(new NotFoundError(`Variant ID ${variantId} is invalid or inactive`));
+  public async validateStock(productId: string, requiredQuantity: number): Promise<Result<Product, AppError>> {
+    const productRes = await this.productRepo.findById(productId);
+    if (!productRes.success) return productRes;
+    if (!productRes.value || !productRes.value.is_active) {
+      return failure(new NotFoundError(`Product ID ${productId} is invalid or inactive`));
     }
 
-    const variant = variantRes.value;
-    if (variant.stock_quantity < requiredQuantity) {
-      logger.warn(`[InventoryService] Low stock for variant ${variant.sku}: requested ${requiredQuantity}, available ${variant.stock_quantity}`);
-      return failure(new InventoryError(`Insufficient inventory for "${variant.name}". Available stock: ${variant.stock_quantity}`));
+    const product = productRes.value;
+    if (product.count_in_stock < requiredQuantity) {
+      logger.warn(
+        `[InventoryService] Low stock for product ${product.sku ?? product.id}: ` +
+        `requested ${requiredQuantity}, available ${product.count_in_stock}`
+      );
+      return failure(
+        new InventoryError(
+          `Insufficient inventory for "${product.name}". Available stock: ${product.count_in_stock}`
+        )
+      );
     }
 
-    return success(variant);
+    return success(product);
   }
 
-  public async deductStockAfterSuccessfulPayment(variantId: string, quantity: number): Promise<Result<ProductVariant, AppError>> {
-    logger.info(`[InventoryService] Deducting ${quantity} stock for variant ${variantId} after payment`);
-    const validRes = await this.validateStock(variantId, quantity);
+  public async deductStockAfterSuccessfulPayment(productId: string, quantity: number): Promise<Result<Product, AppError>> {
+    logger.info(`[InventoryService] Deducting ${quantity} stock for product ${productId} after payment`);
+    const validRes = await this.validateStock(productId, quantity);
     if (!validRes.success) return validRes;
 
-    const variant = validRes.value;
-    const newStock = variant.stock_quantity - quantity;
-    return this.variantRepo.update(variantId, { stock_quantity: newStock });
+    const product = validRes.value;
+    const newStock = product.count_in_stock - quantity;
+    return this.productRepo.update(productId, { count_in_stock: newStock });
   }
 
-  public async restoreStockAfterCancellation(variantId: string, quantity: number): Promise<Result<ProductVariant, AppError>> {
-    logger.info(`[InventoryService] Restoring ${quantity} stock for variant ${variantId} after cancellation`);
-    const variantRes = await this.variantRepo.findById(variantId);
-    if (!variantRes.success) return variantRes;
-    if (!variantRes.value) {
-      return failure(new NotFoundError(`Variant ID ${variantId} not found to restore stock`));
+  public async restoreStockAfterCancellation(productId: string, quantity: number): Promise<Result<Product, AppError>> {
+    logger.info(`[InventoryService] Restoring ${quantity} stock for product ${productId} after cancellation`);
+    const productRes = await this.productRepo.findById(productId);
+    if (!productRes.success) return productRes;
+    if (!productRes.value) {
+      return failure(new NotFoundError(`Product ID ${productId} not found to restore stock`));
     }
 
-    const newStock = variantRes.value.stock_quantity + quantity;
-    return this.variantRepo.update(variantId, { stock_quantity: newStock });
+    const newStock = productRes.value.count_in_stock + quantity;
+    return this.productRepo.update(productId, { count_in_stock: newStock });
   }
 }

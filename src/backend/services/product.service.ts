@@ -4,9 +4,7 @@ import { NotFoundError } from '../errors/domain-errors';
 import { Category, Product, ProductVariant } from '../models/domain-models.types';
 import { CreateProductDTO, CreateVariantDTO, PaginationQueryDTO } from '../types/dto.types';
 import { ProductRepository } from '../repositories/product.repository';
-import { ProductVariantRepository } from '../repositories/product-variant.repository';
 import { CategoryRepository } from '../repositories/category.repository';
-import { ProductStatus } from '../enums/entity.enums';
 import { logger } from '../utils/logger.util';
 import { container, RepositoryTokens } from '../providers/container.provider';
 
@@ -20,6 +18,7 @@ export interface ProductService {
   createProduct(dto: CreateProductDTO): Promise<Result<Product, AppError>>;
   updateProduct(id: string, dto: Partial<CreateProductDTO>): Promise<Result<Product, AppError>>;
   deleteProduct(id: string): Promise<Result<boolean, AppError>>;
+  // TODO: Re-enable when product_variants table is populated with production data
   getVariants(productId: string): Promise<Result<ProductVariant[], AppError>>;
   addVariant(dto: CreateVariantDTO): Promise<Result<ProductVariant, AppError>>;
   getCategories(): Promise<Result<Category[], AppError>>;
@@ -27,16 +26,13 @@ export interface ProductService {
 
 export class ProductServiceImpl implements ProductService {
   private productRepo: ProductRepository;
-  private variantRepo: ProductVariantRepository;
   private categoryRepo: CategoryRepository;
 
   constructor(
     productRepo?: ProductRepository,
-    variantRepo?: ProductVariantRepository,
     categoryRepo?: CategoryRepository
   ) {
     this.productRepo = productRepo || container.resolve<ProductRepository>(RepositoryTokens.ProductRepository);
-    this.variantRepo = variantRepo || container.resolve<ProductVariantRepository>(RepositoryTokens.ProductVariantRepository);
     this.categoryRepo = categoryRepo || container.resolve<CategoryRepository>(RepositoryTokens.CategoryRepository);
   }
 
@@ -68,12 +64,12 @@ export class ProductServiceImpl implements ProductService {
   }
 
   public async listProducts(query: PaginationQueryDTO): Promise<Result<{ items: Product[]; total: number }, AppError>> {
-    const filter: Record<string, unknown> = { status: ProductStatus.ACTIVE };
+    const filter: Record<string, unknown> = { is_active: true };
     return this.productRepo.findWithPagination(query.page, query.pageSize, filter, query.sortBy, query.sortOrder);
   }
 
   public async getFeaturedProducts(limit: number = 6): Promise<Result<Product[], AppError>> {
-    const res = await this.productRepo.findAll({ status: ProductStatus.ACTIVE, is_featured: true });
+    const res = await this.productRepo.findFeatured(limit);
     if (!res.success) return res;
     return success(res.value.slice(0, limit));
   }
@@ -87,7 +83,7 @@ export class ProductServiceImpl implements ProductService {
       return this.getFeaturedProducts(limit);
     }
 
-    const res = await this.productRepo.findAll({ category_id: categoryId, status: ProductStatus.ACTIVE });
+    const res = await this.productRepo.findAll({ category_id: categoryId, is_active: true });
     if (!res.success) return res;
 
     const filtered = res.value.filter((p) => p.id !== productId).slice(0, limit);
@@ -112,14 +108,17 @@ export class ProductServiceImpl implements ProductService {
   }
 
   public async getVariants(productId: string): Promise<Result<ProductVariant[], AppError>> {
-    return this.variantRepo.findByProductId(productId);
+    // TODO: product_variants table has no production data.
+    // When variants are populated, replace this stub with: return this.variantRepo.findByProductId(productId);
+    logger.warn(`[ProductService.getVariants] product_variants table is unpopulated — returning empty array for product ${productId}`);
+    return success([]);
   }
 
   public async addVariant(dto: CreateVariantDTO): Promise<Result<ProductVariant, AppError>> {
-    const product = await this.getProductById(dto.product_id);
-    if (!product.success) return failure(product.error);
-
-    return this.variantRepo.create(dto);
+    // TODO: product_variants table has no production data.
+    // When variants are activated, replace this stub with actual variant creation logic.
+    logger.warn(`[ProductService.addVariant] product_variants table is unpopulated — addVariant is a no-op stub`);
+    return failure(new NotFoundError('Variant management is not yet enabled in this deployment'));
   }
 
   public async getCategories(): Promise<Result<Category[], AppError>> {

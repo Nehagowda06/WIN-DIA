@@ -176,23 +176,22 @@ export class RequestScopedContainer {
       case ServiceTokens.ProductService:
         return new ProductServiceImpl(
           this.resolve(RepositoryTokens.ProductRepository),
-          this.resolve(RepositoryTokens.ProductVariantRepository),
           this.resolve(RepositoryTokens.CategoryRepository)
         ) as any;
       case ServiceTokens.CartService:
         return new CartServiceImpl(
           this.resolve(RepositoryTokens.CartRepository),
           this.resolve(RepositoryTokens.CartItemRepository),
-          this.resolve(RepositoryTokens.ProductVariantRepository)
+          this.resolve(RepositoryTokens.ProductRepository)
         ) as any;
       case ServiceTokens.WishlistService:
         return new WishlistServiceImpl(
           this.resolve(RepositoryTokens.WishlistRepository),
-          this.resolve(RepositoryTokens.ProductVariantRepository)
+          this.resolve(RepositoryTokens.ProductRepository)
         ) as any;
       case ServiceTokens.InventoryService:
         return new InventoryServiceImpl(
-          this.resolve(RepositoryTokens.ProductVariantRepository)
+          this.resolve(RepositoryTokens.ProductRepository)
         ) as any;
       case ServiceTokens.CouponService:
         return new CouponServiceImpl(
@@ -236,7 +235,7 @@ export class RequestScopedContainer {
         return new CheckoutServiceImpl(
           this.resolve(ServiceTokens.UserService),
           this.resolve(ServiceTokens.CartService),
-          this.resolve(RepositoryTokens.ProductVariantRepository),
+          this.resolve(RepositoryTokens.ProductRepository),
           this.resolve(RepositoryTokens.OrderRepository),
           this.resolve(ServiceTokens.InventoryService),
           this.resolve(ServiceTokens.CouponService),

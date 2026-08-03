@@ -5,15 +5,15 @@ import { Cart, CartItem } from '../models/domain-models.types';
 import { AddToCartDTO, UpdateCartItemDTO } from '../types/dto.types';
 import { CartRepository } from '../repositories/cart.repository';
 import { CartItemRepository } from '../repositories/cart-item.repository';
-import { ProductVariantRepository } from '../repositories/product-variant.repository';
+import { ProductRepository } from '../repositories/product.repository';
 import { logger } from '../utils/logger.util';
 import { container, RepositoryTokens } from '../providers/container.provider';
 
 export interface CartService {
   getCart(userId?: string, sessionId?: string): Promise<Result<{ cart: Cart; items: CartItem[] }, AppError>>;
   addItem(cartId: string, dto: AddToCartDTO): Promise<Result<CartItem, AppError>>;
-  updateItemQuantity(cartId: string, variantId: string, dto: UpdateCartItemDTO): Promise<Result<CartItem, AppError>>;
-  removeItem(cartId: string, variantId: string): Promise<Result<boolean, AppError>>;
+  updateItemQuantity(cartId: string, productId: string, dto: UpdateCartItemDTO): Promise<Result<CartItem, AppError>>;
+  removeItem(cartId: string, productId: string): Promise<Result<boolean, AppError>>;
   clearCart(cartId: string): Promise<Result<boolean, AppError>>;
   mergeGuestCart(sessionId: string, userId: string): Promise<Result<{ cart: Cart; items: CartItem[] }, AppError>>;
   calculateSubtotal(items: CartItem[]): Promise<Result<number, AppError>>;
@@ -22,16 +22,16 @@ export interface CartService {
 export class CartServiceImpl implements CartService {
   private cartRepo: CartRepository;
   private cartItemRepo: CartItemRepository;
-  private variantRepo: ProductVariantRepository;
+  private productRepo: ProductRepository;
 
   constructor(
     cartRepo?: CartRepository,
     cartItemRepo?: CartItemRepository,
-    variantRepo?: ProductVariantRepository
+    productRepo?: ProductRepository
   ) {
     this.cartRepo = cartRepo || container.resolve<CartRepository>(RepositoryTokens.CartRepository);
     this.cartItemRepo = cartItemRepo || container.resolve<CartItemRepository>(RepositoryTokens.CartItemRepository);
-    this.variantRepo = variantRepo || container.resolve<ProductVariantRepository>(RepositoryTokens.ProductVariantRepository);
+    this.productRepo = productRepo || container.resolve<ProductRepository>(RepositoryTokens.ProductRepository);
   }
 
   public async getCart(userId?: string, sessionId?: string): Promise<Result<{ cart: Cart; items: CartItem[] }, AppError>> {
@@ -65,14 +65,17 @@ export class CartServiceImpl implements CartService {
   }
 
   public async addItem(cartId: string, dto: AddToCartDTO): Promise<Result<CartItem, AppError>> {
-    logger.info(`[CartService.addItem] Adding variant ${dto.variant_id} to cart ${cartId}`);
-    const variantRes = await this.variantRepo.findById(dto.variant_id);
-    if (!variantRes.success) return failure(variantRes.error);
-    if (!variantRes.value || !variantRes.value.is_active) {
-      return failure(new NotFoundError('Product variant is no longer active or available'));
+    logger.info(`[CartService.addItem] Adding product ${dto.product_id} to cart ${cartId}`);
+
+    // Validate the product exists and is active using ProductRepository
+    const productRes = await this.productRepo.findById(dto.product_id);
+    if (!productRes.success) return failure(productRes.error);
+    if (!productRes.value || !productRes.value.is_active) {
+      return failure(new NotFoundError('Product is no longer active or available'));
     }
 
-    const existingRes = await this.cartItemRepo.findItem(cartId, dto.variant_id);
+    // cart_items.variant_id physically stores product_id in this architecture
+    const existingRes = await this.cartItemRepo.findItem(cartId, dto.product_id);
     if (!existingRes.success) return failure(existingRes.error);
 
     if (existingRes.value) {
@@ -82,13 +85,13 @@ export class CartServiceImpl implements CartService {
 
     return this.cartItemRepo.create({
       cart_id: cartId,
-      variant_id: dto.variant_id,
+      variant_id: dto.product_id, // cart_items column is variant_id; stores product_id
       quantity: dto.quantity,
     });
   }
 
-  public async updateItemQuantity(cartId: string, variantId: string, dto: UpdateCartItemDTO): Promise<Result<CartItem, AppError>> {
-    const itemRes = await this.cartItemRepo.findItem(cartId, variantId);
+  public async updateItemQuantity(cartId: string, productId: string, dto: UpdateCartItemDTO): Promise<Result<CartItem, AppError>> {
+    const itemRes = await this.cartItemRepo.findItem(cartId, productId);
     if (!itemRes.success) return failure(itemRes.error);
     if (!itemRes.value) {
       return failure(new NotFoundError('Item not found in cart'));
@@ -102,8 +105,13 @@ export class CartServiceImpl implements CartService {
     return this.cartItemRepo.update(itemRes.value.id, { quantity: dto.quantity });
   }
 
-  public async removeItem(cartId: string, variantId: string): Promise<Result<boolean, AppError>> {
-    return this.cartItemRepo.deleteByCartId(cartId);
+  public async removeItem(cartId: string, productId: string): Promise<Result<boolean, AppError>> {
+    const itemRes = await this.cartItemRepo.findItem(cartId, productId);
+    if (!itemRes.success) return failure(itemRes.error);
+    if (!itemRes.value) {
+      return success(true); // Already removed — idempotent
+    }
+    return this.cartItemRepo.delete(itemRes.value.id);
   }
 
   public async clearCart(cartId: string): Promise<Result<boolean, AppError>> {
@@ -120,7 +128,8 @@ export class CartServiceImpl implements CartService {
 
     if (guestCartRes.success && guestCartRes.value.items.length > 0) {
       for (const item of guestCartRes.value.items) {
-        await this.addItem(userCart.id, { variant_id: item.variant_id, quantity: item.quantity });
+        // item.variant_id physically stores product_id in this architecture
+        await this.addItem(userCart.id, { product_id: item.variant_id, quantity: item.quantity });
       }
       await this.cartRepo.delete(guestCartRes.value.cart.id);
     }
@@ -133,17 +142,18 @@ export class CartServiceImpl implements CartService {
       return success(0);
     }
 
-    // Batched query avoiding N+1 individual queries
-    const variantsRes = await this.variantRepo.findAll({ is_active: true });
-    if (!variantsRes.success) return failure(variantsRes.error);
+    // Batched query — fetch all active products and build a map to avoid N+1 queries
+    const productsRes = await this.productRepo.findAll({ is_active: true });
+    if (!productsRes.success) return failure(productsRes.error);
 
-    const variantMap = new Map(variantsRes.value.map((v) => [v.id, v]));
+    // item.variant_id stores product_id in this architecture
+    const productMap = new Map(productsRes.value.map((p) => [p.id, p]));
     let total = 0;
 
     for (const item of items) {
-      const variant = variantMap.get(item.variant_id);
-      if (variant) {
-        total += Number(variant.price) * item.quantity;
+      const product = productMap.get(item.variant_id);
+      if (product) {
+        total += Number(product.price) * item.quantity;
       }
     }
 

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { container, ServiceTokens } from '@/src/backend/providers/container.provider';
+import { ServiceTokens } from '@/src/backend/providers/container.provider';
 import { UserService } from '@/src/backend/services/user.service';
 import { getAuthUserContext, handleServiceResult } from '@/src/backend/utils/route-helper.util';
 import { createErrorResponse } from '@/src/backend/types/api-response.types';
@@ -16,7 +16,7 @@ export async function PUT(
     }
 
     const body = await request.json().catch(() => ({}));
-    const userService = container.resolve<UserService>(ServiceTokens.UserService);
+    const userService = authRes.value.scope.resolve<UserService>(ServiceTokens.UserService);
     const result = await userService.updateAddress(id, authRes.value.id, body);
 
     return handleServiceResult(result);
@@ -39,7 +39,7 @@ export async function DELETE(
       return handleServiceResult(authRes);
     }
 
-    const userService = container.resolve<UserService>(ServiceTokens.UserService);
+    const userService = authRes.value.scope.resolve<UserService>(ServiceTokens.UserService);
     const result = await userService.deleteAddress(id, authRes.value.id);
 
     return handleServiceResult(result);

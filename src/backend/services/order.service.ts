@@ -2,7 +2,7 @@ import { Result, failure, success } from '../types/result.types';
 import { AppError } from '../errors/app-error';
 import { NotFoundError, ValidationError } from '../errors/domain-errors';
 import { Order, OrderItem, OrderStatusHistory } from '../models/domain-models.types';
-import { OrderStatus, PaymentStatus, ShippingStatus } from '../enums/entity.enums';
+import { OrderStatus, PaymentStatus } from '../enums/entity.enums';
 import { OrderRepository } from '../repositories/order.repository';
 import { OrderItemRepository } from '../repositories/order-item.repository';
 import { OrderStatusHistoryRepository } from '../repositories/order-status-history.repository';
@@ -46,20 +46,15 @@ export class OrderServiceImpl implements OrderService {
     const payload: any = {
       order_number: orderNumber,
       user_id: userId,
-      status: OrderStatus.PENDING,
+      order_status: OrderStatus.PENDING,
       payment_status: PaymentStatus.PENDING,
-      shipping_status: ShippingStatus.UNFULFILLED,
-      currency: orderData.currency || 'INR',
-      subtotal_amount: orderData.subtotal_amount || 0,
-      discount_amount: orderData.discount_amount || 0,
-      tax_amount: orderData.tax_amount || 0,
-      shipping_amount: orderData.shipping_amount || 0,
-      total_amount: orderData.total_amount || 0,
-      coupon_code: orderData.coupon_code || null,
+      items_price: orderData.items_price || 0,
+      discount_price: orderData.discount_price || 0,
+      tax_price: orderData.tax_price || 0,
+      shipping_price: orderData.shipping_price || 0,
+      total_price: orderData.total_price || 0,
       shipping_address: orderData.shipping_address || {},
-      billing_address: orderData.billing_address || orderData.shipping_address || {},
-      customer_notes: orderData.customer_notes || null,
-      metadata: orderData.metadata || {},
+      order_notes: orderData.order_notes || null,
     };
 
     console.log(`[OrderService.createOrder] Repository: OrderRepository | Method: create | Payload:`, payload);
@@ -136,7 +131,7 @@ export class OrderServiceImpl implements OrderService {
     const existing = await this.getOrderById(orderId);
     if (!existing.success) return existing;
 
-    const updateRes = await this.orderRepo.update(orderId, { status });
+    const updateRes = await this.orderRepo.update(orderId, { order_status: status });
     if (!updateRes.success) return updateRes;
 
     await this.writeStatusHistory(orderId, status, note || `Status updated to ${status}`, updatedBy);

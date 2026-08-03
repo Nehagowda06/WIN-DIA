@@ -55,10 +55,7 @@ export class SupabaseOrderRepository
         .from(this.tableName)
         .select(`
           *,
-          items:order_items(*),
-          status_history:order_status_history(*),
-          shipment:shipments(*),
-          payments:payments(*)
+          items:order_items(*)
         `)
         .eq('id', orderId)
         .maybeSingle();

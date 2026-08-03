@@ -2,7 +2,7 @@ import { Result, failure, success } from '../types/result.types';
 import { AppError } from '../errors/app-error';
 import { Wishlist } from '../models/domain-models.types';
 import { WishlistRepository } from '../repositories/wishlist.repository';
-import { ProductVariantRepository } from '../repositories/product-variant.repository';
+import { ProductRepository } from '../repositories/product.repository';
 import { CartService } from './cart.service';
 import { logger } from '../utils/logger.util';
 import { container, RepositoryTokens } from '../providers/container.provider';
@@ -11,16 +11,17 @@ export interface WishlistService {
   getWishlist(userId: string): Promise<Result<Wishlist[], AppError>>;
   addToWishlist(userId: string, productId: string): Promise<Result<Wishlist, AppError>>;
   removeFromWishlist(userId: string, productId: string): Promise<Result<boolean, AppError>>;
-  moveToCart(userId: string, productId: string, variantId: string): Promise<Result<boolean, AppError>>;
+  moveToCart(userId: string, productId: string): Promise<Result<boolean, AppError>>;
 }
 
 export class WishlistServiceImpl implements WishlistService {
   private wishlistRepo: WishlistRepository;
-  private variantRepo: ProductVariantRepository;
+  // productRepo reserved for future stock checks before move-to-cart
+  private productRepo: ProductRepository;
 
-  constructor(wishlistRepo?: WishlistRepository, variantRepo?: ProductVariantRepository) {
+  constructor(wishlistRepo?: WishlistRepository, productRepo?: ProductRepository) {
     this.wishlistRepo = wishlistRepo || container.resolve<WishlistRepository>(RepositoryTokens.WishlistRepository);
-    this.variantRepo = variantRepo || container.resolve<ProductVariantRepository>(RepositoryTokens.ProductVariantRepository);
+    this.productRepo = productRepo || container.resolve<ProductRepository>(RepositoryTokens.ProductRepository);
   }
 
   public async getWishlist(userId: string): Promise<Result<Wishlist[], AppError>> {
@@ -44,13 +45,13 @@ export class WishlistServiceImpl implements WishlistService {
     return this.wishlistRepo.removeByUserIdAndProductId(userId, productId);
   }
 
-  public async moveToCart(userId: string, productId: string, variantId: string): Promise<Result<boolean, AppError>> {
-    logger.info(`[WishlistService.moveToCart] User ${userId} moving product ${productId} variant ${variantId} to cart`);
+  public async moveToCart(userId: string, productId: string): Promise<Result<boolean, AppError>> {
+    logger.info(`[WishlistService.moveToCart] User ${userId} moving product ${productId} to cart`);
     const cartService = container.resolve<CartService>('CartService');
     const cartRes = await cartService.getCart(userId);
     if (!cartRes.success) return failure(cartRes.error);
 
-    const addRes = await cartService.addItem(cartRes.value.cart.id, { variant_id: variantId, quantity: 1 });
+    const addRes = await cartService.addItem(cartRes.value.cart.id, { product_id: productId, quantity: 1 });
     if (!addRes.success) return failure(addRes.error);
 
     await this.removeFromWishlist(userId, productId);

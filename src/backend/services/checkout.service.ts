@@ -10,7 +10,7 @@ import { CouponService } from './coupon.service';
 import { OrderService } from './order.service';
 import { PaymentService } from './payment.service';
 import { ShipmentService } from './shipment.service';
-import { ProductVariantRepository } from '../repositories/product-variant.repository';
+import { ProductRepository } from '../repositories/product.repository';
 import { OrderRepository } from '../repositories/order.repository';
 import { logger } from '../utils/logger.util';
 import { container, RepositoryTokens } from '../providers/container.provider';
@@ -37,7 +37,7 @@ export interface CheckoutService {
 export class CheckoutServiceImpl implements CheckoutService {
   private userService: UserService;
   private cartService: CartService;
-  private variantRepo: ProductVariantRepository;
+  private productRepo: ProductRepository;
   private orderRepo: OrderRepository;
   private inventoryService: InventoryService;
   private couponService: CouponService;
@@ -48,7 +48,7 @@ export class CheckoutServiceImpl implements CheckoutService {
   constructor(
     userService?: UserService,
     cartService?: CartService,
-    variantRepo?: ProductVariantRepository,
+    productRepo?: ProductRepository,
     orderRepo?: OrderRepository,
     inventoryService?: InventoryService,
     couponService?: CouponService,
@@ -58,7 +58,7 @@ export class CheckoutServiceImpl implements CheckoutService {
   ) {
     this.userService = userService || container.resolve<UserService>('UserService');
     this.cartService = cartService || container.resolve<CartService>('CartService');
-    this.variantRepo = variantRepo || container.resolve<ProductVariantRepository>(RepositoryTokens.ProductVariantRepository);
+    this.productRepo = productRepo || container.resolve<ProductRepository>(RepositoryTokens.ProductRepository);
     this.orderRepo = orderRepo || container.resolve<OrderRepository>(RepositoryTokens.OrderRepository);
     this.inventoryService = inventoryService || container.resolve<InventoryService>('InventoryService');
     this.couponService = couponService || container.resolve<CouponService>('CouponService');
@@ -155,25 +155,22 @@ export class CheckoutServiceImpl implements CheckoutService {
         subtotal += itemTotal;
 
         const pId = item.productId || item.product_id || item.id || item._id;
-        const vId = item.variant_id || item.variantId || pId;
 
         // Wrap stock validation call individually
-        console.log(`[TRACE STEP 4: STOCK_VALIDATION] Calling InventoryService.validateStock for variantId: ${vId}, qty: ${qty}`);
-        const stockRes = await this.inventoryService.validateStock(String(vId), qty);
+        console.log(`[TRACE STEP 4: STOCK_VALIDATION] Calling InventoryService.validateStock for productId: ${pId}, qty: ${qty}`);
+        const stockRes = await this.inventoryService.validateStock(String(pId), qty);
         if (!stockRes.success) {
           console.log(`[TRACE STEP 4: STOCK_VALIDATION] FAILURE | Error:`, stockRes.error);
         }
 
         preparedOrderItems.push({
           product_id: pId,
-          variant_id: vId,
-          product_name: item.name || item.product_name || 'WIN-DIA Product',
-          variant_name: item.flavor || item.variant_name || item.name || 'Standard',
-          sku: item.sku || `SKU-${String(pId).slice(0, 8)}`,
-          unit_price: unitPrice,
-          quantity: qty,
-          total_price: itemTotal,
-          price_snapshot: { price: unitPrice, sku: item.sku || null },
+          name: item.name || item.product_name || 'WIN-DIA Product',
+          price: unitPrice,
+          qty: qty,
+          flavor: item.flavor || null,
+          net_weight_grams: item.net_weight_grams || null,
+          image: item.image || item.image_url || null,
         });
       }
       const step4Time = Date.now() - step4Start;
@@ -215,7 +212,7 @@ export class CheckoutServiceImpl implements CheckoutService {
       console.log(`[TRACE STEP 7: RPC_INVOCATION] Calling OrderRepository.createCheckoutTransaction RPC`);
       console.log(`RPC Params:`, {
         userId,
-        orderData: { subtotal, discount, tax, shipping, total, coupon_code: dto.coupon_code || null },
+        orderData: { subtotal, discount, tax, shipping, total },
         itemsCount: preparedOrderItems.length,
         paymentData: { mockRazorpayOrderId, total },
       });
@@ -223,14 +220,13 @@ export class CheckoutServiceImpl implements CheckoutService {
       const txRes = await this.orderRepo.createCheckoutTransaction(
         userId,
         {
-          subtotal_amount: subtotal,
-          discount_amount: discount,
-          tax_amount: tax,
-          shipping_amount: shipping,
-          total_amount: total,
-          coupon_code: dto.coupon_code || null,
+          items_price: subtotal,
+          discount_price: discount,
+          tax_price: tax,
+          shipping_price: shipping,
+          total_price: total,
           shipping_address: selectedAddress,
-          customer_notes: dto.customer_notes || (dto as any).orderNotes || null,
+          order_notes: dto.order_notes || (dto as any).orderNotes || null,
         },
         preparedOrderItems,
         {
@@ -258,14 +254,13 @@ export class CheckoutServiceImpl implements CheckoutService {
         console.log(`[TRACE STEP 7: FALLBACK] Initiating standard repository order creation fallback`);
 
         const orderRes = await this.orderService.createOrder(userId, {
-          subtotal_amount: subtotal,
-          discount_amount: discount,
-          tax_amount: tax,
-          shipping_amount: shipping,
-          total_amount: total,
-          coupon_code: dto.coupon_code || null,
+          items_price: subtotal,
+          discount_price: discount,
+          tax_price: tax,
+          shipping_price: shipping,
+          total_price: total,
           shipping_address: selectedAddress as any,
-          customer_notes: dto.customer_notes || (dto as any).orderNotes || null,
+          order_notes: dto.order_notes || (dto as any).orderNotes || null,
         });
 
         if (!orderRes.success) {

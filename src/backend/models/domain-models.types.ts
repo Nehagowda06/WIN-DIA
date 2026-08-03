@@ -1,16 +1,13 @@
 import { BaseEntity, Nullable } from '../types/common.types';
 import {
-  AddressType,
   ContactMessageStatus,
   CouponType,
   OtpPurpose,
   OrderStatus,
   PaymentProvider,
   PaymentStatus,
-  ProductStatus,
   ReviewStatus,
   ShipmentStatus,
-  ShippingStatus,
   UserRole,
 } from '../enums/entity.enums';
 
@@ -24,14 +21,14 @@ export interface Profile extends BaseEntity {
 
 export interface Address extends BaseEntity {
   user_id: string;
+  full_name: string;
+  phone: string;
   address_line1: string;
   address_line2: Nullable<string>;
   city: string;
   state: string;
-  postal_code: string;
-  country: string;
+  pincode: string;
   is_default: boolean;
-  address_type: AddressType;
 }
 
 export interface Category extends BaseEntity {
@@ -47,11 +44,22 @@ export interface Product extends BaseEntity {
   name: string;
   slug: string;
   description: Nullable<string>;
+  short_description: Nullable<string>;
   category_id: Nullable<string>;
-  status: ProductStatus;
+  price: number;
+  original_price: Nullable<number>;
+  image: Nullable<string>;
+  image_url: Nullable<string>;
+  flavor: Nullable<string>;
+  count_in_stock: number;
+  is_low_gi: boolean;
+  is_gluten_free: boolean;
+  is_vegan: boolean;
+  gi_value: Nullable<number>;
+  net_weight: Nullable<string>;
+  is_active: boolean;
   is_featured: boolean;
-  meta_title: Nullable<string>;
-  meta_description: Nullable<string>;
+  sku: Nullable<string>;
 }
 
 export interface ProductVariant extends BaseEntity {
@@ -88,6 +96,8 @@ export interface Cart extends BaseEntity {
 
 export interface CartItem extends BaseEntity {
   cart_id: string;
+  // NOTE: This column is physically named 'variant_id' in cart_items but stores product_id
+  // since product_variants is not in use. Treat as product_id in all service logic.
   variant_id: string;
   quantity: number;
 }
@@ -95,33 +105,33 @@ export interface CartItem extends BaseEntity {
 export interface Order extends BaseEntity {
   order_number: string;
   user_id: Nullable<string>;
-  status: OrderStatus;
+  order_status: OrderStatus;
   payment_status: PaymentStatus;
-  shipping_status: ShippingStatus;
-  currency: string;
-  subtotal_amount: number;
-  discount_amount: number;
-  tax_amount: number;
-  shipping_amount: number;
-  total_amount: number;
-  coupon_code: Nullable<string>;
+  payment_method: Nullable<string>;
+  items_price: number;
+  discount_price: number;
+  tax_price: number;
+  shipping_price: number;
+  total_price: number;
   shipping_address: Record<string, unknown>;
-  billing_address: Record<string, unknown>;
-  customer_notes: Nullable<string>;
-  metadata: Record<string, unknown>;
+  order_notes: Nullable<string>;
+  razorpay_order_id: Nullable<string>;
+  razorpay_payment_id: Nullable<string>;
+  awb_code: Nullable<string>;
+  courier_name: Nullable<string>;
+  shipping_provider: Nullable<string>;
+  delivered_at: Nullable<string>;
 }
 
 export interface OrderItem extends BaseEntity {
   order_id: string;
   product_id: string;
-  variant_id: string;
-  product_name: string;
-  variant_name: string;
-  sku: string;
-  unit_price: number;
-  quantity: number;
-  total_price: number;
-  price_snapshot: Record<string, unknown>;
+  name: string;
+  price: number;
+  qty: number;
+  flavor: string | null;
+  net_weight_grams: number | null;
+  image: string | null;
 }
 
 export interface OrderStatusHistory extends BaseEntity {

@@ -25,7 +25,7 @@ export class SupabaseProductRepository
   }
 
   public async findFeatured(limit: number = 10): Promise<Result<Product[], AppError>> {
-    return this.findAll({ is_active: true });
+    return this.findAll({ is_active: true, is_featured: true });
   }
 
   public async findWithRelations(id: string): Promise<Result<Record<string, unknown> | null, AppError>> {

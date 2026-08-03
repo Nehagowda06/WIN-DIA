@@ -12,6 +12,7 @@ import brownProfileIcon from "@/src/frontend/assets/icons/profile.png";
 import offWhiteProfileIcon from "@/src/frontend/assets/icons/profile-offwhite.png";
 import windiaLogo from "@/src/frontend/assets/logos/windia-logo.png";
 
+import { useAuth } from "@/src/frontend/hooks/useAuth";
 import styles from "./HeroNavbar.module.scss";
 
 type NavigationItem = {
@@ -27,28 +28,29 @@ const navigationItems: readonly NavigationItem[] = [
   { href: "/health-benefits", label: "Health Benefits" },
 ];
 
-const utilityLinks = [
-  {
-    href: "/wishlist",
-    icons: { brown: brownHeartIcon, "off-white": offWhiteHeartIcon },
-    label: "Wishlist",
-  },
-  {
-    href: "/cart",
-    icons: { brown: brownCartIcon, "off-white": offWhiteCartIcon },
-    label: "Shopping cart",
-  },
-  {
-    href: "/profile",
-    icons: { brown: brownProfileIcon, "off-white": offWhiteProfileIcon },
-    label: "Your profile",
-  },
-] as const;
-
 /** Fixed site navigation whose theme follows the visible page section. */
 export function Navbar() {
   const [theme, setTheme] = useState("brown");
+  const { user } = useAuth();
   const utilityIconVariant = theme === "off-white" ? "off-white" : "brown";
+
+  const utilityLinks = [
+    {
+      href: "/wishlist",
+      icons: { brown: brownHeartIcon, "off-white": offWhiteHeartIcon },
+      label: "Wishlist",
+    },
+    {
+      href: "/cart",
+      icons: { brown: brownCartIcon, "off-white": offWhiteCartIcon },
+      label: "Shopping cart",
+    },
+    {
+      href: user ? "/profile" : "/login",
+      icons: { brown: brownProfileIcon, "off-white": offWhiteProfileIcon },
+      label: user ? "Your profile" : "Log in",
+    },
+  ] as const;
 
   useEffect(() => {
     const sections = Array.from(

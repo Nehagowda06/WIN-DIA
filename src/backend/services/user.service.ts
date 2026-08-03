@@ -76,7 +76,6 @@ export class UserServiceImpl implements UserService {
       city: dto.city || '',
       state: dto.state || '',
       pincode: postalCode,
-      type: dto.type || dto.address_type || 'shipping',
       is_default: dto.is_default !== undefined ? Boolean(dto.is_default) : (dto.isDefault !== undefined ? Boolean(dto.isDefault) : !hasExisting),
     };
 
