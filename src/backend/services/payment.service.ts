@@ -10,6 +10,7 @@ import { getEnv } from '../config/env.config';
 import { logger } from '../utils/logger.util';
 import { createHmac } from 'crypto';
 import { container, RepositoryTokens } from '../providers/container.provider';
+import { getRazorpayClient } from '../lib/razorpay.js';
 
 export interface VerifyPaymentDTO {
   orderId: string;
@@ -45,19 +46,31 @@ export class PaymentServiceImpl implements PaymentService {
   public async initiateRazorpayPayment(orderId: string, amount: number, orderNumber: string): Promise<Result<{ payment: Payment; razorpayOrderId: string }, AppError>> {
     logger.info(`[PaymentService.initiateRazorpayPayment] Initiating payment for order ${orderId}, amount ${amount}`);
     const env = getEnv();
+    let razorpayOrderId: string;
 
-    const mockRazorpayOrderId = `order_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    try {
+      const razorpayOrder = await getRazorpayClient().orders.create({
+        amount: Math.round(amount * 100),
+        currency: 'INR',
+        receipt: orderNumber,
+        notes: { internal_order_id: orderId },
+      });
+      razorpayOrderId = razorpayOrder.id;
+    } catch (error) {
+      logger.error('[PaymentService.initiateRazorpayPayment] Razorpay order creation failed', error);
+      return failure(new PaymentError('Could not create Razorpay order'));
+    }
 
     const createPaymentRes = await this.paymentRepo.create({
       order_id: orderId,
       payment_provider: PaymentProvider.RAZORPAY,
       transaction_id: null,
-      provider_order_id: mockRazorpayOrderId,
+      provider_order_id: razorpayOrderId,
       amount,
       currency: 'INR',
       status: PaymentStatus.PENDING,
       payment_method: 'card/upi/netbanking',
-      raw_response: { provider_order_id: mockRazorpayOrderId },
+      raw_response: { provider_order_id: razorpayOrderId },
     });
 
     if (!createPaymentRes.success) return failure(createPaymentRes.error);
@@ -65,12 +78,12 @@ export class PaymentServiceImpl implements PaymentService {
     await this.logPaymentEvent(createPaymentRes.value.id, 'payment.initiated', {
       amount,
       order_number: orderNumber,
-      provider_order_id: mockRazorpayOrderId,
+      provider_order_id: razorpayOrderId,
     });
 
     return success({
       payment: createPaymentRes.value,
-      razorpayOrderId: mockRazorpayOrderId,
+      razorpayOrderId,
     });
   }
 
@@ -137,11 +150,25 @@ export class PaymentServiceImpl implements PaymentService {
   }
 
   public async logPaymentEvent(paymentId: string, eventType: string, payload: Record<string, unknown>): Promise<Result<PaymentEvent, AppError>> {
-    return this.paymentEventRepo.create({
-      payment_id: paymentId,
-      event_type: eventType,
-      payload,
-    });
+    try {
+      const paymentRes = await this.paymentRepo.findById(paymentId);
+      const payment = paymentRes.success ? paymentRes.value : null;
+      const eventStatus = eventType.includes('failed') ? 'failed' : eventType.includes('succeeded') ? 'success' : 'pending';
+
+      // The live payment_events table stores order/payment provider IDs and
+      // raw_payload, rather than the newer payment_id/payload names.
+      return await this.paymentEventRepo.create({
+        order_id: payment?.order_id || null,
+        razorpay_order_id: payment?.provider_order_id || payload.provider_order_id || payload.razorpay_order_id || null,
+        razorpay_payment_id: payload.transaction_id || payload.razorpay_payment_id || null,
+        event_type: eventType,
+        status: eventStatus,
+        raw_payload: { payment_id: paymentId, ...payload },
+      } as Partial<PaymentEvent>);
+    } catch (err) {
+      logger.warn(`[PaymentService.logPaymentEvent] Could not log payment event: ${(err as any)?.message}`);
+      return success({} as PaymentEvent);
+    }
   }
 
   public async handleWebhook(payload: Record<string, unknown>, signature: string): Promise<Result<boolean, AppError>> {

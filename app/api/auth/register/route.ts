@@ -11,17 +11,17 @@ export async function POST(request: Request) {
     if (rateLimitResponse) return rateLimitResponse;
 
     const body = await request.json().catch(() => ({}));
-    const { email, full_name, phone } = body;
+    const { email, password, full_name, phone } = body;
 
-    if (!email) {
+    if (!email || !password) {
       return NextResponse.json(
-        createErrorResponse('VALIDATION_ERROR', 'Email is required for registration'),
+        createErrorResponse('VALIDATION_ERROR', 'Email and password are required for registration'),
         { status: 400 }
       );
     }
 
     const authService = container.resolve<AuthService>(ServiceTokens.AuthService);
-    const result = await authService.register(email, full_name, phone);
+    const result = await authService.register(email, password, full_name, phone);
 
     return handleServiceResult(result, 201);
   } catch (err: any) {

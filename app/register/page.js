@@ -56,7 +56,17 @@ export default function RegisterPage() {
         return;
       }
 
-      setStep(2);
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: form.email,
+        password: form.password,
+      });
+
+      if (signInError) {
+        setError(signInError.message || 'Account created, but automatic sign in failed. Please log in.');
+        return;
+      }
+
+      window.location.replace('/');
     } catch (err) {
       console.error('Register error:', err);
       setError('Something went wrong. Please try again.');

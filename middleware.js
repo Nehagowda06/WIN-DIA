@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
-const PROTECTED_PREFIXES = ['/profile', '/wishlist', '/cart', '/admin'];
+const PROTECTED_PREFIXES = ['/profile', '/wishlist', '/checkout', '/admin'];
 const GUEST_ONLY_PATHS = ['/login', '/register'];
 
 export async function middleware(request) {
@@ -49,8 +49,8 @@ export const config = {
     '/profile/:path*',
     '/wishlist',
     '/wishlist/:path*',
-    '/cart',
-    '/cart/:path*',
+    '/checkout',
+    '/checkout/:path*',
     '/admin',
     '/admin/:path*',
     '/login',

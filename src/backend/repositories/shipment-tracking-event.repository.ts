@@ -17,6 +17,6 @@ export class SupabaseShipmentTrackingEventRepository
   }
 
   public async findByShipmentId(shipmentId: string): Promise<Result<ShipmentTrackingEvent[], AppError>> {
-    return this.findAll({ shipment_id: shipmentId });
+    return this.findAll({ order_id: shipmentId });
   }
 }

@@ -28,13 +28,11 @@ export class ShipmentServiceImpl implements ShipmentService {
     logger.info(`[ShipmentService.createShipmentPlaceholder] Creating shipment placeholder for order ${orderId}`);
     return this.shipmentRepo.create({
       order_id: orderId,
+      provider: 'nimbuspost',
       courier_name: courierName || 'NimbusPost',
-      tracking_number: null,
-      shipping_label_url: null,
-      status: ShipmentStatus.PENDING,
-      shipped_at: null,
-      delivered_at: null,
-    });
+      status: 'created' as ShipmentStatus,
+      raw_response: {},
+    } as Partial<Shipment>);
   }
 
   public async getShipmentByOrderId(orderId: string): Promise<Result<Shipment, AppError>> {
@@ -75,19 +73,16 @@ export class ShipmentServiceImpl implements ShipmentService {
       return failure(new NotFoundError(`Shipment ID ${shipmentId} not found`));
     }
 
+    // The deployed shipments table stores status and provider metadata only;
+    // shipped_at/delivered_at are not part of that live schema.
     const updateData: Partial<Shipment> = { status };
-    if (status === ShipmentStatus.SHIPPED) updateData.shipped_at = new Date().toISOString();
-    if (status === ShipmentStatus.DELIVERED) updateData.delivered_at = new Date().toISOString();
 
     const updateRes = await this.shipmentRepo.update(shipmentId, updateData);
     if (!updateRes.success) return updateRes;
 
     await this.eventRepo.create({
-      shipment_id: shipmentId,
+      order_id: updateRes.value.order_id,
       status,
-      location: location || null,
-      description: description || `Status updated to ${status}`,
-      event_timestamp: new Date().toISOString(),
     });
 
     return success(updateRes.value);

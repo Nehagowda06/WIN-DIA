@@ -7,10 +7,11 @@ import { UserRole } from '../enums/entity.enums';
 import { ProfileRepository } from '../repositories/profile.repository';
 import { logger } from '../utils/logger.util';
 import { container, RepositoryTokens } from '../providers/container.provider';
+import { getAdminClient } from '../config/supabase.config';
 
 export interface AuthService {
   login(email: string): Promise<Result<Profile, AppError>>;
-  register(email: string, fullName?: string, phone?: string): Promise<Result<Profile, AppError>>;
+  register(email: string, password: string, fullName?: string, phone?: string): Promise<Result<Profile, AppError>>;
   logout(userId: string): Promise<Result<boolean, AppError>>;
   passwordReset(email: string): Promise<Result<boolean, AppError>>;
   verifyEmail(email: string): Promise<Result<boolean, AppError>>;
@@ -37,23 +38,46 @@ export class AuthServiceImpl implements AuthService {
     return success(res.value);
   }
 
-  public async register(email: string, fullName?: string, phone?: string): Promise<Result<Profile, AppError>> {
+  public async register(email: string, password: string, fullName?: string, phone?: string): Promise<Result<Profile, AppError>> {
     logger.info(`[AuthService.register] Registering new user: ${email}`);
+    if (!password || password.length < 6) {
+      return failure(new ValidationError('Password must be at least 6 characters'));
+    }
+
     const existing = await this.profileRepo.findByEmail(email);
     if (!existing.success) return existing;
     if (existing.value) {
       return failure(new ValidationError('User with this email already exists'));
     }
 
-    const createRes = await this.profileRepo.create({
+    const admin = getAdminClient();
+    const { data: authData, error: authError } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name: fullName || '', phone: phone || '' },
+    });
+    if (authError || !authData.user) {
+      const message = authError?.message?.toLowerCase().includes('already')
+        ? 'User with this email already exists'
+        : authError?.message || 'Could not create account';
+      return failure(new ValidationError(message, authError));
+    }
+
+    const { data: profile, error: profileError } = await admin.from('profiles').upsert({
+      id: authData.user.id,
       email,
       full_name: fullName || null,
       phone: phone || null,
       role: UserRole.CUSTOMER,
-    });
+    }).select('*').single();
 
-    if (!createRes.success) return createRes;
-    return success(createRes.value);
+    if (profileError || !profile) {
+      await admin.auth.admin.deleteUser(authData.user.id);
+      return failure(new AppError('Could not create account profile', 500, 'INTERNAL_SERVER_ERROR', true, profileError));
+    }
+
+    return success(profile as Profile);
   }
 
   public async logout(userId: string): Promise<Result<boolean, AppError>> {

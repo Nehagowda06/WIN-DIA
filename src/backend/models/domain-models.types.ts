@@ -170,11 +170,8 @@ export interface Shipment extends BaseEntity {
 }
 
 export interface ShipmentTrackingEvent extends BaseEntity {
-  shipment_id: string;
+  order_id: string;
   status: ShipmentStatus;
-  location: Nullable<string>;
-  description: Nullable<string>;
-  event_timestamp: string;
 }
 
 export interface ProductReview extends BaseEntity {

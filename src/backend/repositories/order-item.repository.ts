@@ -3,7 +3,7 @@ import { BaseRepository, IBaseRepository } from './base.repository';
 import { OrderItem } from '../models/domain-models.types';
 import { Result, failure, success } from '../types/result.types';
 import { AppError } from '../errors/app-error';
-import { getServerClient } from '../config/supabase.config';
+import { getServerClient, getAdminClient } from '../config/supabase.config';
 
 export interface OrderItemRepository extends IBaseRepository<OrderItem, string, Partial<OrderItem>, Partial<OrderItem>> {
   findByOrderId(orderId: string): Promise<Result<OrderItem[], AppError>>;
@@ -14,7 +14,7 @@ export class SupabaseOrderItemRepository
   extends BaseRepository<OrderItem, string, Partial<OrderItem>, Partial<OrderItem>>
   implements OrderItemRepository {
   constructor(clientOrGetter?: SupabaseClient | (() => SupabaseClient)) {
-    super('order_items', clientOrGetter || (() => getServerClient()));
+    super('order_items', clientOrGetter || (() => getAdminClient()));
   }
 
   public async findByOrderId(orderId: string): Promise<Result<OrderItem[], AppError>> {

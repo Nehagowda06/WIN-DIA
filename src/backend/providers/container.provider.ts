@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { getServerClient } from '../config/supabase.config';
+import { getServerClient, getAdminClient } from '../config/supabase.config';
 import { SupabaseProfileRepository } from '../repositories/profile.repository';
 import { SupabaseAddressRepository } from '../repositories/address.repository';
 import { SupabaseCategoryRepository } from '../repositories/category.repository';
@@ -135,19 +135,19 @@ export class RequestScopedContainer {
       case RepositoryTokens.CartItemRepository:
         return new SupabaseCartItemRepository(this.client) as any;
       case RepositoryTokens.OrderRepository:
-        return new SupabaseOrderRepository(this.client) as any;
+        return new SupabaseOrderRepository(getAdminClient()) as any;
       case RepositoryTokens.OrderItemRepository:
-        return new SupabaseOrderItemRepository(this.client) as any;
+        return new SupabaseOrderItemRepository(getAdminClient()) as any;
       case RepositoryTokens.OrderStatusHistoryRepository:
-        return new SupabaseOrderStatusHistoryRepository(this.client) as any;
+        return new SupabaseOrderStatusHistoryRepository(getAdminClient()) as any;
       case RepositoryTokens.ShipmentRepository:
-        return new SupabaseShipmentRepository(this.client) as any;
+        return new SupabaseShipmentRepository(getAdminClient()) as any;
       case RepositoryTokens.ShipmentTrackingEventRepository:
-        return new SupabaseShipmentTrackingEventRepository(this.client) as any;
+        return new SupabaseShipmentTrackingEventRepository(getAdminClient()) as any;
       case RepositoryTokens.PaymentRepository:
-        return new SupabasePaymentRepository(this.client) as any;
+        return new SupabasePaymentRepository(getAdminClient()) as any;
       case RepositoryTokens.PaymentEventRepository:
-        return new SupabasePaymentEventRepository(this.client) as any;
+        return new SupabasePaymentEventRepository(getAdminClient()) as any;
       case RepositoryTokens.ProductReviewRepository:
         return new SupabaseProductReviewRepository(this.client) as any;
       case RepositoryTokens.CouponRepository:

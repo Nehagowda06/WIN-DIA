@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FiLogOut, FiSave } from "react-icons/fi";
-import StoreNav from "@/src/frontend/components/StoreNav";
 import { useAuth } from "@/src/frontend/hooks/useAuth";
 import styles from "../storefront.module.css";
 
@@ -35,11 +34,10 @@ export default function AccountPage() {
     setSaving(false);
   };
 
-  if (loading || !user) return <main className={styles.shell}><StoreNav /><section className={styles.section}>Loading account...</section></main>;
+  if (loading || !user) return <main className={styles.shell}><section className={styles.section}>Loading account...</section></main>;
 
   return (
     <main className={styles.shell}>
-      <StoreNav />
       <section className={styles.section}>
         <div className={styles.sectionTop}>
           <div>

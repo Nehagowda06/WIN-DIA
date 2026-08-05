@@ -15,7 +15,7 @@ export class SupabaseCartRepository
   extends BaseRepository<Cart, string, Partial<Cart>, Partial<Cart>>
   implements CartRepository {
   constructor(clientOrGetter?: SupabaseClient | (() => SupabaseClient)) {
-    super('cart', clientOrGetter || (() => getServerClient()));
+    super('carts', clientOrGetter || (() => getServerClient()));
   }
 
   public async findByUserId(userId: string): Promise<Result<Cart | null, AppError>> {

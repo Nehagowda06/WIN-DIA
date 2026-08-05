@@ -68,3 +68,24 @@ export function maskPhone(phone: string): string {
   if (phone.length < 6) return '******';
   return `${phone.slice(0, 2)}******${phone.slice(-2)}`;
 }
+
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/**
+ * Converts arbitrary product identifiers or slugs into valid UUID format.
+ */
+export function stableProductUuid(value: string | number): string {
+  const text = String(value || '');
+  if (uuidPattern.test(text)) return text;
+
+  const crypto = require('crypto');
+  const hex = crypto.createHash('sha1').update(`windia-product:${text}`).digest('hex');
+  const variant = ((parseInt(hex.slice(16, 18), 16) & 0x3f) | 0x80).toString(16).padStart(2, '0');
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    `5${hex.slice(13, 16)}`,
+    `${variant}${hex.slice(18, 20)}`,
+    hex.slice(20, 32),
+  ].join('-');
+}

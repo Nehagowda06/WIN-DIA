@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { FiShoppingCart, FiTrash2 } from "react-icons/fi";
-import StoreNav from "@/src/frontend/components/StoreNav";
 import { addToCart } from "@/src/frontend/redux/slices/cartSlice";
 import { removeFromWishlist } from "@/src/frontend/redux/slices/wishlistSlice";
 import styles from "../storefront.module.css";
@@ -13,7 +12,6 @@ export default function WishlistPage() {
 
   return (
     <main className={styles.shell}>
-      <StoreNav />
       <section className={styles.section}>
         <div className={styles.sectionTop}>
           <div>

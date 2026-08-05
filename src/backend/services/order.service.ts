@@ -46,8 +46,9 @@ export class OrderServiceImpl implements OrderService {
     const payload: any = {
       order_number: orderNumber,
       user_id: userId,
-      order_status: OrderStatus.PENDING,
-      payment_status: PaymentStatus.PENDING,
+      order_status: orderData.order_status || OrderStatus.PLACED,
+      payment_status: orderData.payment_status || PaymentStatus.PENDING,
+      payment_method: orderData.payment_method || (orderData as any).paymentMethod || 'razorpay',
       items_price: orderData.items_price || 0,
       discount_price: orderData.discount_price || 0,
       tax_price: orderData.tax_price || 0,
@@ -72,7 +73,7 @@ export class OrderServiceImpl implements OrderService {
     }
 
     console.log(`[OrderService.createOrder] SUCCESS | Time: ${elapsed}ms | Created Order ID: ${newOrderRes.value.id}`);
-    await this.writeStatusHistory(newOrderRes.value.id, OrderStatus.PENDING, 'Order created in pending state', userId);
+    await this.writeStatusHistory(newOrderRes.value.id, OrderStatus.PLACED, 'Order placed successfully', userId);
     return success(newOrderRes.value);
   }
 
@@ -142,8 +143,6 @@ export class OrderServiceImpl implements OrderService {
     return this.statusHistoryRepo.create({
       order_id: orderId,
       status,
-      notes: note || null,
-      created_by: createdBy || null,
     });
   }
 }

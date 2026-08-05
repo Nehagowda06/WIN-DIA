@@ -24,7 +24,9 @@ export const ProductStatus = {
 export type ProductStatus = typeof ProductStatus[keyof typeof ProductStatus];
 
 export const OrderStatus = {
-  PENDING: 'pending',
+  PLACED: 'placed',
+  PENDING: 'placed',
+  CONFIRMED: 'confirmed',
   PROCESSING: 'processing',
   SHIPPED: 'shipped',
   DELIVERED: 'delivered',
@@ -57,7 +59,8 @@ export const PaymentProvider = {
 export type PaymentProvider = typeof PaymentProvider[keyof typeof PaymentProvider];
 
 export const ShipmentStatus = {
-  PENDING: 'pending',
+  PENDING: 'created',
+  CREATED: 'created',
   MANIFESTED: 'manifested',
   SHIPPED: 'shipped',
   IN_TRANSIT: 'in_transit',
