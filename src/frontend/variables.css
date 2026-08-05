@@ -1,0 +1,10 @@
+:root{
+  --win-dia-white:#ffffff; --win-dia-cream:#FDF8F3; --win-dia-primary:#2D6A4F; --win-dia-primary-light:#7fb89a;
+  --win-dia-primary-gradient:linear-gradient(135deg,#2D6A4F,#40916C); --win-dia-gray-light:#eee2d8; --win-dia-gray-medium:#b9ada4;
+  --win-dia-text-brown:#5b3426; --win-dia-text-light:#84766f; --win-dia-success:#2D6A4F; --win-dia-success-light:#e8f5ee; --win-dia-error:#c4451e;
+  --win-dia-font-primary:'Cormorant Garamond',serif; --win-dia-font-secondary:'Nunito','Segoe UI',sans-serif;
+  --win-dia-spacing-xs:4px; --win-dia-spacing-sm:8px; --win-dia-spacing-md:12px; --win-dia-spacing-lg:20px; --win-dia-spacing-xl:28px; --win-dia-spacing-2xl:36px; --win-dia-spacing-3xl:48px; --win-dia-spacing-4xl:72px;
+  --win-dia-radius-sm:8px; --win-dia-radius-md:12px; --win-dia-radius-lg:20px; --win-dia-radius-full:999px;
+  --win-dia-shadow-sm:0 4px 14px rgba(91,52,38,.08); --win-dia-shadow-md:0 8px 26px rgba(91,52,38,.12); --win-dia-shadow-xl:0 18px 44px rgba(91,52,38,.18);
+  --win-dia-transition-fast:160ms ease; --win-dia-transition-base:240ms ease; --win-dia-transition-slow:400ms ease;
+}

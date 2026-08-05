@@ -26,6 +26,7 @@ const navigationItems: readonly NavigationItem[] = [
   { href: "/shop", label: "Shop", isActive: true },
   { href: "/our-story", label: "Our Story" },
   { href: "/health-benefits", label: "Health Benefits" },
+  { href: "/our-story/contact", label: "Contact" },
 ];
 
 /** Fixed site navigation whose theme follows the visible page section. */

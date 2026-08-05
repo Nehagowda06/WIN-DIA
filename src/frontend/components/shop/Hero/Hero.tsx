@@ -23,7 +23,7 @@ export function Hero() {
         preload="metadata"
         aria-hidden="true"
       >
-        <source src="/videos/hero/hero-video.mp4" type="video/mp4" />
+         <source src="/video/hero_vdo.mp4" type="video/mp4" />
       </video>
       <div className={styles.overlay} aria-hidden="true" />
 

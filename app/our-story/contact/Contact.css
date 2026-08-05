@@ -1,0 +1,541 @@
+/* WIN-DIA Contact Page Styles - Matched to Site Palette */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Jost:wght@300;400;500;600;700&display=swap');
+
+/* ── TOKENS ──────────────────────────────────────────────── */
+:root {
+  --win-brown-dark:   #2c1a0e;   /* primary text, buttons   */
+  --win-brown-mid:    #4a2e1a;   /* hover states            */
+  --win-brown-light:  #7a5c42;   /* subtext, muted labels   */
+  --win-cream:        #f5f0eb;   /* base page bg            */
+  --win-rose:         #e8ddd5;   /* hero / left-panel bg    */
+  --win-sage:         #d4dcc8;   /* accent bg panels        */
+  --win-border:       rgba(44, 26, 14, 0.12);
+  --win-accent-line:  #2c1a0e;
+}
+
+/* Main Container */
+.win-contact-page {
+  background: var(--win-cream);
+}
+
+/* Container */
+.win-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* ========== HERO SECTION ========== */
+.win-contact-hero {
+  padding: 6rem 0 4rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+background: linear-gradient(135deg, #d4dcc8 0%, #c8d4bc 50%, #e8ddd5 100%);  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--win-border);
+}
+
+.win-hero-content {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.win-hero-content.win-animate-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.win-hero-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  font-weight: 500;
+  color: var(--win-brown-light);
+  margin-bottom: 1.5rem;
+  font-family: 'Jost', sans-serif;
+  position: relative;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.win-hero-title {
+  font-size: clamp(2.8rem, 6vw, 4.5rem);
+  font-weight: 600;
+  font-style: italic;
+  letter-spacing: -0.01em;
+  margin-bottom: 1.5rem;
+  color: var(--win-brown-dark);
+  font-family: 'Cormorant Garamond', serif;
+  animation: fadeInUp 0.6s ease-out 0.1s both;
+  line-height: 1.1;
+}
+
+.win-hero-line {
+  width: 60px;
+  height: 2px;
+  background: var(--win-brown-dark);
+  margin: 0 auto 1.5rem auto;
+  animation: expandWidth 0.8s ease-out 0.2s both;
+}
+
+.win-hero-subtitle {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--win-brown-light);
+  max-width: 600px;
+  margin: 0 auto;
+  font-family: 'Jost', sans-serif;
+  font-weight: 300;
+  animation: fadeInUp 0.6s ease-out 0.3s both;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes expandWidth {
+  from { width: 0; opacity: 0; }
+  to   { width: 60px; opacity: 1; }
+}
+
+/* ========== MAIN GRID SECTION ========== */
+.win-contact-main-section {
+  padding: 2rem 0 4rem;
+}
+
+.win-contact-split-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: start;
+}
+
+/* Map Side */
+.win-map-side {
+  min-height: 520px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(44, 26, 14, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.win-map-side:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(44, 26, 14, 0.15);
+}
+
+.win-map-container {
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+  background: var(--win-sage);
+}
+
+.win-map-container iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+  display: block;
+}
+
+/* ========== VERTICAL CARDS (RIGHT SIDE) ========== */
+.win-info-side {
+  display: flex;
+  align-items: center;
+}
+
+.win-contact-cards-vertical {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.win-info-card-vertical {
+  background: var(--win-rose);
+  border: 1px solid var(--win-border);
+  border-radius: 16px;
+  padding: 0;
+  transition: all 0.35s ease;
+  box-shadow: 0 4px 12px rgba(44, 26, 14, 0.06);
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+.win-info-card-vertical:hover {
+  transform: translateY(-4px) translateX(6px);
+  box-shadow: 0 14px 32px rgba(44, 26, 14, 0.12);
+}
+
+.win-card-accent {
+  width: 4px;
+  background: var(--win-brown-dark);
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.win-info-card-vertical:hover .win-card-accent {
+  width: 6px;
+}
+
+.win-card-content {
+  flex: 1;
+  padding: 1.75rem;
+}
+
+.win-card-title-vertical {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: var(--win-brown-light);
+  margin-bottom: 0.9rem;
+  font-family: 'Jost', sans-serif;
+}
+
+.win-card-text-vertical {
+  font-size: 1.25rem;
+  font-weight: 500;
+  font-style: italic;
+  color: var(--win-brown-dark);
+  margin: 0 0 0.35rem 0;
+  line-height: 1.5;
+  font-family: 'Cormorant Garamond', serif;
+}
+
+.win-card-subtext-vertical {
+  font-size: 0.875rem;
+  color: var(--win-brown-light);
+  margin-top: 0.25rem;
+  font-family: 'Jost', sans-serif;
+  font-weight: 300;
+}
+
+.win-card-link-vertical {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--win-brown-dark);
+  text-decoration: none;
+  margin-bottom: 0.5rem;
+  transition: color 0.2s ease;
+  font-family: 'Jost', sans-serif;
+}
+
+.win-card-link-vertical:hover {
+  color: var(--win-brown-mid);
+  text-decoration: underline;
+}
+
+.win-card-hours-vertical {
+  font-size: 0.8rem;
+  color: var(--win-brown-light);
+  margin-top: 0.5rem;
+  font-family: 'Jost', sans-serif;
+  font-weight: 300;
+}
+
+/* Social Links */
+.win-social-links-vertical {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.25rem;
+}
+
+.win-social-link-vertical {
+  font-size: 0.95rem;
+  color: var(--win-brown-dark);
+  text-decoration: none;
+  transition: color 0.2s ease;
+  font-family: 'Jost', sans-serif;
+  position: relative;
+}
+
+.win-social-link-vertical:hover {
+  color: var(--win-brown-mid);
+}
+
+.win-social-link-vertical::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 1.5px;
+  background: var(--win-brown-dark);
+  transition: width 0.3s ease;
+}
+
+.win-social-link-vertical:hover::after {
+  width: 100%;
+}
+
+/* ========== FORM SECTION ========== */
+.win-form-section {
+  padding: 4rem 0;
+  background: linear-gradient(180deg, var(--win-cream) 0%, var(--win-rose) 100%);
+}
+
+.win-form-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.win-form-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.win-form-header h2 {
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-weight: 600;
+  font-style: italic;
+  margin-bottom: 0.75rem;
+  color: var(--win-brown-dark);
+  font-family: 'Cormorant Garamond', serif;
+}
+
+.win-form-header p {
+  color: var(--win-brown-light);
+  font-size: 0.9rem;
+  font-family: 'Jost', sans-serif;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+}
+
+.win-contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.win-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.win-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.win-form-group label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--win-brown-dark);
+  font-family: 'Jost', sans-serif;
+}
+
+.win-form-group input,
+.win-form-group textarea {
+  padding: 0.9rem 1rem;
+  border: 1.5px solid var(--win-border);
+  background: #ffffff;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  color: var(--win-brown-dark);
+  font-family: 'Jost', sans-serif;
+  font-weight: 300;
+}
+
+.win-form-group input:focus,
+.win-form-group textarea:focus {
+  outline: none;
+  border-color: var(--win-brown-dark);
+  box-shadow: 0 0 0 3px rgba(44, 26, 14, 0.08);
+  transform: translateY(-2px);
+}
+
+.win-form-group textarea {
+  min-height: 130px;
+  resize: vertical;
+}
+
+.win-submit-btn {
+  background: var(--win-brown-dark);
+  color: var(--win-cream);
+  border: none;
+  padding: 1rem 2.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  border-radius: 0;                /* flat corners like the site's buttons */
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: fit-content;
+  min-width: 180px;
+  margin-top: 0.5rem;
+  font-family: 'Jost', sans-serif;
+}
+
+.win-submit-btn:hover {
+  background: var(--win-brown-mid);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(44, 26, 14, 0.2);
+}
+
+.win-btn-arrow {
+  transition: transform 0.3s ease;
+}
+
+.win-submit-btn:hover .win-btn-arrow {
+  transform: translateX(6px);
+}
+
+.win-success-message {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(44, 26, 14, 0.06);
+  border-radius: 8px;
+  border: 1px solid var(--win-border);
+  margin-top: 1rem;
+  animation: slideIn 0.4s ease-out;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.win-success-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: var(--win-brown-dark);
+  color: var(--win-cream);
+  border-radius: 50%;
+  font-size: 13px;
+}
+
+.win-success-message p {
+  margin: 0;
+  color: var(--win-brown-dark);
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-family: 'Jost', sans-serif;
+}
+
+/* ========== BUSINESS SECTION ========== */
+.win-business-section {
+  padding: 4rem 0 5rem;
+}
+
+.win-business-content {
+  max-width: 550px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.win-business-line {
+  width: 50px;
+  height: 2px;
+  background: var(--win-brown-dark);
+  margin: 0 auto 1.5rem auto;
+  transition: width 0.3s ease;
+}
+
+.win-business-content:hover .win-business-line {
+  width: 80px;
+}
+
+.win-business-content h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 600;
+  font-style: italic;
+  margin-bottom: 1rem;
+  color: var(--win-brown-dark);
+  font-family: 'Cormorant Garamond', serif;
+}
+
+.win-business-content p {
+  color: var(--win-brown-light);
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  font-family: 'Jost', sans-serif;
+  font-weight: 300;
+}
+
+.win-business-email {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--win-brown-dark);
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  font-family: 'Jost', sans-serif;
+  padding: 0.75rem 1.5rem;
+  border: 1.5px solid var(--win-brown-dark);
+}
+
+.win-business-email:hover {
+  gap: 0.75rem;
+  background: var(--win-brown-dark);
+  color: var(--win-cream);
+}
+
+.win-arrow {
+  transition: transform 0.3s ease;
+}
+
+.win-business-email:hover .win-arrow {
+  transform: translateX(6px);
+}
+
+/* ========== MOBILE RESPONSIVE ========== */
+@media (max-width: 968px) {
+  .win-container { padding: 0 1.5rem; }
+  .win-contact-split-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+  .win-map-side { min-height: 380px; }
+  .win-map-container { min-height: 380px; }
+  .win-map-container iframe { min-height: 380px; }
+}
+
+@media (max-width: 768px) {
+  .win-contact-hero { padding: 4rem 0 2.5rem; }
+  .win-hero-title { font-size: 2.2rem; }
+  .win-hero-subtitle { font-size: 1rem; padding: 0 1rem; }
+  .win-contact-main-section { padding: 1rem 0 3rem; }
+  .win-form-section { padding: 3rem 0; }
+  .win-form-row { grid-template-columns: 1fr; gap: 1.25rem; }
+  .win-map-side { min-height: 300px; }
+  .win-map-container { min-height: 300px; }
+  .win-map-container iframe { min-height: 300px; }
+  .win-submit-btn { width: 100%; }
+  .win-business-section { padding: 3rem 0 4rem; }
+  .win-card-content { padding: 1.25rem; }
+  .win-card-text-vertical { font-size: 1.1rem; }
+}
+
+@media (max-width: 480px) {
+  .win-container { padding: 0 1rem; }
+  .win-hero-title { font-size: 1.8rem; }
+  .win-hero-badge { font-size: 0.7rem; letter-spacing: 3px; }
+  .win-card-content { padding: 1rem; }
+  .win-card-title-vertical { font-size: 0.65rem; }
+  .win-card-text-vertical { font-size: 1rem; }
+  .win-social-links-vertical { gap: 1rem; }
+  .win-social-link-vertical { font-size: 0.9rem; }
+}
