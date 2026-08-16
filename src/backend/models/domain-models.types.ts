@@ -96,9 +96,7 @@ export interface Cart extends BaseEntity {
 
 export interface CartItem extends BaseEntity {
   cart_id: string;
-  // NOTE: This column is physically named 'variant_id' in cart_items but stores product_id
-  // since product_variants is not in use. Treat as product_id in all service logic.
-  variant_id: string;
+  product_id: string;
   quantity: number;
 }
 

@@ -33,7 +33,7 @@ export class SupabaseProductRepository
       const client = this.getClient();
       const { data, error } = await client
         .from(this.tableName)
-        .select('*, variants:product_variants(*), images:product_images(*), category:categories(*)')
+        .select('*, images:product_images(*), category:categories(*)')
         .eq('id', id)
         .maybeSingle();
 

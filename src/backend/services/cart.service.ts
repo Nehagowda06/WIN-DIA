@@ -74,7 +74,6 @@ export class CartServiceImpl implements CartService {
       return failure(new NotFoundError('Product is no longer active or available'));
     }
 
-    // cart_items.variant_id physically stores product_id in this architecture
     const existingRes = await this.cartItemRepo.findItem(cartId, dto.product_id);
     if (!existingRes.success) return failure(existingRes.error);
 
@@ -85,7 +84,7 @@ export class CartServiceImpl implements CartService {
 
     return this.cartItemRepo.create({
       cart_id: cartId,
-      variant_id: dto.product_id, // cart_items column is variant_id; stores product_id
+      product_id: dto.product_id,
       quantity: dto.quantity,
     });
   }
@@ -128,8 +127,7 @@ export class CartServiceImpl implements CartService {
 
     if (guestCartRes.success && guestCartRes.value.items.length > 0) {
       for (const item of guestCartRes.value.items) {
-        // item.variant_id physically stores product_id in this architecture
-        await this.addItem(userCart.id, { product_id: item.variant_id, quantity: item.quantity });
+        await this.addItem(userCart.id, { product_id: item.product_id, quantity: item.quantity });
       }
       await this.cartRepo.delete(guestCartRes.value.cart.id);
     }
@@ -146,12 +144,11 @@ export class CartServiceImpl implements CartService {
     const productsRes = await this.productRepo.findAll({ is_active: true });
     if (!productsRes.success) return failure(productsRes.error);
 
-    // item.variant_id stores product_id in this architecture
     const productMap = new Map(productsRes.value.map((p) => [p.id, p]));
     let total = 0;
 
     for (const item of items) {
-      const product = productMap.get(item.variant_id);
+      const product = productMap.get(item.product_id);
       if (product) {
         total += Number(product.price) * item.quantity;
       }

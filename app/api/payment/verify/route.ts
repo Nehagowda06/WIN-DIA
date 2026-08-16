@@ -74,7 +74,7 @@ export async function POST(request: Request) {
 
     // Fetch order_items directly from the order_items table using order_id.
     // getOrderById only returns the orders row (no join) — it never contains order_items.
-    // order_items columns: product_id (not variant_id), qty (not quantity).
+    // order_items columns: product_id, qty.
     const itemsRes = await orderItemRepo.findByOrderId(orderId);
     if (itemsRes.success && itemsRes.value.length > 0) {
       for (const item of itemsRes.value) {
