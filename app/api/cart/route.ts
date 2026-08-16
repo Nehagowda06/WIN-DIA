@@ -30,8 +30,7 @@ export async function POST(request: Request) {
   try {
     const authHeader = request.headers.get('authorization');
     const body = await request.json().catch(() => ({}));
-    // Accept product_id directly; fall back to variant_id for backwards-compat
-    // (cart_items.variant_id physically stores product_id in this architecture)
+    // Accept product_id; fall back to variant_id for backwards-compat with older clients
     const { cart_id, product_id, variant_id, quantity } = body;
     const resolvedProductId = product_id ?? variant_id;
 
@@ -62,7 +61,7 @@ export async function PUT(request: Request) {
   try {
     const authHeader = request.headers.get('authorization');
     const body = await request.json().catch(() => ({}));
-    // Accept product_id directly; fall back to variant_id for backwards-compat
+    // Accept product_id; fall back to variant_id for backwards-compat with older clients
     const { cart_id, product_id, variant_id, quantity } = body;
     const resolvedProductId = product_id ?? variant_id;
 
@@ -93,7 +92,7 @@ export async function DELETE(request: Request) {
     const authHeader = request.headers.get('authorization');
     const { searchParams } = new URL(request.url);
     const cartId = searchParams.get('cartId') || searchParams.get('cart_id');
-    // Accept product_id or variant_id (backwards-compat) — both identify the product in this architecture
+    // Accept product_id or variant_id (backwards-compat with older clients)
     const productId = searchParams.get('productId') || searchParams.get('product_id')
       || searchParams.get('variantId') || searchParams.get('variant_id');
 

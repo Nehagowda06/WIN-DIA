@@ -7,8 +7,8 @@ import { getServerClient } from '../config/supabase.config';
 
 export interface CartItemRepository extends IBaseRepository<CartItem, string, Partial<CartItem>, Partial<CartItem>> {
   findByCartId(cartId: string): Promise<Result<CartItem[], AppError>>;
-  findByCartAndVariant(cartId: string, variantId: string): Promise<Result<CartItem | null, AppError>>;
-  findItem(cartId: string, variantId: string): Promise<Result<CartItem | null, AppError>>;
+  findByCartAndProduct(cartId: string, productId: string): Promise<Result<CartItem | null, AppError>>;
+  findItem(cartId: string, productId: string): Promise<Result<CartItem | null, AppError>>;
   deleteByCartId(cartId: string): Promise<Result<boolean, AppError>>;
 }
 
@@ -23,28 +23,28 @@ export class SupabaseCartItemRepository
     return this.findAll({ cart_id: cartId });
   }
 
-  public async findByCartAndVariant(cartId: string, variantId: string): Promise<Result<CartItem | null, AppError>> {
+  public async findByCartAndProduct(cartId: string, productId: string): Promise<Result<CartItem | null, AppError>> {
     try {
       const client = this.getClient();
       const { data, error } = await client
         .from(this.tableName)
         .select('*')
         .eq('cart_id', cartId)
-        .eq('variant_id', variantId)
+        .eq('product_id', productId)
         .maybeSingle();
 
       if (error) {
-        return failure(this.handleError(error, 'findByCartAndVariant'));
+        return failure(this.handleError(error, 'findByCartAndProduct'));
       }
 
       return success((data as CartItem) || null);
     } catch (err) {
-      return failure(this.handleError(err, 'findByCartAndVariant'));
+      return failure(this.handleError(err, 'findByCartAndProduct'));
     }
   }
 
-  public async findItem(cartId: string, variantId: string): Promise<Result<CartItem | null, AppError>> {
-    return this.findByCartAndVariant(cartId, variantId);
+  public async findItem(cartId: string, productId: string): Promise<Result<CartItem | null, AppError>> {
+    return this.findByCartAndProduct(cartId, productId);
   }
 
   public async deleteByCartId(cartId: string): Promise<Result<boolean, AppError>> {
