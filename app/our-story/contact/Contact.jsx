@@ -244,23 +244,31 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* Business Inquiries Section */}
-      <section className="win-business-section">
-        <div className="win-container">
-          <div className="win-business-content">
-            <div className="win-business-line"></div>
-            <h2>Business Inquiries</h2>
-            <p>
-              For partnership opportunities, wholesale orders, or corporate gifting,
-              please reach out to our business development team.
-            </p>
-            <a href="mailto:business@win-dia.com" className="win-business-email">
-              business@win-dia.com
-              <span className="win-arrow">→</span>
-            </a>
-          </div>
-        </div>
-      </section>
+{/* Business Inquiries Section */}
+<section className="win-business-section">
+  <div className="win-container">
+    <div className="win-business-content">
+      <div className="win-business-line"></div>
+
+      <h2>Business Inquiries</h2>
+
+      <p>
+        For partnership opportunities, wholesale orders, or corporate gifting,
+        please reach out to our business development team.
+      </p>
+
+      <a
+        href="https://mail.google.com/mail/?view=cm&fs=1&to=business@win-dia.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="win-business-email"
+      >
+        BUSINESS@WIN-DIA.COM
+        <span className="win-arrow">→</span>
+      </a>
+    </div>
+  </div>
+</section>
     </div>
   );
 };

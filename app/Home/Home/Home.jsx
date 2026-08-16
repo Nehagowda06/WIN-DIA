@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import StoreNav from "@/src/frontend/components/StoreNav";
 import './Home.css'
 import { motion, useReducedMotion } from 'framer-motion'
 import Image from 'next/image';
 import BannerStrip from "@/src/frontend/components/BannerStrip/BannerStrip";
+import WhatsAppButton from "@/src/frontend/components/WhatsAppButton/WhatsAppButton";
+
 import jeeraBg  from './jeera-bg.jpg'
 import garlicBg  from './garlic-bg.jpg'
 import methiBg   from './methi-bg.jpg'
@@ -1426,6 +1427,7 @@ export default function Home(){
           <RecognitionSection />
           <FounderSection/>
           <CommunityShowcase/>
+           <WhatsAppButton />
         </>
     )
 }
