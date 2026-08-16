@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase, setRememberMe } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase/client';
 import styles from './login.module.css';
 
 const TAGLINES = [
@@ -16,7 +16,6 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [taglineIndex, setTaglineIndex] = useState(0);
@@ -28,47 +27,43 @@ export default function LoginPage() {
     return () => clearInterval(interval);
   }, []);
 
-  /* === Email/password login === */
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
-  setLoading(true);
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
-  setRememberMe(remember);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-  try {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+      const result = await res.json();
 
-    const result = await res.json();
-
-    if (!res.ok) {
-      if (result.accountNotFound) {
-        router.push(`/register?email=${encodeURIComponent(email)}`);
+      if (!res.ok) {
+        if (result.accountNotFound) {
+          router.push(`/register?email=${encodeURIComponent(email)}`);
+          return;
+        }
+        setError(result.error || 'Invalid email or password.');
         return;
       }
-      setError(result.error || 'Invalid email or password.');
-      return;
+
+      await supabase.auth.setSession({
+        access_token: result.session.access_token,
+        refresh_token: result.session.refresh_token,
+      });
+
+      router.push('/');
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    await supabase.auth.setSession({
-      access_token: result.session.access_token,
-      refresh_token: result.session.refresh_token,
-    });
-
-    router.push('/');
-  } catch (err) {
-    console.error('Login error:', err);
-    setError('Something went wrong. Please try again.');
-  } finally {
-    setLoading(false);
-  }
-};
-
-  /* === Google OAuth login === */
   const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -80,7 +75,6 @@ export default function LoginPage() {
     <div className={styles.page}>
       <div className={styles.card}>
 
-        {/* === Left panel: animated brand showcase === */}
         <div className={styles.brandPanel}>
           <div className={styles.brandPattern} aria-hidden="true">
             <span className={styles.leaf}></span>
@@ -111,7 +105,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* === Right panel: form === */}
         <div className={styles.formPanel}>
           <h1 className={styles.title}>Welcome back</h1>
           <p className={styles.subtitle}>Sign in to continue your WINDIA journey</p>
@@ -143,14 +136,6 @@ export default function LoginPage() {
             />
 
             <div className={styles.formRow}>
-              <label className={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                />
-                Remember me
-              </label>
               <a href="/forgot-password" className={styles.linkSubtle}>Forgot password?</a>
             </div>
 

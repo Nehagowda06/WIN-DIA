@@ -46,9 +46,20 @@ export default function ProfileSidebar({ profile }) {
   const dispatch = useDispatch();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const getInitials = (name) => {
-    if (!name) return '?';
-    return name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+  const getInitials = (name, email) => {
+    if (name && name.trim()) {
+      return name
+        .trim()
+        .split(/\s+/)
+        .map((n) => n[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase();
+    }
+    if (email) {
+      return email.split('@')[0].slice(0, 2).toUpperCase();
+    }
+    return '?';
   };
 
   const navLinks = [
@@ -63,11 +74,9 @@ export default function ProfileSidebar({ profile }) {
       <div className="profile-sidebar-top">
         <div className="profile-avatar-block">
           <div className="profile-avatar-ring">
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="" className="profile-avatar" />
-            ) : (
-              <div className="profile-avatar">{getInitials(profile?.full_name)}</div>
-            )}
+            <div className="profile-avatar">
+              {getInitials(profile?.full_name, profile?.email)}
+            </div>
           </div>
           <p className="profile-name">{profile?.full_name}</p>
           <p className="profile-email">{profile?.email}</p>
@@ -87,6 +96,7 @@ export default function ProfileSidebar({ profile }) {
 
       <nav className={`profile-nav ${mobileOpen ? 'profile-nav-open' : ''}`}>
         {navLinks.map((link) => (
+          
            <a key={link.href}
             href={link.href}
             className={`profile-nav-item ${pathname === link.href ? 'profile-nav-item-active' : ''}`}
