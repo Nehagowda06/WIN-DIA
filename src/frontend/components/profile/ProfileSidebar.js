@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useDispatch } from 'react-redux';
 import { handleLogout } from '@/src/frontend/lib/auth/logout';
 
 /* === Icon set === */
@@ -42,6 +43,7 @@ const icons = {
 export default function ProfileSidebar({ profile }) {
   const pathname = usePathname();
   const router = useRouter();
+  const dispatch = useDispatch();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const getInitials = (name) => {
@@ -95,7 +97,7 @@ export default function ProfileSidebar({ profile }) {
         ))}
 
         <div className="profile-logout-item">
-          <button className="profile-nav-item" onClick={() => handleLogout(router)}>
+          <button className="profile-nav-item" onClick={() => handleLogout(router, dispatch)}>
             <span className="profile-nav-icon">{icons.logout}</span>
             Logout
           </button>

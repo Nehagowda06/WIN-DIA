@@ -1,7 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from 'react';
-import { supabase, setRememberMe } from '@/src/frontend/lib/supabase/client';
+import { useRouter } from 'next/navigation';
+import { supabase, setRememberMe } from '@/lib/supabase/client';
 import styles from './login.module.css';
 
 const TAGLINES = [
@@ -11,11 +12,10 @@ const TAGLINES = [
   'Nourish, Naturally',
 ];
 
-const EMPTY_LOGIN = { email: '', password: '' };
-
 export default function LoginPage() {
-  const [email, setEmail] = useState(EMPTY_LOGIN.email);
-  const [password, setPassword] = useState(EMPTY_LOGIN.password);
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -28,71 +28,52 @@ export default function LoginPage() {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('error') === 'auth_failed') {
-      const message = params.get('message');
-      if (message?.startsWith('Unable to exchange external code')) {
-        setError('Google sign in is reaching Supabase, but Supabase cannot exchange the Google code. Check the Google OAuth Client ID/Secret and callback URL in Supabase.');
-        return;
-      }
-
-      setError(message || 'Google sign in could not be completed. Please try again.');
-    }
-  }, []);
-
-  useEffect(() => {
-    const timers = [100, 600].map((delay) =>
-      window.setTimeout(() => {
-        setEmail(EMPTY_LOGIN.email);
-        setPassword(EMPTY_LOGIN.password);
-      }, delay)
-    );
-    return () => timers.forEach((timer) => window.clearTimeout(timer));
-  }, []);
-
   /* === Email/password login === */
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+  e.preventDefault();
+  setError('');
+  setLoading(true);
 
-    setRememberMe(remember);
+  setRememberMe(remember);
 
-    try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
 
-      if (signInError) {
-        setError(signInError.message || 'Invalid email or password.');
+    const result = await res.json();
+
+    if (!res.ok) {
+      if (result.accountNotFound) {
+        router.push(`/register?email=${encodeURIComponent(email)}`);
         return;
       }
-
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        setError('Login succeeded, but session was not created. Please try again.');
-        return;
-      }
-
-      window.location.href = '/';
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
+      setError(result.error || 'Invalid email or password.');
+      return;
     }
-  };
+
+    await supabase.auth.setSession({
+      access_token: result.session.access_token,
+      refresh_token: result.session.refresh_token,
+    });
+
+    router.push('/');
+  } catch (err) {
+    console.error('Login error:', err);
+    setError('Something went wrong. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   /* === Google OAuth login === */
   const handleGoogleLogin = async () => {
-    setError('');
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+    await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/` },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
-
-    if (oauthError) {
-      setError(oauthError.message || 'Could not start Google sign in.');
-    }
   };
 
   return (
@@ -142,11 +123,9 @@ export default function LoginPage() {
 
           <div className={styles.divider}><span>or</span></div>
 
-          <form onSubmit={handleSubmit} autoComplete="off">
+          <form onSubmit={handleSubmit}>
             <input
               type="email"
-              name="windia_login_email"
-              autoComplete="off"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -156,8 +135,6 @@ export default function LoginPage() {
             />
             <input
               type="password"
-              name="windia_login_password"
-              autoComplete="new-password"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

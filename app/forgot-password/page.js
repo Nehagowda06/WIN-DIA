@@ -42,10 +42,10 @@ export default function ForgotPasswordPage() {
     <div className={styles.page}>
       <div className={styles.card}>
         <h1 className={styles.title}>Forgot password?</h1>
-        <p className={styles.subtitle}>Enter your email and we&apos;ll send you a reset code</p>
+        <p className={styles.subtitle}>Enter your email and we'll send you a reset code</p>
 
         {sent ? (
-          <p className={styles.success}>Code sent - redirecting you...</p>
+          <p className={styles.success}>Code sent — redirecting you...</p>
         ) : (
           <form onSubmit={handleSubmit}>
             <input

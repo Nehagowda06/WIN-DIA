@@ -160,47 +160,6 @@
   box-shadow: 0 0 0 3px rgba(70, 44, 25, 0.08);
 }
 
-.googleBtn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 11px;
-  background: #fff;
-  border: 1px solid #E3D9C8;
-  border-radius: 10px;
-  font-family: Arial, sans-serif;
-  font-size: 13px;
-  color: #462c19;
-  cursor: pointer;
-  margin-bottom: 12px;
-  transition: border-color 0.2s ease, transform 0.15s ease;
-}
-
-.googleBtn:hover {
-  border-color: #462c19;
-  transform: translateY(-1px);
-}
-
-.googleBtn:active {
-  transform: translateY(0);
-}
-
-.googleIcon {
-  width: 16px;
-  height: 16px;
-}
-
-.divider {
-  text-align: center;
-  font-family: Arial, sans-serif;
-  font-size: 12px;
-  color: #462c19;
-  opacity: 0.45;
-  margin: 0 0 12px;
-}
-
 .otpRow {
   display: flex;
   gap: 8px;
@@ -353,4 +312,42 @@
     width: 15%;
     min-width: 40px;
   }
+}
+
+.orDivider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 20px 0;
+  color: #999;
+  font-size: 13px;
+}
+.orDivider::before,
+.orDivider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #ddd;
+}
+.orDivider span {
+  padding: 0 12px;
+}
+
+.googleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  color: #333;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.googleBtn:hover {
+  background: #f7f7f7;
 }

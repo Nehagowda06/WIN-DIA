@@ -9,6 +9,32 @@ import { OrderStatusHistoryRepository } from '../repositories/order-status-histo
 import { logger } from '../utils/logger.util';
 import { container, RepositoryTokens } from '../providers/container.provider';
 
+/**
+ * Valid order status transitions map.
+ * An order can only move FORWARD through these defined paths.
+ * Cancellation is allowed from placed/confirmed/processing but NOT after shipped.
+ * Refund is only allowed from cancelled state.
+ */
+const STATUS_TRANSITIONS: Record<string, string[]> = {
+  placed: ['confirmed', 'processing', 'cancelled'],
+  confirmed: ['processing', 'cancelled'],
+  processing: ['shipped', 'cancelled'],
+  shipped: ['delivered'],
+  delivered: [],
+  cancelled: ['refunded'],
+  refunded: [],
+};
+
+function isValidStatusTransition(from: string, to: string): boolean {
+  const allowed = STATUS_TRANSITIONS[from];
+  if (!allowed) return false;
+  return allowed.includes(to);
+}
+
+function getAllowedTransitions(from: string): string[] {
+  return STATUS_TRANSITIONS[from] || [];
+}
+
 function generateOrderNumber(): string {
   return `WIN-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 }
@@ -131,6 +157,15 @@ export class OrderServiceImpl implements OrderService {
   public async updateOrderStatus(orderId: string, status: OrderStatus, note?: string, updatedBy?: string): Promise<Result<Order, AppError>> {
     const existing = await this.getOrderById(orderId);
     if (!existing.success) return existing;
+
+    // Validate status transition — status can only move FORWARD in proper sequence
+    const currentStatus = existing.value.order_status;
+    if (!isValidStatusTransition(currentStatus, status)) {
+      return failure(new ValidationError(
+        `Invalid status transition: cannot move from "${currentStatus}" to "${status}". ` +
+        `Allowed transitions from "${currentStatus}": ${getAllowedTransitions(currentStatus).join(', ') || 'none'}`
+      ));
+    }
 
     const updateRes = await this.orderRepo.update(orderId, { order_status: status });
     if (!updateRes.success) return updateRes;

@@ -9,7 +9,9 @@ export const runtime = 'nodejs';
 export async function POST(request: Request) {
   try {
     const signature = request.headers.get('x-razorpay-signature') || '';
-    const payload = await request.json().catch(() => ({}));
+    const rawBody = await request.text();
+    let payload: Record<string, unknown> = {};
+    try { payload = JSON.parse(rawBody); } catch { payload = {}; }
 
     const paymentService = container.resolve<PaymentService>(ServiceTokens.PaymentService);
     const result = await paymentService.handleWebhook(payload, signature);

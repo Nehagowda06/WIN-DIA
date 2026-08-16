@@ -13,7 +13,7 @@ import { removeFromCart, updateQuantity, setCart, addToCart } from "@/src/fronte
 import { addToWishlist } from "@/src/frontend/redux/slices/wishlistSlice";
 import styles from "./CartPage.module.css";
 
-const FREE_THRESHOLD = 499;
+const FREE_THRESHOLD = 0; // Free delivery always — no threshold needed
 
 export default function CartPage() {
   const dispatch = useDispatch();
@@ -31,11 +31,11 @@ export default function CartPage() {
 
   const subtotal = cartItems.reduce((a, i) => a + i.price * i.qty, 0);
   const discount = promoApplied ? subtotal * 0.1 : 0;
-  const shipping = subtotal >= FREE_THRESHOLD ? 0 : 50;
+  const shipping = 0; // FREE DELIVERY — always ₹0
   const tax = (subtotal - discount) * 0.05;
   const total = subtotal - discount + tax + shipping;
-  const progress = Math.min((subtotal / FREE_THRESHOLD) * 100, 100);
-  const remaining = Math.max(FREE_THRESHOLD - subtotal, 0);
+  const progress = 100; // Always free shipping
+  const remaining = 0;
 
   const handleQty = useCallback((id, delta, curr, stock) => {
     const n = curr + delta;

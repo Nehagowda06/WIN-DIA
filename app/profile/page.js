@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/src/frontend/hooks/useAuth';
 
 export default function ProfilePage() {
-  const { user, authFetch, loading: authLoading } = useAuth();
   const [form, setForm] = useState({ full_name: '', email: '', phone: '' });
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -13,34 +11,22 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState(false);
 
   const loadProfile = async () => {
-    try {
-      const res = await authFetch('/api/profile');
-      const result = await res.json();
+    const res = await fetch('/api/profile');
+    const result = await res.json();
 
-      if (res.ok && result.success) {
-        const prof = result.profile || result.data || {};
-        setForm({
-          full_name: prof.full_name || '',
-          email: prof.email || user?.email || '',
-          phone: prof.phone || '',
-        });
-      }
-    } catch (err) {
-      console.error("Failed to load profile", err);
-    } finally {
-      setLoading(false);
+    if (res.ok) {
+      setForm({
+        full_name: result.profile?.full_name || '',
+        email: result.profile?.email || '',
+        phone: result.profile?.phone || '',
+      });
     }
+    setLoading(false);
   };
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
     loadProfile();
-  }, [user, authLoading]);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -48,27 +34,23 @@ export default function ProfilePage() {
     setSuccess(false);
     setSaving(true);
 
-    try {
-      const res = await authFetch('/api/profile', {
-        method: 'PUT',
-        body: JSON.stringify({ full_name: form.full_name, phone: form.phone }),
-      });
+    const res = await fetch('/api/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ full_name: form.full_name, phone: form.phone }),
+    });
 
-      const result = await res.json();
-      setSaving(false);
+    const result = await res.json();
+    setSaving(false);
 
-      if (!res.ok || !result.success) {
-        setError(typeof result.error === 'string' ? result.error : result.error?.message || 'Failed to update profile');
-        return;
-      }
-
-      setEditing(false);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 2500);
-    } catch (err) {
-      setSaving(false);
-      setError(err.message || 'Something went wrong');
+    if (!res.ok) {
+      setError(result.error);
+      return;
     }
+
+    setEditing(false);
+    setSuccess(true);
+    setTimeout(() => setSuccess(false), 2500);
   };
 
   const handleCancel = () => {
@@ -77,7 +59,7 @@ export default function ProfilePage() {
     setEditing(false);
   };
 
-  if (authLoading || loading) return null;
+  if (loading) return null;
 
   return (
     <div>
@@ -134,15 +116,15 @@ export default function ProfilePage() {
         <div className="profile-view">
           <div className="profile-view-row">
             <span className="profile-view-label">Full name</span>
-            <span className="profile-view-value">{form.full_name || '-'}</span>
+            <span className="profile-view-value">{form.full_name || '—'}</span>
           </div>
           <div className="profile-view-row">
             <span className="profile-view-label">Email</span>
-            <span className="profile-view-value">{form.email || '-'}</span>
+            <span className="profile-view-value">{form.email || '—'}</span>
           </div>
           <div className="profile-view-row">
             <span className="profile-view-label">Phone</span>
-            <span className="profile-view-value">{form.phone || '-'}</span>
+            <span className="profile-view-value">{form.phone || '—'}</span>
           </div>
         </div>
       )}

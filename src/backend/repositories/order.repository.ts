@@ -119,8 +119,8 @@ export class SupabaseOrderRepository
 
       const { data: shipment, error: shipmentError } = await client.from('shipments').insert({
         order_id: order.id,
-        provider: 'nimbuspost',
-        courier_name: shipmentData.courier_name || 'NimbusPost',
+        provider: 'shiprocket',
+        courier_name: shipmentData.courier_name || 'Shiprocket',
         status: shipmentData.status || 'created',
         raw_response: {},
       }).select('*').single();

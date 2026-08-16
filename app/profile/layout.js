@@ -1,6 +1,6 @@
-﻿import { redirect } from 'next/navigation';
-import { createSupabaseServerClient } from '@/src/frontend/lib/supabase/server';
-import { createSupabaseAdminClient } from '@/src/frontend/lib/supabase/admin';
+import { redirect } from 'next/navigation';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import ProfileSidebar from '@/src/frontend/components/profile/ProfileSidebar';
 import './profile.css';
 

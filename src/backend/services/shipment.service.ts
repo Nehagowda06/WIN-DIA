@@ -28,8 +28,8 @@ export class ShipmentServiceImpl implements ShipmentService {
     logger.info(`[ShipmentService.createShipmentPlaceholder] Creating shipment placeholder for order ${orderId}`);
     return this.shipmentRepo.create({
       order_id: orderId,
-      provider: 'nimbuspost',
-      courier_name: courierName || 'NimbusPost',
+      provider: 'shiprocket',
+      courier_name: courierName || 'Shiprocket',
       status: 'created' as ShipmentStatus,
       raw_response: {},
     } as Partial<Shipment>);

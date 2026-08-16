@@ -2,8 +2,15 @@
 
 import "./about.css";
 import Image from "next/image";
+import worldMap from "../../../public/maps/countries-50m.json";
 
-import { ComposableMap, Geographies, Geography, Marker, Line } from "react-simple-maps";
+import {
+  ComposableMap,
+  Geographies,
+  Geography,
+  Marker,
+  Line
+} from "@vnedyalk0v/react19-simple-maps";
 
 import storyCard from "./images/story-making.jpg";
 import meaningImage from "./images/meaning.jpg";
@@ -48,11 +55,10 @@ const founders = [
     name: "Smt. G. Tejaswini",
     role: "Founder & CEO",
     shortBio:
-      "19+ years entrepreneur transforming traditional foods into global wellness solutions.",
+      "An experienced entrepreneur transforming traditional foods into global wellness solutions.",
     fullBio: [
-      "With over 19 years of entrepreneurial experience as an IOCL dealer managing a ₹24 Cr business, Tejaswini brings strong operational expertise into the food innovation space.",
-      "Driven by a vision to make Indian traditional foods globally relevant, she founded WIN-DIA to bridge the gap between authentic taste and modern nutrition.",
-      "Under her leadership, WIN-DIA is shaping a new category of wellness-driven Indian foods for global markets.",
+      "Tejaswini brings extensive entrepreneurial experience to WIN-DIA, having built and led a large-scale fuel retail business with a sharp focus on operations, customer trust, and disciplined growth. That foundation in running a high-accountability enterprise now shapes how she leads in the food innovation space.",
+      "Driven by a vision to make Indian traditional foods globally relevant, she founded WIN-DIA to bridge the gap between authentic taste and modern nutrition. Under her leadership, WIN-DIA is shaping a new category of wellness-driven Indian foods designed for global palates — rooted in heritage, built for the future.",
     ],
   },
   {
@@ -63,9 +69,8 @@ const founders = [
     shortBio:
       "Food scientist blending traditional wisdom with modern nutrition science.",
     fullBio: [
-      "A food scientist with expertise in functional ingredients and nutrition science, Teni leads product development at WIN-DIA.",
-      "His work ensures every product is scientifically validated while maintaining authentic taste.",
-      "He focuses on creating formulations that combine traditional wisdom with modern wellness needs.",
+      "A food scientist with deep expertise in functional ingredients and nutrition science, Teni leads product development at WIN-DIA. His work ensures every product is scientifically grounded while staying true to authentic flavor — never compromising one for the other.",
+      "Teni's approach centers on formulation science that draws from traditional wisdom while meeting the standards of modern wellness needs, resulting in products that are as functional as they are delicious.",
     ],
   },
 ];
@@ -87,7 +92,7 @@ const REGION_NUMERIC = {
   "oceania":     ["036","554"],
 };
 
-const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json";
+//const GEO_URL = "/maps/countries-50m.json";
 
 // These are lon/lat coordinates — react-simple-maps projects them correctly
 const REGION_LONLAT = {
@@ -472,7 +477,7 @@ return (
   </div>
 </section>
 
-<section className="about-founders">
+<section  id="founders" className="about-founders">
 
   <div className="about-founders-container">
 
@@ -690,7 +695,7 @@ function WorldMapSVG({ selected, onSelect }) {
         height={500}
         style={{ width: "100%", height: "auto", display: "block" }}
       >
-        <Geographies geography={GEO_URL}>
+        <Geographies geography={worldMap}>
           {({ geographies }) =>
             geographies.map((geo) => {
               const numId = String(geo.id);

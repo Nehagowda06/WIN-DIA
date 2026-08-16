@@ -196,7 +196,6 @@ useEffect(() => {
   muted
   loop = {false}
   playsInline
-  poster="https://via.placeholder.com/1280x720"
   ref={videoRef} 
   onEnded={handleVideoEnd}
 >
@@ -611,15 +610,13 @@ function FeaturedProducts() {
               </div>
               <div className="featured-info">
                 <div className="featured-name">{p.name}</div>
-                <div className="featured-price">
-                  {p.price} <span>/ 250g</span>
-                </div>
+                
                 <Link
                   href="/shop"
                   className="featured-add"
                   onClick={e => e.stopPropagation()}
                 >
-                  Add to Cart
+                  Explore
                 </Link>
               </div>
             </div>
@@ -643,192 +640,224 @@ function FeaturedProducts() {
   )
 }
 
-
 /* ============================================================
    TESTIMONIALS
    ============================================================ */
+const videoReviews = [
+  { id: 1, src: '/video/review1.mp4',  name: 'Ananya', location: 'Bengaluru', lift: true },
+  { id: 2, src: '/video/review2.mp4',  name: 'Karthik', location: 'Hyderabad', lift: false },
+  { id: 3, src: '/video/review3.mp4',  name: 'Sneha', location: 'Pune', lift: true },
+]
+
 const reviews = [
   { rating: 5.0, quote: "I bought these for healthier snacking, but they've become a small ritual in our home. Every evening tea now feels incomplete without them. The jeera flavour especially has this warmth that just feels like home.", author: "Priya Mehta", location: "Bengaluru", product: "Garlic Thins" },
-  
+
   { rating: 4.7, quote: "Finding something wholesome that my whole family enjoys is rare. These crisps somehow bring together flavour, tradition, and comfort in every bite. My kids ask for them after school and my parents love them with chai.", author: "Anjali Rao", location: "Mysuru", product: "Moringa Thins" },
-  
+
   { rating: 4.5, quote: "The first bite reminded me of homemade snacks we grew up with. It feels comforting to find something traditional that fits today's lifestyle. I've tried nearly every flavour now and honestly can't pick a favourite.", author: "Rohit", location: "Bangalore", product: "Methi Thins" },
-  
+
   { rating: 4.8, quote: "What started as curiosity turned into a pantry essential. They've become my go-to for busy days, quiet evenings, and everything in between. I love that I don't feel guilty reaching for a second handful.", author: "Meera Krishnan", location: "Chennai", product: "Curry Thins" },
-  
+
   { rating: 4.3, quote: "Some snacks satisfy cravings. These feel different — wholesome, familiar, and made with care you can actually taste. I ordered once thinking I'd try it out, and within a week I was placing my second order.", author: "Nisha Patel", location: "Hyderabad", product: "Methi Thins" },
 ]
-const TERRACOTTA = '#C9A45B'
-const LIGHT      = '#FBF3EA'
 
-function StarRating({ rating, isActive }) {
+/* ---------- Video card ---------- */
+function VideoReviewCard({ review }) {
+  const videoRef = useRef(null)
+  const [playing, setPlaying] = useState(false)
+
+  const handleEnter = () => {
+    if (window.matchMedia('(hover: none)').matches) return
+    videoRef.current?.play()
+    setPlaying(true)
+  }
+  const handleLeave = () => {
+    if (window.matchMedia('(hover: none)').matches) return
+    if (videoRef.current) {
+      videoRef.current.pause()
+      videoRef.current.currentTime = 0
+    }
+    setPlaying(false)
+  }
+  const handleTap = () => {
+    if (!videoRef.current) return
+    if (videoRef.current.paused) {
+      videoRef.current.play()
+      setPlaying(true)
+    } else {
+      videoRef.current.pause()
+      setPlaying(false)
+    }
+  }
+
+  return (
+    <div className={`tv-card-wrap${review.lift ? ' tv-card-wrap--lift' : ''}`}>
+      <div
+        className="tv-card"
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
+        onClick={handleTap}
+      >
+        <video
+          ref={videoRef}
+          src={review.src}
+          poster={review.poster}
+          className="tv-card__video"
+          loop
+          playsInline
+          controls
+        />
+        {!playing && (
+          <div className="tv-card__play" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="6,3 21,12 6,21" />
+            </svg>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ---------- Star rating ---------- */
+function StarRating({ rating }) {
   const full = Math.floor(rating)
   const partial = Math.round((rating - full) * 10) / 10
   const empty = 5 - full - (partial > 0 ? 1 : 0)
-
-  const starColor = isActive ? '#D8C3A5' : '#D8C3A5'
-  const glowColor = isActive ? 'rgba(255, 228, 196, 0.7)' : 'rgba(226, 112, 58, 0.6)'
-  const emptyColor = isActive ? 'rgba(255,255,255,0.2)' : 'rgba(180,100,60,0.25)'
   const id = `partial-${Math.round(rating * 10)}`
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '3px', filter: `drop-shadow(0 0 4px ${glowColor})` }}>
+    <div className="qs-stars">
       {[...Array(full)].map((_, i) => (
-        <svg key={`f${i}`} width="16" height="16" viewBox="0 0 24 24" fill={starColor}>
+        <svg key={`f${i}`} width="15" height="15" viewBox="0 0 24 24" fill="#C9A45B">
           <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
         </svg>
       ))}
       {partial > 0 && (
-        <svg key="p" width="16" height="16" viewBox="0 0 24 24">
+        <svg key="p" width="15" height="15" viewBox="0 0 24 24">
           <defs>
             <linearGradient id={id} x1="0" y1="0" x2="1" y2="0">
-              <stop offset={`${partial * 100}%`} stopColor={starColor}/>
-              <stop offset={`${partial * 100}%`} stopColor={emptyColor}/>
+              <stop offset={`${partial * 100}%`} stopColor="#C9A45B"/>
+              <stop offset={`${partial * 100}%`} stopColor="#D8C3A5"/>
             </linearGradient>
           </defs>
           <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" fill={`url(#${id})`}/>
         </svg>
       )}
       {[...Array(empty)].map((_, i) => (
-        <svg key={`e${i}`} width="16" height="16" viewBox="0 0 24 24" fill={emptyColor}>
+        <svg key={`e${i}`} width="15" height="15" viewBox="0 0 24 24" fill="#D8C3A5">
           <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
         </svg>
       ))}
-      <span style={{ fontSize: '12px', marginLeft: '5px', opacity: 0.85, color: starColor }}>{rating.toFixed(1)}</span>
     </div>
   )
 }
 
-function getPosition(index, current, total) {
-  let diff = index - current
-  if (diff >  total / 2) diff -= total
-  if (diff < -total / 2) diff += total
-  if (diff ===  0) return { x:    0, scale: 1,    opacity: 1,   z: 10, shadow: '0 28px 56px rgba(226,112,58,0.35)', active: true  }
-  if (diff ===  1) return { x:  236, scale: 0.86, opacity: 1,   z:  6, shadow: '0 6px 20px rgba(200,140,110,0.2)',  active: false }
-  if (diff === -1) return { x: -236, scale: 0.86, opacity: 1,   z:  6, shadow: '0 6px 20px rgba(200,140,110,0.2)',  active: false }
-  if (diff ===  2) return { x:  400, scale: 0.74, opacity: 0.7, z:  3, shadow: 'none', active: false }
-  if (diff === -2) return { x: -400, scale: 0.74, opacity: 0.7, z:  3, shadow: 'none', active: false }
-  return { x: diff > 0 ? 560 : -560, scale: 0.65, opacity: 0, z: 0, shadow: 'none', active: false }
-}
-
-function Testimonials() {
- <h1>Healthy Khakhra</h1>
+/* ---------- Written review slider ---------- */
+function QuoteSlider() {
   const [current, setCurrent] = useState(0)
-  const [displayed, setDisplayed] = useState(0) 
-  const startXRef = useRef(null)
+  const [fade, setFade] = useState(true)
   const autoRef = useRef(null)
+  const startXRef = useRef(null)
 
- const next = () => {
-  setCurrent(c => {
-    const n = (c + 1) % reviews.length
-    requestAnimationFrame(() => {          
-      setTimeout(() => setDisplayed(n), 50)
-    })
-    return n
-  })
-}
+  const goTo = (index) => {
+    setFade(false)
+    setTimeout(() => {
+      setCurrent(index)
+      setFade(true)
+    }, 220)
+  }
 
-const prev = () => {
-  setCurrent(c => {
-    const n = (c - 1 + reviews.length) % reviews.length
-    requestAnimationFrame(() => {          
-      setTimeout(() => setDisplayed(n), 50)
-    })
-    return n
-  })
-}
+  const next = () => goTo((current + 1) % reviews.length)
+  const prev = () => goTo((current - 1 + reviews.length) % reviews.length)
 
   const startAuto = () => {
     clearInterval(autoRef.current)
-    autoRef.current = setInterval(next, 5000)
+    autoRef.current = setInterval(() => {
+      setCurrent(c => {
+        const n = (c + 1) % reviews.length
+        setFade(false)
+        setTimeout(() => setFade(true), 220)
+        return n
+      })
+    }, 4500)
   }
-
   const stopAuto = () => clearInterval(autoRef.current)
 
   useEffect(() => {
-    autoRef.current = setInterval(next, 4000)
+    startAuto()
     return () => clearInterval(autoRef.current)
   }, [])
 
+  const review = reviews[current]
+
+  return (
+    <div
+      className="qs-wrap"
+      onMouseEnter={stopAuto}
+      onMouseLeave={startAuto}
+      onTouchStart={e => {
+        stopAuto()
+        startXRef.current = e.touches[0].clientX
+      }}
+      onTouchEnd={e => {
+        const dx = e.changedTouches[0].clientX - startXRef.current
+        if (dx < -40) next(); else if (dx > 40) prev()
+        startAuto()
+      }}
+    >
+      <div className="qs-stage" style={{ opacity: fade ? 1 : 0 }}>
+        <StarRating rating={review.rating} />
+        <p className="qs-quote">&ldquo;{review.quote}&rdquo;</p>
+        <p className="qs-author">{review.author}</p>
+        <p className="qs-meta">{review.location} &middot; {review.product}</p>
+      </div>
+
+      <div className="qs-controls">
+        <button className="qs-arrow" onClick={prev} aria-label="Previous review">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div className="qs-dots">
+          {reviews.map((_, i) => (
+            <button
+              key={i}
+              className={`qs-dot${i === current ? ' qs-dot--active' : ''}`}
+              onClick={() => goTo(i)}
+              aria-label={`Go to review ${i + 1}`}
+            />
+          ))}
+        </div>
+        <button className="qs-arrow" onClick={next} aria-label="Next review">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function Testimonials() {
   return (
     <section className="tc-section">
       <span className="tc-label">Testimonials</span>
       <h2 className="tc-heading">Loved by thousands</h2>
       <p className="tc-sub">Real people · Real results</p>
 
-      <div
-        className="tc-stage"
-        onMouseEnter={stopAuto}       
-  onMouseLeave={startAuto}
-        onTouchStart={e => {
-          stopAuto()
-          startXRef.current = e.touches[0].clientX
-        }}
-        onTouchEnd={e => {
-          const dx = e.changedTouches[0].clientX - startXRef.current
-          if (dx < -40) next(); else if (dx > 40) prev()
-          startAuto()
-        }}
-        onMouseDown={e => { startXRef.current = e.clientX }}
-        onMouseUp={e => {
-          const dx = e.clientX - startXRef.current
-          startXRef.current = null
-          if (dx < -30) next(); else if (dx > 30) prev()
-        }}
-      >
-        <div className="tc-track">
-          {reviews.map((review, i) => {
-            const pos = getPosition(i, current, reviews.length)
-            return (
-              <div
-                key={i}
-                className={`tc-card ${i === displayed ? 'tc-card--active' : 'tc-card--side'}`}
-                style={{
-                  transform: `translateX(${pos.x}px) scale(${pos.scale})`,
-                  opacity: pos.opacity,
-                  zIndex: pos.z,
-                  boxShadow: pos.shadow,
-                  backgroundColor: i === displayed ? TERRACOTTA : LIGHT,
-                }}
-                onClick={() => {
-                  if (i !== current) {
-                    setCurrent(i)
-                    setTimeout(() => setDisplayed(i), 50)
-                  }
-                }}
-              >
-                <div className="tc-card__top">
-                  <StarRating rating={review.rating} isActive={i === displayed} />
-                  <p className="tc-card__quote">{review.quote}</p>
-                </div>
-                <div className="tc-card__bottom">
-                  <div className="tc-card__line" />
-                  <p className="tc-card__author">{review.author}</p>
-                  <p className="tc-card__location">{review.location}</p>
-                  <span className="tc-card__tag">{review.product}</span>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-        <button className="tc-nav tc-nav--prev" onClick={prev} aria-label="Previous">&#8249;</button>
-        <button className="tc-nav tc-nav--next" onClick={next} aria-label="Next">&#8250;</button>
-      </div>
-
-      <div className="tc-dots">
-        {reviews.map((_, i) => (
-          <button
-            key={i}
-            className={`tc-dot${i === current ? ' tc-dot--active' : ''}`}
-            onClick={() => { setCurrent(i); setTimeout(() => setDisplayed(i), 50) }}
-            aria-label={`Go to slide ${i + 1}`}
-          />
+      {/* ---------- Section 1: video reviews ---------- */}
+      <div className="tv-row">
+        {videoReviews.map(review => (
+          <VideoReviewCard key={review.id} review={review} />
         ))}
       </div>
-      <p className="tc-counter">{current + 1} of {reviews.length}</p>
+
+      <div className="tc-divider" />
+
+      {/* ---------- Section 2: written reviews ---------- */}
+      <QuoteSlider />
     </section>
   )
 }
+
+
 
 /* ============================================================
    RECOGNITION
@@ -995,14 +1024,7 @@ const prev = () => {
                 <motion.p key={`desc-${activeIndex}`} className="rec-desc" initial={{opacity:0,x:-20}} animate={{opacity:1,x:0}} transition={{duration:0.3,delay:0.15}}>
                   {active.description}
                 </motion.p>
-                <motion.div key={`cta-${activeIndex}`} initial={{opacity:0,x:-20}} animate={{opacity:1,x:0}} transition={{duration:0.3,delay:0.2}}>
-                  <a href={active.blogUrl} className="rec-cta" target="_blank" rel="noopener noreferrer">
-                    <span>Read Full Story</span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
-                  </a>
-                </motion.div>
+                
               </div>
             </div>
           </div>
@@ -1084,7 +1106,7 @@ function FounderSection(){
         </div>
 
         <motion.div className="fnd-condensed-cta-wrap" {...viewProps(0.3)}>
-          <Link href="/about" className="fnd-condensed-cta">
+          <Link href="/our-story/about" className="fnd-condensed-cta">
             Know More
             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -1293,7 +1315,15 @@ function CommunityShowcase(){
                   <svg fill="currentColor" viewBox="0 0 24 24" width="28" height="28"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
                   <span>@Kalpavristi_Coco_FAB</span>
                 </a>
-                <button className="com-join-btn">
+                <button
+                  className="com-join-btn"
+                  onClick={() =>
+                    window.open(
+                      "https://www.instagram.com/Kalpavristi_Coco_FAB",
+                      "_blank"
+                    )
+                  }
+                >
                   <span>Join Our Family</span>
                   <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                 </button>
@@ -1386,6 +1416,7 @@ function StatsSection() {
 export default function Home(){
     return(
         <>
+          <BannerStrip position="homepage" />
           <HeroSection />
           <WhyUsBanner />
           <RangeCategories />

@@ -1,3 +1,7 @@
+/* =========================================================
+   storefront.module.css
+   ========================================================= */
+
 .shell {
   min-height: 100vh;
   background: var(--cream);
@@ -5,11 +9,12 @@
   font-family: "DM Sans", Arial, sans-serif;
 }
 
+/* ── NAV ── */
 .nav {
   position: sticky;
   top: 0;
-  z-index: 20;
-  background: rgba(253, 246, 236, 0.94);
+  z-index: 100;
+  background: rgba(250, 246, 239, 0.96);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(10px);
 }
@@ -28,17 +33,20 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  text-decoration: none;
   font-weight: 800;
-  letter-spacing: .04em;
+  letter-spacing: 0.04em;
 }
 
 .brand span {
   color: var(--coco);
+  font-family: "Cormorant Garamond", serif;
+  font-size: 25px;
 }
 
 .brand img {
-  width: 56px;
-  height: 56px;
+  width: 70px;
+  height: 70px;
   object-fit: contain;
 }
 
@@ -46,10 +54,42 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  color: var(--coco-mid);
   font-size: 14px;
 }
 
+/* THIS is the missing fix — color on anchor tags */
+.links a {
+  color: var(--coco-mid);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.links a:hover {
+  color: var(--coco-mid);
+}
+
+.links a.activeLink,
+.mobileMenu a.activeLink {
+  color: var(--coco);
+  font-weight: 700;
+}
+
+.links a.activeLink {
+  position: relative;
+}
+
+.links a.activeLink::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -14px;
+  height: 2px;
+  background: var(--coco);
+}
+
+/* ── BUTTONS ── */
 .pill,
 .ghost,
 .goldBtn,
@@ -64,12 +104,17 @@
   gap: 8px;
   min-height: 42px;
   border-radius: 8px;
+  text-decoration: none;
 }
-
 .pill {
   padding: 0 16px;
-  color: var(--cream);
-  background: var(--coco);
+  color: #ffffff !important;
+  background: var(--coco-mid);
+  font-weight: 600;
+  font-size: 14px;
+  min-height: 36px;
+  border-radius: 6px;
+  text-decoration: none;
 }
 
 .ghost {
@@ -79,12 +124,33 @@
   border: 1px solid var(--border);
 }
 
+.goldBtn {
+  padding: 0 20px;
+  background: var(--gold);
+  color: var(--coco);
+  font-weight: 800;
+}
+
+.brownBtn {
+  padding: 0 20px;
+  background: var(--coco);
+  color: var(--cream);
+  font-weight: 800;
+}
+
+.iconBtn {
+  background: var(--cream);
+  color: var(--coco);
+  border: 1px solid var(--border);
+}
+
+/* ── HERO ── */
 .hero {
   max-width: 1180px;
   margin: 0 auto;
   padding: 56px 22px 36px;
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(280px, .9fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
   gap: 34px;
   align-items: center;
 }
@@ -92,7 +158,7 @@
 .hero h1 {
   font-family: "Cormorant Garamond", serif;
   font-size: clamp(46px, 7vw, 86px);
-  line-height: .95;
+  line-height: 0.95;
   letter-spacing: 0;
   margin: 0 0 18px;
 }
@@ -109,20 +175,6 @@
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 26px;
-}
-
-.goldBtn {
-  padding: 0 20px;
-  background: var(--gold);
-  color: var(--coco);
-  font-weight: 800;
-}
-
-.brownBtn {
-  padding: 0 20px;
-  background: var(--coco);
-  color: var(--cream);
-  font-weight: 800;
 }
 
 .heroImage {
@@ -144,6 +196,7 @@
   object-position: center top;
 }
 
+/* ── SECTIONS ── */
 .band {
   background: var(--white);
   border-top: 1px solid var(--border);
@@ -174,6 +227,7 @@
   color: var(--coco-light);
 }
 
+/* ── GRID & CARDS ── */
 .grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -189,7 +243,7 @@
 }
 
 .cardImg {
-  aspect-ratio: 1 / .78;
+  aspect-ratio: 1 / 0.78;
   background: var(--cream-warm);
 }
 
@@ -231,12 +285,7 @@
   gap: 8px;
 }
 
-.iconBtn {
-  background: var(--cream);
-  color: var(--coco);
-  border: 1px solid var(--border);
-}
-
+/* ── FORMS ── */
 .formWrap {
   max-width: 480px;
   margin: 42px auto;
@@ -280,9 +329,10 @@
   font-weight: 700;
 }
 
+/* ── ACCOUNT / STORY ── */
 .accountGrid {
   display: grid;
-  grid-template-columns: .8fr 1.2fr;
+  grid-template-columns: 0.8fr 1.2fr;
   gap: 18px;
 }
 
@@ -293,13 +343,9 @@
   gap: 16px;
 }
 
-.benefitGrid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
 .storySplit {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(280px, .9fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
   gap: 24px;
   align-items: start;
 }
@@ -320,6 +366,39 @@
   padding: 14px 0;
 }
 
+/* ── MOBILE MENU ── */
+.mobileMenu {
+  display: none;
+}
+
+.mobileMenuOpen {
+  display: flex;
+  flex-direction: column;
+  background: rgba(253, 246, 236, 0.97);
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.mobileMenu a {
+  padding: 12px 22px;
+  font-size: 15px;
+  color: var(--coco-mid);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.mobileMenu a:hover {
+  color: var(--coco);
+  border-left-color: var(--coco);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.mobileMenuBtn {
+  display: none;
+}
+
+/* ── RESPONSIVE ── */
 @media (max-width: 850px) {
   .hero,
   .accountGrid,
@@ -339,8 +418,50 @@
   }
 }
 
+@media (max-width: 768px) {
+  .navInner {
+    width: 100%;
+    padding: 8px 10px;
+    gap: 8px;
+    box-sizing: border-box;
+  }
+
+  .brand img {
+    width: 36px;
+    height: 36px;
+  }
+
+  .brand span {
+    font-size: 0.85rem;
+  }
+
+  .mobileMenuBtn {
+    display: flex;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 22px;
+    color: var(--coco);
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Hide text nav links */
+  .links > a:not(:nth-last-child(-n+3)) {
+    display: none;
+  }
+
+  .pill {
+    padding: 6px 9px;
+    font-size: 0.75rem;
+  }
+
+  .mobileMenuOpen {
+    display: flex;
+  }
+}
+
 @media (max-width: 560px) {
-  .navInner,
   .sectionTop {
     align-items: flex-start;
     flex-direction: column;

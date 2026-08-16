@@ -64,6 +64,21 @@
   transition: background-color 360ms ease, box-shadow 360ms ease;
 }
 
+.cardExpanded[data-product="jeera"] .showcase {
+  background: #D99B21;
+  box-shadow: 0 1rem 2.4rem rgba(54, 28, 13, 0.18);
+}
+
+.cardExpanded[data-product="methi"] .showcase {
+  background: #978F66;
+  box-shadow: 0 1rem 2.4rem rgba(54, 28, 13, 0.18);
+}
+
+.cardExpanded[data-product="moringa"] .showcase {
+  background: #0D530E;
+  box-shadow: 0 1rem 2.4rem rgba(54, 28, 13, 0.18);
+}
+
 .cardExpanded[data-product="onion"] .showcase {
   background: #4a2e58;
   box-shadow: 0 1rem 2.4rem rgba(54, 28, 13, 0.18);
@@ -240,6 +255,24 @@
   cursor: pointer;
 }
 
+.offer {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 10px 0 4px;
+}
+
+.offerDetails {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 4px 0;
+}
+
+.delivery {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 4px 0 10px;
+}
+
 .wishlistOutwardLeft { left: 1rem; }
 .wishlistOutwardRight { right: 1rem; }
 .wishlistActive { background: rgba(255, 243, 233, 0.2); }
@@ -337,9 +370,19 @@
 
   .section {
     min-height: 100svh;
-    margin-top: 10rem;
     grid-template-rows: 28vh minmax(0, 1fr);
   }
+
+.headingArea {
+  padding: 3rem 20px 2rem;
+  align-items: flex-end;
+}
+
+.heading {
+  font-size: 3rem;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+}
   .products {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));

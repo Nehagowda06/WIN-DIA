@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/src/frontend/lib/supabase/client';
+import { useState, useRef, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
 import styles from './register.module.css';
 
 const TAGLINES = [
@@ -12,17 +12,16 @@ const TAGLINES = [
   'Nourish, Naturally',
 ];
 
-const EMPTY_DETAILS = { full_name: '', email: '', phone: '', password: '' };
-
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState(EMPTY_DETAILS);
+  const [form, setForm] = useState({ full_name: '', email: '', phone: '', password: '' });
   const [otpDigits, setOtpDigits] = useState(['', '', '', '']);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [taglineIndex, setTaglineIndex] = useState(0);
   const otpRefs = useRef([]);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -32,9 +31,11 @@ export default function RegisterPage() {
   }, []);
 
   useEffect(() => {
-    const timers = [100, 600].map((delay) => window.setTimeout(() => setForm({ ...EMPTY_DETAILS }), delay));
-    return () => timers.forEach((timer) => window.clearTimeout(timer));
-  }, []);
+    const prefill = searchParams.get('email');
+    if (prefill) {
+      setForm((prev) => ({ ...prev, email: prefill }));
+    }
+  }, [searchParams]);
 
   /* === Step 1: submit details, trigger OTP === */
   const handleDetailsSubmit = async (e) => {
@@ -56,22 +57,27 @@ export default function RegisterPage() {
         return;
       }
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: form.email,
-        password: form.password,
-      });
-
-      if (signInError) {
-        setError(signInError.message || 'Account created, but automatic sign in failed. Please log in.');
-        return;
-      }
-
-      window.location.replace('/');
+      setStep(2);
     } catch (err) {
       console.error('Register error:', err);
       setError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  /* === Google OAuth sign-in/sign-up === */
+  const handleGoogleSignIn = async () => {
+    setError('');
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) {
+      console.error('Google sign-in error:', error.message);
+      setError('Could not sign in with Google. Please try again.');
     }
   };
 
@@ -87,9 +93,21 @@ export default function RegisterPage() {
     }
   };
 
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
   const handleVerify = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (otpDigits.some((d) => d === '')) {
+      setError('Please enter all 4 digits.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -110,23 +128,7 @@ export default function RegisterPage() {
         return;
       }
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: form.email,
-        password: form.password,
-      });
-
-      if (signInError) {
-        router.push('/login');
-        return;
-      }
-
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        router.push('/login');
-        return;
-      }
-
-      window.location.replace('/');
+      router.push('/');
     } catch (err) {
       console.error('Verify error:', err);
       setError('Something went wrong. Please try again.');
@@ -149,17 +151,7 @@ export default function RegisterPage() {
     }
   };
 
-  const handleGoogleSignup = async () => {
-    setError('');
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/` },
-    });
-
-    if (oauthError) {
-      setError(oauthError.message || 'Could not start Google sign up.');
-    }
-  };
+  const otpComplete = otpDigits.every((d) => d !== '');
 
   return (
     <div className={styles.page}>
@@ -175,20 +167,11 @@ export default function RegisterPage() {
           {step === 1 ? (
             <>
               <h1 className={styles.title}>Join WINDIA</h1>
-              <p className={styles.subtitleMuted}>Step 1 of 2 - your details</p>
+              <p className={styles.subtitleMuted}>Step 1 of 2 — your details</p>
 
-              <button type="button" className={styles.googleBtn} onClick={handleGoogleSignup}>
-                <img src="/icons/google.svg" alt="" className={styles.googleIcon} />
-                Continue with Google
-              </button>
-
-              <div className={styles.divider}><span>or</span></div>
-
-              <form onSubmit={handleDetailsSubmit} autoComplete="off">
+              <form onSubmit={handleDetailsSubmit}>
                 <input
                   type="text"
-                  name="windia_signup_full_name"
-                  autoComplete="off"
                   placeholder="Full name"
                   className={styles.input}
                   value={form.full_name}
@@ -197,8 +180,6 @@ export default function RegisterPage() {
                 />
                 <input
                   type="email"
-                  name="windia_signup_email"
-                  autoComplete="new-password"
                   placeholder="Email"
                   className={styles.input}
                   value={form.email}
@@ -207,8 +188,6 @@ export default function RegisterPage() {
                 />
                 <input
                   type="tel"
-                  name="windia_signup_phone"
-                  autoComplete="off"
                   placeholder="Phone number"
                   className={styles.input}
                   value={form.phone}
@@ -217,8 +196,6 @@ export default function RegisterPage() {
                 />
                 <input
                   type="password"
-                  name="windia_signup_password"
-                  autoComplete="new-password"
                   placeholder="Password"
                   className={styles.input}
                   value={form.password}
@@ -232,11 +209,29 @@ export default function RegisterPage() {
                   {loading ? 'Please wait...' : 'CONTINUE'}
                 </button>
               </form>
+
+              <div className={styles.orDivider}>
+                <span>or</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                className={styles.googleBtn}
+              >
+                <svg width="18" height="18" viewBox="0 0 48 48">
+                  <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+                  <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+                  <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
+                  <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+                </svg>
+                Continue with Google
+              </button>
             </>
           ) : (
             <>
               <h1 className={styles.title}>Verify your email</h1>
-              <p className={styles.subtitle}>Step 2 of 2 - enter the code</p>
+              <p className={styles.subtitle}>Step 2 of 2 — enter the code</p>
               <p className={styles.subtitleMuted}>Sent to {form.email}</p>
 
               <form onSubmit={handleVerify}>
@@ -251,12 +246,13 @@ export default function RegisterPage() {
                       className={styles.otpBox}
                       value={digit}
                       onChange={(e) => handleOtpChange(i, e.target.value)}
+                      onKeyDown={(e) => handleOtpKeyDown(i, e)}
                     />
                   ))}
                 </div>
 
                 <p className={styles.resendRow}>
-                  Didn&apos;t get it?{' '}
+                  Didn't get it?{' '}
                   <button type="button" className={styles.resendLink} onClick={handleResend}>
                     Resend OTP
                   </button>
@@ -264,7 +260,7 @@ export default function RegisterPage() {
 
                 {error && <p className={styles.error}>{error}</p>}
 
-                <button type="submit" className={styles.submitBtn} disabled={loading}>
+                <button type="submit" className={styles.submitBtn} disabled={loading || !otpComplete}>
                   {loading ? 'Verifying...' : 'VERIFY & CREATE ACCOUNT'}
                 </button>
               </form>
@@ -299,5 +295,13 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterForm />
+    </Suspense>
   );
 }

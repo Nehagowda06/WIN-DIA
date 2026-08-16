@@ -17,6 +17,7 @@ import { logger } from '../utils/logger.util';
 import { container, RepositoryTokens, ServiceTokens } from '../providers/container.provider';
 import { stableProductUuid } from '../utils/helpers.util';
 import { getAdminClient } from '../config/supabase.config';
+import { BundlePricing, calculateBundlePricing, calculateOrderTotal } from '../constants/bundle-pricing.constants';
 
 export interface CheckoutResult {
   order: Order;
@@ -138,16 +139,20 @@ export class CheckoutServiceImpl implements CheckoutService {
       }
       console.log(`[TRACE STEP 3: CART_LOOKUP] SUCCESS | Time: ${step3Time}ms | Items Count: ${rawItems.length}`, rawItems);
 
-      // STEP 4: ORDER_PAYLOAD_CREATION & STOCK_VALIDATION
+      // STEP 4: ORDER_PAYLOAD_CREATION & STOCK_VALIDATION (BUNDLE PRICING ENFORCED)
       const step4Start = Date.now();
-      console.log(`[TRACE STEP 4: ORDER_PAYLOAD_CREATION & STOCK_VALIDATION] Mapping items to order snapshots`);
+      console.log(`[TRACE STEP 4: ORDER_PAYLOAD_CREATION & STOCK_VALIDATION] Mapping items to order snapshots with BUNDLE PRICING`);
       const preparedOrderItems: Record<string, unknown>[] = [];
       let subtotal = 0;
 
       for (const item of rawItems) {
-        const qty = Math.max(1, parseInt(item.qty || item.quantity) || 1);
-        const unitPrice = Math.max(0, Number(item.price || item.unit_price) || 0);
-        const itemTotal = unitPrice * qty;
+        // qty from frontend represents number of BUNDLES (enforced by frontend selector)
+        const bundles = Math.max(BundlePricing.MIN_BUNDLES, Math.min(BundlePricing.MAX_BUNDLES_PER_ITEM, Math.floor(parseInt(item.qty || item.quantity) || 1)));
+        const bundlePricing = calculateBundlePricing(bundles);
+
+        // SERVER-SIDE PRICE ENFORCEMENT: Never trust frontend-sent price.
+        // Price is ALWAYS BundlePricing.BUNDLE_PRICE per bundle, regardless of what frontend sends.
+        const itemTotal = bundlePricing.lineTotal;
         subtotal += itemTotal;
 
         const rawId = item.productId || item.product_id || item.id || item._id;
@@ -161,27 +166,33 @@ export class CheckoutServiceImpl implements CheckoutService {
             await adminClient.from('products').upsert({
               id: validProductId,
               name: item.name || item.product_name || 'WIN-DIA Product',
-              price: unitPrice || 99,
+              price: BundlePricing.BUNDLE_PRICE,
               count_in_stock: 999,
               is_active: true,
             });
           }
         } catch (_) {}
 
-        // Wrap stock validation call individually
-        console.log(`[TRACE STEP 4: STOCK_VALIDATION] Calling InventoryService.validateStock for productId: ${validProductId}, qty: ${qty}`);
-        const stockRes = await this.inventoryService.validateStock(validProductId, qty);
+        // Stock validation: check against packets to be SHIPPED (12 per bundle)
+        // This is the real quantity that leaves the warehouse
+        console.log(`[TRACE STEP 4: STOCK_VALIDATION] Calling InventoryService.validateStock for productId: ${validProductId}, packetsShipped: ${bundlePricing.packetsShipped}`);
+        const stockRes = await this.inventoryService.validateStock(validProductId, bundlePricing.packetsShipped);
         if (!stockRes.success) {
-          console.log(`[TRACE STEP 4: STOCK_VALIDATION] Stock check skipped/fallback:`, stockRes.error);
+          console.log(`[TRACE STEP 4: STOCK_VALIDATION] Insufficient stock:`, stockRes.error);
+          return failure(new ValidationError(
+            `Insufficient stock for "${item.name || 'product'}". Requested ${bundles} bundle(s) (${bundlePricing.packetsShipped} packets) but not enough inventory available.`
+          ));
         }
 
         preparedOrderItems.push({
           product_id: validProductId,
           name: item.name || item.product_name || 'WIN-DIA Product',
-          price: unitPrice || 99,
-          qty: qty,
+          // Store bundle price as the unit price (price per bundle)
+          price: BundlePricing.BUNDLE_PRICE,
+          // qty = number of bundles ordered
+          qty: bundles,
           flavor: item.flavor || null,
-          net_weight_grams: Number(item.net_weight_grams || item.net_weight || item.netWeight || 200),
+          net_weight_grams: Number(item.net_weight_grams || item.net_weight || item.netWeight || 200) * bundlePricing.packetsShipped,
           image: item.image || item.image_url || null,
         });
       }
@@ -191,6 +202,7 @@ export class CheckoutServiceImpl implements CheckoutService {
       // STEP 5: COUPON_VALIDATION
       const step5Start = Date.now();
       let discount = 0;
+      let validatedCouponId: string | null = null;
       if (dto.coupon_code) {
         console.log(`[TRACE STEP 5: COUPON_VALIDATION] Calling CouponService.calculateDiscount for code: ${dto.coupon_code}`);
         const couponRes = await this.couponService.calculateDiscount({
@@ -199,20 +211,22 @@ export class CheckoutServiceImpl implements CheckoutService {
         });
         if (couponRes.success) {
           discount = couponRes.value.discountAmount;
+          validatedCouponId = couponRes.value.coupon.id;
           console.log(`[TRACE STEP 5: COUPON_VALIDATION] SUCCESS | Discount: ${discount}`);
         } else {
+          // Invalid/expired coupon — reject checkout, do not silently ignore
           console.log(`[TRACE STEP 5: COUPON_VALIDATION] FAILURE | Error:`, couponRes.error);
+          return failure(couponRes.error);
         }
       }
       const step5Time = Date.now() - step5Start;
       console.log(`[TRACE STEP 5: COUPON_VALIDATION] Finished | Time: ${step5Time}ms`);
 
-      // STEP 6: PRICING_CALCULATION
-      const shipping = subtotal >= 499 ? 0 : ((dto as any).deliverySpeed === 'express' ? 150 : 50);
-      const taxableAmount = Math.max(0, subtotal - discount);
-      const tax = Math.round(taxableAmount * 0.05 * 100) / 100;
-      const total = Math.round((taxableAmount + tax + shipping) * 100) / 100;
-      console.log(`[TRACE STEP 6: PRICING_CALCULATION] Pricing:`, { subtotal, discount, tax, shipping, total });
+      // STEP 6: PRICING_CALCULATION (SERVER-SIDE ONLY — FREE DELIVERY ENFORCED)
+      // Shipping is ALWAYS ₹0. This is hardcoded and cannot be overridden by frontend.
+      const orderPricing = calculateOrderTotal(subtotal, discount);
+      const { shipping, tax, total } = orderPricing;
+      console.log(`[TRACE STEP 6: PRICING_CALCULATION] Pricing (FREE DELIVERY enforced):`, orderPricing);
 
       // STEP 7: RPC_INVOCATION & ORDER_CREATION
       const step7Start = Date.now();
@@ -254,7 +268,7 @@ export class CheckoutServiceImpl implements CheckoutService {
           payment_method: selectedPaymentMethod,
         },
         {
-          courier_name: 'NimbusPost',
+          courier_name: 'Shiprocket',
           status: 'pending',
         }
       );
@@ -338,10 +352,15 @@ export class CheckoutServiceImpl implements CheckoutService {
         createdShipment = shipRes.value;
       }
 
-      // STEP 9: CLEAR_CART
+      // STEP 9: CLEAR_CART & INCREMENT COUPON USAGE
       const cartRes = await this.cartService.getCart(userId);
       if (cartRes.success && cartRes.value.cart) {
         await this.cartService.clearCart(cartRes.value.cart.id);
+      }
+
+      // Increment coupon usage count to prevent double-use
+      if (validatedCouponId) {
+        await this.couponService.incrementUsage(validatedCouponId);
       }
 
       const totalProcessTime = Date.now() - startTime;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import './addresses.css';
 
 const EMPTY_FORM = {
@@ -17,17 +17,14 @@ export default function AddressesPage() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const loadAddresses = useCallback(async () => {
+  const loadAddresses = async () => {
     const res = await fetch('/api/addresses');
     const result = await res.json();
     if (res.ok) setAddresses(result.addresses);
     setLoading(false);
-  }, []);
+  };
 
-  useEffect(() => {
-    const timer = window.setTimeout(loadAddresses, 0);
-    return () => window.clearTimeout(timer);
-  }, [loadAddresses]);
+  useEffect(() => { loadAddresses(); }, []);
 
   const openAddForm = () => {
     setForm(EMPTY_FORM);

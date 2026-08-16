@@ -22,9 +22,12 @@ type Product = {
   readonly image: StaticImageData;
   readonly description: string;
   readonly price: string;
-  readonly rating: string;
-  readonly reviews: string;
-  readonly reviewList: readonly string[];
+  readonly offer?: string;
+  readonly offerDetails?: string;
+  readonly delivery?: string;
+  readonly rating?: string;
+  readonly reviews?: string;
+  readonly reviewList?: readonly string[];
 };
 
 type ProductRangeProps = {
@@ -37,7 +40,6 @@ type ProductRangeProps = {
 type ProductInteraction = {
   readonly isWishlisted: boolean;
   readonly quantity: number;
-  readonly reviewsOpen: boolean;
 };
 
 function toStoreProduct(product: Product, collection: ProductRangeProps["theme"]) {
@@ -69,12 +71,16 @@ export function ProductRange({ heading, headingId, products, theme }: ProductRan
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [phase, setPhase] = useState<ShowcasePhase>("idle");
   const [interactions, setInteractions] = useState<Record<string, ProductInteraction>>(() =>
-    Object.fromEntries(products.map((product) => [product.id, {
-      isWishlisted: false,
-      quantity: 0,
-      reviewsOpen: false,
-    }])),
-  );
+  Object.fromEntries(
+    products.map((product) => [
+      product.id,
+      {
+        isWishlisted: false,
+        quantity: 0,
+      },
+    ])
+  )
+);
   const [wishlistSparkles, setWishlistSparkles] = useState<string | null>(null);
   const [cartSparkles, setCartSparkles] = useState<string | null>(null);
   const timers = useRef<number[]>([]);
@@ -179,7 +185,7 @@ export function ProductRange({ heading, headingId, products, theme }: ProductRan
                 updateInteraction(product.id, { isWishlisted: nextWishlisted });
                 if (nextWishlisted) pulse(product.id, "wishlist");
               }}
-              onToggleReviews={() => updateInteraction(product.id, { reviewsOpen: !interactions[product.id].reviewsOpen })}
+              
               onQuantityChange={(quantity) => {
                 const nextQuantity = Math.max(0, quantity);
                 const currentQuantity = interactions[product.id].quantity;
@@ -232,7 +238,6 @@ type ProductCardProps = {
   readonly onOpen: () => void;
   readonly onBack: () => void;
   readonly onToggleWishlist: () => void;
-  readonly onToggleReviews: () => void;
   readonly onQuantityChange: (quantity: number) => void;
   readonly onBuyNow: () => void;
 };
@@ -254,7 +259,6 @@ function ProductCard({
   onOpen,
   onBack,
   onToggleWishlist,
-  onToggleReviews,
   onQuantityChange,
   onBuyNow,
 }: ProductCardProps) {
@@ -363,32 +367,21 @@ function ProductCard({
                 <h3 className={styles.infoName}>{product.name}</h3>
                 <p className={styles.flavour}>Flavour: {product.flavour}</p>
                 <p className={styles.description}>{product.description}</p>
-                <p className={styles.rating}>★★★★★ {product.rating}</p>
-                <p className={styles.reviewCount}>{product.reviews} Reviews</p>
+                
                 <p className={styles.price}>{product.price}</p>
+                {product.offer && (
+                  <p className={styles.offer}>{product.offer}</p>
+                )}
 
-                <div className={styles.reviews}>
-                  <button className={styles.reviewsTrigger} type="button" aria-expanded={interaction.reviewsOpen} onClick={onToggleReviews}>
-                    {interaction.reviewsOpen ? "▲" : "▼"} Reviews ({product.reviews})
-                  </button>
-                  <AnimatePresence initial={false}>
-                    {interaction.reviewsOpen && (
-                      <motion.div
-                        className={styles.reviewList}
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.28, ease: "easeInOut" }}
-                      >
-                        {product.reviewList.map((review, index) => (
-                          <motion.p key={review} className={styles.review} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }} transition={{ duration: 0.2, delay: index * 0.07 }}>
-                            <strong>Customer {index + 1}</strong> {review}
-                          </motion.p>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                {product.offerDetails && (
+                  <p className={styles.offerDetails}>{product.offerDetails}</p>
+                )}
+
+                {product.delivery && (
+                  <p className={styles.delivery}>{product.delivery}</p>
+                )}
+
+                
 
                 <AnimatePresence mode="wait" initial={false}>
                   {interaction.quantity === 0 ? (

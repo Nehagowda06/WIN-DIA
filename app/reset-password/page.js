@@ -84,7 +84,7 @@ function ResetPasswordForm() {
           </div>
 
           <p className={styles.resendRow}>
-            Didn&apos;t get it?{' '}
+            Didn't get it?{' '}
             <button type="button" className={styles.resendLink} onClick={handleResend}>
               Resend OTP
             </button>

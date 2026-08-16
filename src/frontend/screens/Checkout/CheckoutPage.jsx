@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   FiArrowLeft, FiCheck, FiPlus, FiHome, FiBriefcase,
   FiMapPin, FiTruck, FiShield, FiCreditCard, FiPackage,
-  FiChevronRight, FiLoader, FiClock
+  FiChevronRight, FiLoader
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import { saveShippingAddress, savePaymentMethod, clearCart } from "@/src/frontend/redux/slices/cartSlice";
@@ -41,7 +41,6 @@ export default function CheckoutPage() {
   const [showForm, setShowForm] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [payMethod, setPayMethod] = useState("razorpay");
-  const [delivery, setDelivery] = useState("standard");
   const [notes, setNotes] = useState("");
   const [placing, setPlacing] = useState(false);
   const [couponCode] = useState(promoApplied ? "WINDIA10" : "");
@@ -96,10 +95,10 @@ export default function CheckoutPage() {
     return saved;
   };
 
-  // Calculations
+  // Calculations — SERVER-SIDE is the source of truth, this is display only
   const subtotal = cartItems.reduce((a, i) => a + i.price * i.qty, 0);
   const discount = couponApplied ? subtotal * 0.1 : 0;
-  const shipping = subtotal >= 499 ? 0 : (delivery === "express" ? 150 : 50);
+  const shipping = 0; // FREE DELIVERY — always ₹0, enforced server-side
   const tax = (subtotal - discount) * 0.05;
   const total = subtotal - discount + tax + shipping;
 
@@ -163,7 +162,7 @@ export default function CheckoutPage() {
           })),
           shippingAddress: { name: addr.name, phone: addr.phone, street: addr.street, city: addr.city, state: addr.state, pincode: addr.pincode },
           paymentMethod: payMethod, orderNotes: notes,
-          deliverySpeed: delivery, couponCode: couponApplied ? couponCode : null,
+          couponCode: couponApplied ? couponCode : null,
         }),
       });
       const data = await res.json();
@@ -371,21 +370,16 @@ export default function CheckoutPage() {
                 <motion.div key="s2" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className={styles.section}>
                   <h2>Payment & Delivery</h2>
 
-                  {/* Delivery options */}
+                  {/* Delivery — Always Free */}
                   <div className={styles.optGroup}>
-                    <h3>Delivery Speed</h3>
+                    <h3>Delivery</h3>
                     <div className={styles.optGrid}>
-                      {[
-                        { id: "standard", label: "Standard", sub: "3–5 business days", cost: subtotal >= 499 ? "FREE" : "₹50", icon: FiTruck },
-                        { id: "express", label: "Express", sub: "1–2 business days", cost: "₹150", icon: FiClock },
-                      ].map(({ id, label, sub, cost, icon: Icon }) => (
-                        <motion.div key={id} className={`${styles.optCard} ${delivery === id ? styles.optSelected : ""}`} onClick={() => setDelivery(id)} whileHover={{ y: -2 }}>
-                          <span className={`${styles.optRadio} ${delivery === id ? styles.optRadioChecked : ""}`}>{delivery === id && <FiCheck />}</span>
-                          <Icon className={styles.optIcon} />
-                          <div><p className={styles.optLabel}>{label}</p><p className={styles.optSub}>{sub}</p></div>
-                          <span className={styles.optCost}>{cost}</span>
-                        </motion.div>
-                      ))}
+                      <motion.div className={`${styles.optCard} ${styles.optSelected}`} whileHover={{ y: -2 }}>
+                        <span className={`${styles.optRadio} ${styles.optRadioChecked}`}><FiCheck /></span>
+                        <FiTruck className={styles.optIcon} />
+                        <div><p className={styles.optLabel}>Free Delivery</p><p className={styles.optSub}>3–5 business days</p></div>
+                        <span className={styles.optCost}>FREE</span>
+                      </motion.div>
                     </div>
                   </div>
 
@@ -441,7 +435,7 @@ export default function CheckoutPage() {
               <div className={styles.breakdown}>
                 <div className={styles.bRow}><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
                 {couponApplied && <div className={`${styles.bRow} ${styles.bDiscount}`}><span>Discount (10%)</span><span>−₹{discount.toFixed(2)}</span></div>}
-                <div className={styles.bRow}><span>Shipping</span><span className={shipping === 0 ? styles.free : ""}>{shipping === 0 ? "FREE" : `₹${shipping}`}</span></div>
+                <div className={styles.bRow}><span>Shipping</span><span className={styles.free}>FREE</span></div>
                 <div className={styles.bRow}><span>GST (5%)</span><span>₹{tax.toFixed(2)}</span></div>
               </div>
 
