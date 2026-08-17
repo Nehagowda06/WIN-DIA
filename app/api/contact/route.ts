@@ -4,6 +4,13 @@ import { ContactService } from '@/src/backend/services/contact.service';
 import { getAdminUserContext, handleServiceResult } from '@/src/backend/utils/route-helper.util';
 import { createErrorResponse } from '@/src/backend/types/api-response.types';
 
+function handleUnexpectedError(err: any) {
+  return NextResponse.json(
+    createErrorResponse('INTERNAL_SERVER_ERROR', err.message || 'An unexpected error occurred'),
+    { status: 500 }
+  );
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
@@ -12,10 +19,7 @@ export async function POST(request: Request) {
 
     return handleServiceResult(result, 201);
   } catch (err: any) {
-    return NextResponse.json(
-      createErrorResponse('INTERNAL_SERVER_ERROR', err.message || 'An unexpected error occurred'),
-      { status: 500 }
-    );
+    return handleUnexpectedError(err);
   }
 }
 
@@ -31,10 +35,7 @@ export async function GET(request: Request) {
 
     return handleServiceResult(result);
   } catch (err: any) {
-    return NextResponse.json(
-      createErrorResponse('INTERNAL_SERVER_ERROR', err.message || 'An unexpected error occurred'),
-      { status: 500 }
-    );
+    return handleUnexpectedError(err);
   }
 }
 
@@ -60,9 +61,6 @@ export async function PATCH(request: Request) {
 
     return handleServiceResult(result);
   } catch (err: any) {
-    return NextResponse.json(
-      createErrorResponse('INTERNAL_SERVER_ERROR', err.message || 'An unexpected error occurred'),
-      { status: 500 }
-    );
+    return handleUnexpectedError(err);
   }
 }

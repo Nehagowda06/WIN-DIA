@@ -1,4 +1,9 @@
-.shell {
+/* =========================================================
+   Layout shell
+   ========================================================= */
+
+.shell,
+.adminShell {
   min-height: 100vh;
   background: var(--cream);
   color: var(--coco);
@@ -6,13 +11,18 @@
 }
 
 .adminShell {
-  min-height: 100vh;
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
-  background: var(--cream);
-  color: var(--coco);
-  font-family: "DM Sans", Arial, sans-serif;
 }
+
+.adminContent {
+  padding: 34px 34px 56px;
+  overflow-x: hidden;
+}
+
+/* =========================================================
+   Sidebar / nav
+   ========================================================= */
 
 .sidebar {
   position: sticky;
@@ -68,9 +78,35 @@
   word-break: break-word;
 }
 
-.adminContent {
-  padding: 34px 34px 56px;
-  overflow-x: hidden;
+/* =========================================================
+   Headings
+   ========================================================= */
+
+.top h1,
+.topTitle,
+.panelHeader h2,
+.notice h1 {
+  font-family: "Cormorant Garamond", serif;
+}
+
+.top h1 {
+  font-size: 46px;
+  margin: 0 0 6px;
+}
+
+.topTitle {
+  font-size: 42px;
+  margin: 0 0 6px;
+}
+
+.panelHeader h2 {
+  font-size: 30px;
+  margin: 0;
+}
+
+.notice h1 {
+  font-size: 38px;
+  margin-bottom: 10px;
 }
 
 .top {
@@ -79,18 +115,6 @@
   gap: 18px;
   align-items: end;
   margin-bottom: 24px;
-}
-
-.top h1 {
-  font-family: "Cormorant Garamond", serif;
-  font-size: 46px;
-  margin: 0 0 6px;
-}
-
-.topTitle {
-  font-family: "Cormorant Garamond", serif;
-  font-size: 42px;
-  margin: 0 0 6px;
 }
 
 .muted {
@@ -106,6 +130,10 @@
   font-size: 13px;
   font-weight: 800;
 }
+
+/* =========================================================
+   Stat cards / panels
+   ========================================================= */
 
 .grid {
   display: grid;
@@ -155,11 +183,9 @@
   border-bottom: 1px solid var(--border);
 }
 
-.panelHeader h2 {
-  font-family: "Cormorant Garamond", serif;
-  font-size: 30px;
-  margin: 0;
-}
+/* =========================================================
+   Table
+   ========================================================= */
 
 .tableWrap {
   overflow-x: auto;
@@ -196,6 +222,10 @@
   text-transform: capitalize;
 }
 
+/* =========================================================
+   Toolbar & buttons
+   ========================================================= */
+
 .toolbar {
   display: flex;
   justify-content: space-between;
@@ -222,6 +252,10 @@
   color: var(--coco);
   border: 1px solid var(--border);
 }
+
+/* =========================================================
+   Form inputs
+   ========================================================= */
 
 .input,
 .select,
@@ -270,6 +304,10 @@
   grid-column: 1 / -1;
 }
 
+/* =========================================================
+   Empty / notice states
+   ========================================================= */
+
 .empty {
   padding: 44px 18px;
   text-align: center;
@@ -281,12 +319,6 @@
   margin: 72px auto;
   padding: 28px;
   text-align: center;
-}
-
-.notice h1 {
-  font-family: "Cormorant Garamond", serif;
-  font-size: 38px;
-  margin-bottom: 10px;
 }
 
 .action {
@@ -301,6 +333,10 @@
   color: var(--coco);
   font-weight: 900;
 }
+
+/* =========================================================
+   Responsive
+   ========================================================= */
 
 @media (max-width: 940px) {
   .adminShell {

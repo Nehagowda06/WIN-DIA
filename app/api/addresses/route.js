@@ -2,16 +2,27 @@ import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 
+/* === Shared helpers === */
+
+async function getAuthenticatedUser() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+}
+
+function errorResponse(message, status) {
+  return NextResponse.json({ error: message }, { status });
+}
+
 /* === GET: list all addresses for the current user === */
 export async function GET() {
   try {
-    const supabase = await createSupabaseServerClient();
     const supabaseAdmin = createSupabaseAdminClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getAuthenticatedUser();
 
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-    }
+    if (!user) return errorResponse('Not authenticated.', 401);
 
     const { data: addresses, error } = await supabaseAdmin
       .from('addresses')
@@ -20,27 +31,22 @@ export async function GET() {
       .order('is_default', { ascending: false })
       .order('created_at', { ascending: false });
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
+    if (error) return errorResponse(error.message, 400);
 
     return NextResponse.json({ addresses });
   } catch (err) {
     console.error('Addresses GET error:', err);
-    return NextResponse.json({ error: err.message || 'Something went wrong.' }, { status: 500 });
+    return errorResponse(err.message || 'Something went wrong.', 500);
   }
 }
 
 /* === POST: create a new address === */
 export async function POST(request) {
   try {
-    const supabase = await createSupabaseServerClient();
     const supabaseAdmin = createSupabaseAdminClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getAuthenticatedUser();
 
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-    }
+    if (!user) return errorResponse('Not authenticated.', 401);
 
     const body = await request.json();
     const { full_name, phone, address_line1, address_line2, city, state, pincode, is_default } = body;
@@ -68,13 +74,11 @@ export async function POST(request) {
       .select()
       .maybeSingle();
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
+    if (error) return errorResponse(error.message, 400);
 
     return NextResponse.json({ address });
   } catch (err) {
     console.error('Addresses POST error:', err);
-    return NextResponse.json({ error: err.message || 'Something went wrong.' }, { status: 500 });
+    return errorResponse(err.message || 'Something went wrong.', 500);
   }
 }

@@ -7,6 +7,14 @@ import { createErrorResponse } from '@/src/backend/types/api-response.types';
 import { formatGlobalError } from '@/src/backend/middleware/error-handler.middleware';
 import { getEnv } from '@/src/backend/config/env.config';
 
+function handleGlobalError(err: any) {
+  const formatted = formatGlobalError(err);
+  return NextResponse.json(
+    createErrorResponse(formatted.errorCode, formatted.message, formatted.details),
+    { status: formatted.statusCode }
+  );
+}
+
 export async function POST(request: Request) {
   try {
     const authRes = await getAuthUserContext(request);
@@ -49,11 +57,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(legacyPayload, { status: 201 });
   } catch (err: any) {
-    const formatted = formatGlobalError(err);
-    return NextResponse.json(
-      createErrorResponse(formatted.errorCode, formatted.message, formatted.details),
-      { status: formatted.statusCode }
-    );
+    return handleGlobalError(err);
   }
 }
 
@@ -82,10 +86,6 @@ export async function GET(request: Request) {
       data: result.value,
     });
   } catch (err: any) {
-    const formatted = formatGlobalError(err);
-    return NextResponse.json(
-      createErrorResponse(formatted.errorCode, formatted.message, formatted.details),
-      { status: formatted.statusCode }
-    );
+    return handleGlobalError(err);
   }
 }
