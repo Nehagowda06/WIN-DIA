@@ -6,8 +6,9 @@ import { OrderStatus, PaymentStatus } from '../enums/entity.enums';
 import { OrderRepository } from '../repositories/order.repository';
 import { OrderItemRepository } from '../repositories/order-item.repository';
 import { OrderStatusHistoryRepository } from '../repositories/order-status-history.repository';
+import { InventoryService } from './inventory.service';
 import { logger } from '../utils/logger.util';
-import { container, RepositoryTokens } from '../providers/container.provider';
+import { container, RepositoryTokens, ServiceTokens } from '../providers/container.provider';
 
 /**
  * Valid order status transitions map.
@@ -53,15 +54,18 @@ export class OrderServiceImpl implements OrderService {
   private orderRepo: OrderRepository;
   private orderItemRepo: OrderItemRepository;
   private statusHistoryRepo: OrderStatusHistoryRepository;
+  private inventoryService: InventoryService;
 
   constructor(
     orderRepo?: OrderRepository,
     orderItemRepo?: OrderItemRepository,
-    statusHistoryRepo?: OrderStatusHistoryRepository
+    statusHistoryRepo?: OrderStatusHistoryRepository,
+    inventoryService?: InventoryService
   ) {
     this.orderRepo = orderRepo || container.resolve<OrderRepository>(RepositoryTokens.OrderRepository);
     this.orderItemRepo = orderItemRepo || container.resolve<OrderItemRepository>(RepositoryTokens.OrderItemRepository);
     this.statusHistoryRepo = statusHistoryRepo || container.resolve<OrderStatusHistoryRepository>(RepositoryTokens.OrderStatusHistoryRepository);
+    this.inventoryService = inventoryService || container.resolve<InventoryService>(ServiceTokens.InventoryService);
   }
 
   public async createOrder(userId: string, orderData: Partial<Order>): Promise<Result<Order, AppError>> {
@@ -169,6 +173,35 @@ export class OrderServiceImpl implements OrderService {
 
     const updateRes = await this.orderRepo.update(orderId, { order_status: status });
     if (!updateRes.success) return updateRes;
+
+    // STOCK RESTORATION: When an order is cancelled and payment was already processed
+    // (i.e., stock was deducted), restore inventory for each order item.
+    if (status === OrderStatus.CANCELLED) {
+      const paymentStatus = existing.value.payment_status;
+      // Stock is deducted only after successful payment, so restore only if paid
+      const stockWasDeducted = paymentStatus === PaymentStatus.PAID;
+      // Also restore if order was in processing/shipped (meaning payment went through)
+      const orderWasProcessed = ['processing', 'confirmed'].includes(currentStatus);
+
+      if (stockWasDeducted || orderWasProcessed) {
+        logger.info(`[OrderService.updateOrderStatus] Order ${orderId} cancelled — restoring stock for all items`);
+        const itemsRes = await this.orderItemRepo.findByOrderId(orderId);
+        if (itemsRes.success && itemsRes.value.length > 0) {
+          for (const item of itemsRes.value) {
+            if (item.product_id && item.qty > 0) {
+              const restoreRes = await this.inventoryService.restoreStockAfterCancellation(item.product_id, item.qty);
+              if (!restoreRes.success) {
+                logger.error(
+                  `[OrderService.updateOrderStatus] Stock restoration failed for product ${item.product_id}: ${restoreRes.error.message}`
+                );
+              }
+            }
+          }
+        } else if (!itemsRes.success) {
+          logger.error(`[OrderService.updateOrderStatus] Could not load order items for stock restoration: ${itemsRes.error.message}`);
+        }
+      }
+    }
 
     await this.writeStatusHistory(orderId, status, note || `Status updated to ${status}`, updatedBy);
     return success(updateRes.value);
