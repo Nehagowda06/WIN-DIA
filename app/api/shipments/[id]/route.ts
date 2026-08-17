@@ -12,7 +12,8 @@ export async function GET(
     const { id } = await params;
     const shipmentService = container.resolve<ShipmentService>(ServiceTokens.ShipmentService);
 
-    // Attempt retrieval by shipmentId first, fallback to orderId
+    // The `id` in the URL could be a shipment ID or an order ID — try
+    // shipment lookup first (more specific), fall back to order ID.
     const timelineRes = await shipmentService.getTrackingTimeline(id);
     if (timelineRes.success) {
       return handleServiceResult(timelineRes);

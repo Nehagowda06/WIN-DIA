@@ -2,12 +2,18 @@ import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 
+/* === Shared: get authed user + admin client === */
+async function getAuthedContext() {
+  const supabase = await createSupabaseServerClient();
+  const supabaseAdmin = createSupabaseAdminClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return { supabaseAdmin, user };
+}
+
 /* === GET current user's profile === */
 export async function GET() {
   try {
-    const supabase = await createSupabaseServerClient();
-    const supabaseAdmin = createSupabaseAdminClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { supabaseAdmin, user } = await getAuthedContext();
 
     if (!user) {
       return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
@@ -36,9 +42,7 @@ export async function GET() {
 /* === PUT: update full_name / phone (email is not editable here) === */
 export async function PUT(request) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const supabaseAdmin = createSupabaseAdminClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { supabaseAdmin, user } = await getAuthedContext();
 
     if (!user) {
       return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
