@@ -11,6 +11,7 @@ import { container, RepositoryTokens } from '../providers/container.provider';
 export interface ProductService {
   getProductById(id: string): Promise<Result<Product, AppError>>;
   getProductBySlug(slug: string): Promise<Result<Product, AppError>>;
+  getProductsByIds(ids: string[]): Promise<Result<Product[], AppError>>;
   getProductWithRelations(id: string): Promise<Result<Record<string, unknown>, AppError>>;
   listProducts(query: PaginationQueryDTO): Promise<Result<{ items: Product[]; total: number }, AppError>>;
   getFeaturedProducts(limit?: number): Promise<Result<Product[], AppError>>;
@@ -53,6 +54,18 @@ export class ProductServiceImpl implements ProductService {
       return failure(new NotFoundError(`Product not found with slug ${slug}`));
     }
     return success(res.value);
+  }
+
+  public async getProductsByIds(ids: string[]): Promise<Result<Product[], AppError>> {
+    if (!ids || ids.length === 0) return success([]);
+    const results: Product[] = [];
+    for (const id of ids.slice(0, 50)) { // Cap at 50 to prevent abuse
+      const res = await this.productRepo.findById(id);
+      if (res.success && res.value) {
+        results.push(res.value);
+      }
+    }
+    return success(results);
   }
 
   public async getProductWithRelations(id: string): Promise<Result<Record<string, unknown>, AppError>> {

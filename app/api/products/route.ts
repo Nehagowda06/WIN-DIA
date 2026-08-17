@@ -11,8 +11,16 @@ export async function GET(request: Request) {
     const pageSize = parseInt(searchParams.get('pageSize') || '20', 10);
     const featured = searchParams.get('featured') === 'true';
     const categorySlug = searchParams.get('category');
+    const ids = searchParams.get('ids');
 
     const productService = container.resolve<ProductService>(ServiceTokens.ProductService);
+
+    // Fetch specific products by comma-separated IDs
+    if (ids) {
+      const idList = ids.split(',').filter(Boolean);
+      const result = await productService.getProductsByIds(idList);
+      return handleServiceResult(result);
+    }
 
     if (categorySlug) {
       const result = await productService.getProductsByCategory(categorySlug);
