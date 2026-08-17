@@ -69,6 +69,19 @@ export async function POST(request: Request) {
     }
 
     // Process payment success & update order status
+    // Check if payment was already processed (e.g., by the webhook arriving first).
+    // If already paid, the webhook already deducted stock — skip to avoid double-deduction.
+    const existingPayment = paymentLookupRes.value;
+    if (existingPayment.status === 'paid') {
+      // Payment already processed by webhook — just return success without re-deducting stock
+      return NextResponse.json({
+        success: true,
+        verified: true,
+        orderId,
+        note: 'Payment was already processed by webhook',
+      });
+    }
+
     await paymentService.processSuccessfulPayment(paymentId, razorpay_payment_id, body);
     await orderService.updateOrderStatus(orderId, OrderStatus.PROCESSING, 'Payment verified via Razorpay client SDK', authRes.value.id);
 

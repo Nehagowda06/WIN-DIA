@@ -227,7 +227,7 @@ export default function CheckoutPage() {
 
           {/* Steps */}
           <div className={styles.steps}>
-            {["Shipping", "Payment", "Review"].map((label, i) => (
+            {["Shipping", "Review", "Payment"].map((label, i) => (
               <div key={label} className={styles.stepGroup}>
                 <div className={`${styles.step} ${step > i + 1 ? styles.stepDone : ""} ${step === i + 1 ? styles.stepActive : ""}`}>
                   <span>{step > i + 1 ? <FiCheck /> : i + 1}</span>

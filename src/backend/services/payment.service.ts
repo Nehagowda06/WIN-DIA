@@ -6,10 +6,12 @@ import { PaymentProvider, PaymentStatus } from '../enums/entity.enums';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { PaymentEventRepository } from '../repositories/payment-event.repository';
 import { OrderRepository } from '../repositories/order.repository';
+import { OrderItemRepository } from '../repositories/order-item.repository';
+import { InventoryService } from './inventory.service';
 import { getEnv } from '../config/env.config';
 import { logger } from '../utils/logger.util';
 import { createHmac } from 'crypto';
-import { container, RepositoryTokens } from '../providers/container.provider';
+import { container, RepositoryTokens, ServiceTokens } from '../providers/container.provider';
 import { getRazorpayClient } from '../lib/razorpay.js';
 
 export interface VerifyPaymentDTO {
@@ -32,15 +34,21 @@ export class PaymentServiceImpl implements PaymentService {
   private paymentRepo: PaymentRepository;
   private paymentEventRepo: PaymentEventRepository;
   private orderRepo: OrderRepository;
+  private orderItemRepo: OrderItemRepository;
+  private inventoryService: InventoryService;
 
   constructor(
     paymentRepo?: PaymentRepository,
     paymentEventRepo?: PaymentEventRepository,
-    orderRepo?: OrderRepository
+    orderRepo?: OrderRepository,
+    orderItemRepo?: OrderItemRepository,
+    inventoryService?: InventoryService
   ) {
     this.paymentRepo = paymentRepo || container.resolve<PaymentRepository>(RepositoryTokens.PaymentRepository);
     this.paymentEventRepo = paymentEventRepo || container.resolve<PaymentEventRepository>(RepositoryTokens.PaymentEventRepository);
     this.orderRepo = orderRepo || container.resolve<OrderRepository>(RepositoryTokens.OrderRepository);
+    this.orderItemRepo = orderItemRepo || container.resolve<OrderItemRepository>(RepositoryTokens.OrderItemRepository);
+    this.inventoryService = inventoryService || container.resolve<InventoryService>(ServiceTokens.InventoryService);
   }
 
   public async initiateRazorpayPayment(orderId: string, amount: number, orderNumber: string): Promise<Result<{ payment: Payment; razorpayOrderId: string }, AppError>> {
@@ -249,6 +257,28 @@ export class PaymentServiceImpl implements PaymentService {
               payment_status: 'paid' as any,
               razorpay_payment_id: razorpayPaymentId,
             } as any);
+
+            // STOCK DEDUCTION: Deduct inventory after successful payment via webhook.
+            // This ensures stock is deducted even if the client-side verify call never completes
+            // (e.g., user closes browser). The atomic_deduct_stock RPC is idempotent in the sense
+            // that if verify already ran and deducted, the order items' stock is already gone.
+            // However, we guard against double-deduction by only running this when payment
+            // transitions from non-paid → paid (the if-check above).
+            const itemsRes = await this.orderItemRepo.findByOrderId(orderId);
+            if (itemsRes.success && itemsRes.value.length > 0) {
+              for (const item of itemsRes.value) {
+                if (item.product_id && item.qty > 0) {
+                  const deductRes = await this.inventoryService.deductStockAfterSuccessfulPayment(item.product_id, item.qty);
+                  if (!deductRes.success) {
+                    logger.error(
+                      `[PaymentService.handleWebhook] Stock deduction failed for product ${item.product_id}: ${deductRes.error.message}`
+                    );
+                  }
+                }
+              }
+            } else if (!itemsRes.success) {
+              logger.error(`[PaymentService.handleWebhook] Could not load order_items for order ${orderId}: ${itemsRes.error.message}`);
+            }
           }
         } else {
           logger.info(`[PaymentService.handleWebhook] Payment ${paymentRecord.id} already marked paid — skipping`);
