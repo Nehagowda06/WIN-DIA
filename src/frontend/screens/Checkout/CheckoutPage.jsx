@@ -10,7 +10,7 @@ import {
   FiChevronRight, FiLoader
 } from "react-icons/fi";
 import toast from "react-hot-toast";
-import { saveShippingAddress, savePaymentMethod, clearCart } from "@/src/frontend/redux/slices/cartSlice";
+import { saveShippingAddress, savePaymentMethod, clearCart, clearBuyNowItem } from "@/src/frontend/redux/slices/cartSlice";
 import { useAuth } from "@/src/frontend/hooks/useAuth";
 import { validateAddress } from "@/src/frontend/lib/validation";
 import styles from "./CheckoutPage.module.css";
@@ -32,8 +32,11 @@ const STATES = ["Karnataka","Tamil Nadu","Kerala","Maharashtra","Delhi","Gujarat
 export default function CheckoutPage() {
   const dispatch = useDispatch();
   const router = useRouter();
-  const { cartItems, promoApplied } = useSelector((s) => s.cart);
+  const { cartItems, buyNowItem, promoApplied } = useSelector((s) => s.cart);
   const { user, authFetch } = useAuth();
+
+  // If buyNowItem is set, checkout only that single item; otherwise use full cart
+  const checkoutItems = buyNowItem ? [buyNowItem] : cartItems;
 
   const [step, setStep] = useState(1);
   const [addresses, setAddresses] = useState([]);
@@ -96,7 +99,7 @@ export default function CheckoutPage() {
   };
 
   // Calculations — SERVER-SIDE is the source of truth, this is display only
-  const subtotal = cartItems.reduce((a, i) => a + i.price * i.qty, 0);
+  const subtotal = checkoutItems.reduce((a, i) => a + i.price * i.qty, 0);
   const discount = couponApplied ? subtotal * 0.1 : 0;
   const shipping = 0; // FREE DELIVERY — always ₹0, enforced server-side
   const tax = (subtotal - discount) * 0.05;
@@ -150,7 +153,7 @@ export default function CheckoutPage() {
       const res = await authFetch("/api/orders", {
         method: "POST",
         body: JSON.stringify({
-          items: cartItems.map((i) => ({
+          items: checkoutItems.map((i) => ({
             productId: i._id || i.id,
             id: i.id || i._id,
             name: i.name,
@@ -169,6 +172,7 @@ export default function CheckoutPage() {
       if (!data.success) { toast.error(data.error || "Could not place order"); setPlacing(false); return; }
 
       if (!data.requiresPayment) {
+        dispatch(clearBuyNowItem());
         dispatch(clearCart());
         router.push(`/order-confirmation?orderId=${data.order.id}`);
         return;
@@ -194,7 +198,7 @@ export default function CheckoutPage() {
               body: JSON.stringify({ orderId: data.order.id, razorpay_order_id: response.razorpay_order_id, razorpay_payment_id: response.razorpay_payment_id, razorpay_signature: response.razorpay_signature }),
             });
             const vData = await vRes.json();
-            if (vData.success) { dispatch(clearCart()); toast.success("Payment successful!"); router.push(`/order-confirmation?orderId=${data.order.id}`); }
+            if (vData.success) { dispatch(clearBuyNowItem()); dispatch(clearCart()); toast.success("Payment successful!"); router.push(`/order-confirmation?orderId=${data.order.id}`); }
             else toast.error(vData.error || "Payment verification failed");
           } finally { setPlacing(false); }
         },
@@ -205,7 +209,7 @@ export default function CheckoutPage() {
     } catch { toast.error("Something went wrong"); setPlacing(false); }
   };
 
-  if (!cartItems.length) return (
+  if (!checkoutItems.length) return (
     <div className={styles.emptyWrap}>
       <div className={styles.emptyCard}>
         <h2>Nothing to checkout</h2>
@@ -420,7 +424,7 @@ export default function CheckoutPage() {
               <div className="gold-divider" style={{ margin: "12px 0 16px" }} />
 
               <div className={styles.summaryItems}>
-                {cartItems.map((item) => (
+                {checkoutItems.map((item) => (
                   <div key={item._id || item.id} className={styles.summaryItem}>
                     <img src={item.image || "/images/product-methi.jpg"} alt={item.name} />
                     <div>
