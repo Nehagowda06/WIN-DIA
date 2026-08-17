@@ -25,8 +25,7 @@ export class SupabaseWishlistRepository
 
   public async findByUserAndProduct(userId: string, productId: string): Promise<Result<Wishlist | null, AppError>> {
     try {
-      const client = this.getClient();
-      const { data, error } = await client
+      const { data, error } = await this.getClient()
         .from(this.tableName)
         .select('*')
         .eq('user_id', userId)
@@ -45,8 +44,7 @@ export class SupabaseWishlistRepository
 
   public async deleteByUserAndProduct(userId: string, productId: string): Promise<Result<boolean, AppError>> {
     try {
-      const client = this.getClient();
-      const { error } = await client
+      const { error } = await this.getClient()
         .from(this.tableName)
         .delete()
         .eq('user_id', userId)
@@ -62,6 +60,9 @@ export class SupabaseWishlistRepository
     }
   }
 
+  /**
+   * Alias of deleteByUserAndProduct, kept for callers using the older method name.
+   */
   public async removeByUserIdAndProductId(userId: string, productId: string): Promise<Result<boolean, AppError>> {
     return this.deleteByUserAndProduct(userId, productId);
   }

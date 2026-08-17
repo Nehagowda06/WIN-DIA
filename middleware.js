@@ -4,10 +4,12 @@ import { createServerClient } from '@supabase/ssr';
 const PROTECTED_PREFIXES = ['/profile', '/wishlist', '/cart'];
 const GUEST_ONLY_PATHS = ['/login', '/register'];
 
-export async function middleware(request) {
-  let response = NextResponse.next({ request });
+function isProtectedPath(path) {
+  return PROTECTED_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+}
 
-  const supabase = createServerClient(
+function createSupabaseMiddlewareClient(request, response) {
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
@@ -24,13 +26,16 @@ export async function middleware(request) {
       },
     }
   );
+}
+
+export async function middleware(request) {
+  const response = NextResponse.next({ request });
+  const supabase = createSupabaseMiddlewareClient(request, response);
 
   const { data: { user } } = await supabase.auth.getUser();
-
   const path = request.nextUrl.pathname;
-  const isProtected = PROTECTED_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 
-  if (!user && isProtected) {
+  if (!user && isProtectedPath(path)) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('next', path);
     return NextResponse.redirect(loginUrl);

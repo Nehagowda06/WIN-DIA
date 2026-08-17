@@ -38,6 +38,22 @@ export interface CheckoutService {
   processCheckout(userId: string, dto: CreateOrderDTO): Promise<Result<CheckoutResult, AppError>>;
 }
 
+interface PreparedOrderItems {
+  preparedOrderItems: Record<string, unknown>[];
+  subtotal: number;
+}
+
+interface CouponOutcome {
+  discount: number;
+  validatedCouponId: string | null;
+}
+
+interface OrderCreationOutcome {
+  createdOrder: Order;
+  createdPayment: Payment;
+  createdShipment: Shipment;
+}
+
 export class CheckoutServiceImpl implements CheckoutService {
   private userService: UserService;
   private cartService: CartService;
@@ -71,6 +87,345 @@ export class CheckoutServiceImpl implements CheckoutService {
     this.shipmentService = shipmentService || container.resolve<ShipmentService>(ServiceTokens.ShipmentService);
   }
 
+  /**
+   * STEP 2: ADDRESS_LOOKUP — resolves the shipping address either from the
+   * inline payload or by looking up the user's saved addresses.
+   */
+  private async resolveShippingAddress(userId: string, dto: CreateOrderDTO): Promise<Result<any, AppError>> {
+    const step2Start = Date.now();
+    console.log(`[TRACE STEP 2: ADDRESS_LOOKUP] Checking address payload or user addresses`);
+    let selectedAddress: any = null;
+    const rawAddr = (dto as any).shippingAddress || (dto as any).shipping_address;
+
+    if (rawAddr) {
+      selectedAddress = {
+        full_name: rawAddr.name || rawAddr.full_name || 'Valued Customer',
+        phone: String(rawAddr.phone || ''),
+        address_line1: rawAddr.street || rawAddr.address_line1 || '',
+        address_line2: rawAddr.address_line2 || null,
+        city: rawAddr.city || '',
+        state: rawAddr.state || '',
+        pincode: String(rawAddr.pincode || rawAddr.postal_code || ''),
+        country: rawAddr.country || 'India',
+      };
+      console.log(`[TRACE STEP 2: ADDRESS_LOOKUP] Used inline address payload:`, selectedAddress);
+    } else {
+      console.log(`[TRACE STEP 2: ADDRESS_LOOKUP] Calling UserService.getUserAddresses for userId: ${userId}`);
+      const addrRes = await this.userService.getUserAddresses(userId);
+      if (addrRes.success && addrRes.value.length > 0) {
+        selectedAddress = addrRes.value.find((a) => a.id === (dto as any).shipping_address_id) || addrRes.value[0];
+        console.log(`[TRACE STEP 2: ADDRESS_LOOKUP] Found address in DB:`, selectedAddress);
+      }
+    }
+    const step2Time = Date.now() - step2Start;
+
+    if (!selectedAddress || !selectedAddress.address_line1 || !selectedAddress.city) {
+      console.log(`[TRACE STEP 2: ADDRESS_LOOKUP] FAILURE | Time: ${step2Time}ms | Error: Valid shipping address is required`);
+      return failure(new ValidationError('Valid shipping address is required for checkout'));
+    }
+    console.log(`[TRACE STEP 2: ADDRESS_LOOKUP] SUCCESS | Time: ${step2Time}ms`);
+    return success(selectedAddress);
+  }
+
+  /**
+   * STEP 3: CART_LOOKUP — resolves the items to check out, either from the
+   * request payload or by falling back to the user's cart.
+   */
+  private async resolveCartItems(userId: string, dto: CreateOrderDTO): Promise<Result<any[], AppError>> {
+    const step3Start = Date.now();
+    console.log(`[TRACE STEP 3: CART_LOOKUP] Resolving items from request dto or CartService`);
+    let rawItems: any[] = (dto as any).items || [];
+    if (!rawItems || rawItems.length === 0) {
+      console.log(`[TRACE STEP 3: CART_LOOKUP] Calling CartService.getCart for userId: ${userId}`);
+      const cartRes = await this.cartService.getCart(userId);
+      if (cartRes.success && cartRes.value.items) {
+        rawItems = cartRes.value.items;
+      }
+    }
+    const step3Time = Date.now() - step3Start;
+
+    if (!rawItems || rawItems.length === 0) {
+      console.log(`[TRACE STEP 3: CART_LOOKUP] FAILURE | Time: ${step3Time}ms | Error: Cart is empty`);
+      return failure(new ValidationError('Cart is empty. Cannot process checkout.'));
+    }
+    console.log(`[TRACE STEP 3: CART_LOOKUP] SUCCESS | Time: ${step3Time}ms | Items Count: ${rawItems.length}`, rawItems);
+    return success(rawItems);
+  }
+
+  /**
+   * Ensures a product row exists so the order_items.product_id foreign key
+   * constraint is satisfied, mirroring the original best-effort upsert.
+   */
+  private async ensureProductExists(validProductId: string, item: any): Promise<void> {
+    try {
+      const prodCheck = await this.productRepo.findById(validProductId);
+      if (!prodCheck.success || !prodCheck.value) {
+        const adminClient = getAdminClient();
+        await adminClient.from('products').upsert({
+          id: validProductId,
+          name: item.name || item.product_name || 'WIN-DIA Product',
+          price: BundlePricing.BUNDLE_PRICE,
+          count_in_stock: 999,
+          is_active: true,
+        });
+      }
+    } catch (_) {}
+  }
+
+  /**
+   * STEP 4: ORDER_PAYLOAD_CREATION & STOCK_VALIDATION (BUNDLE PRICING ENFORCED)
+   * Maps raw cart items to order-item snapshots, enforcing server-side bundle
+   * pricing and validating stock for each item.
+   */
+  private async prepareOrderItems(rawItems: any[]): Promise<Result<PreparedOrderItems, AppError>> {
+    const step4Start = Date.now();
+    console.log(`[TRACE STEP 4: ORDER_PAYLOAD_CREATION & STOCK_VALIDATION] Mapping items to order snapshots with BUNDLE PRICING`);
+    const preparedOrderItems: Record<string, unknown>[] = [];
+    let subtotal = 0;
+
+    for (const item of rawItems) {
+      // qty from frontend represents number of BUNDLES (enforced by frontend selector)
+      const bundles = Math.max(BundlePricing.MIN_BUNDLES, Math.min(BundlePricing.MAX_BUNDLES_PER_ITEM, Math.floor(parseInt(item.qty || item.quantity) || 1)));
+      const bundlePricing = calculateBundlePricing(bundles);
+
+      // SERVER-SIDE PRICE ENFORCEMENT: Never trust frontend-sent price.
+      // Price is ALWAYS BundlePricing.BUNDLE_PRICE per bundle, regardless of what frontend sends.
+      const itemTotal = bundlePricing.lineTotal;
+      subtotal += itemTotal;
+
+      const rawId = item.productId || item.product_id || item.id || item._id;
+      const validProductId = stableProductUuid(rawId);
+
+      // Ensure product exists in database so foreign key constraint order_items.product_id -> products.id is satisfied
+      await this.ensureProductExists(validProductId, item);
+
+      // Stock validation: check against packets to be SHIPPED (12 per bundle)
+      // This is the real quantity that leaves the warehouse
+      console.log(`[TRACE STEP 4: STOCK_VALIDATION] Calling InventoryService.validateStock for productId: ${validProductId}, packetsShipped: ${bundlePricing.packetsShipped}`);
+      const stockRes = await this.inventoryService.validateStock(validProductId, bundlePricing.packetsShipped);
+      if (!stockRes.success) {
+        console.log(`[TRACE STEP 4: STOCK_VALIDATION] Insufficient stock:`, stockRes.error);
+        return failure(new ValidationError(
+          `Insufficient stock for "${item.name || 'product'}". Requested ${bundles} bundle(s) (${bundlePricing.packetsShipped} packets) but not enough inventory available.`
+        ));
+      }
+
+      preparedOrderItems.push({
+        product_id: validProductId,
+        name: item.name || item.product_name || 'WIN-DIA Product',
+        // Store bundle price as the unit price (price per bundle)
+        price: BundlePricing.BUNDLE_PRICE,
+        // qty = number of bundles ordered
+        qty: bundles,
+        flavor: item.flavor || null,
+        net_weight_grams: Number(item.net_weight_grams || item.net_weight || item.netWeight || 200) * bundlePricing.packetsShipped,
+        image: item.image || item.image_url || null,
+      });
+    }
+    const step4Time = Date.now() - step4Start;
+    console.log(`[TRACE STEP 4: ORDER_PAYLOAD_CREATION] SUCCESS | Time: ${step4Time}ms | Subtotal: ${subtotal}`, preparedOrderItems);
+
+    return success({ preparedOrderItems, subtotal });
+  }
+
+  /**
+   * STEP 5: COUPON_VALIDATION — applies a coupon code if provided, rejecting
+   * checkout outright on an invalid/expired coupon rather than ignoring it.
+   */
+  private async applyCoupon(dto: CreateOrderDTO, subtotal: number): Promise<Result<CouponOutcome, AppError>> {
+    const step5Start = Date.now();
+    let discount = 0;
+    let validatedCouponId: string | null = null;
+    if (dto.coupon_code) {
+      console.log(`[TRACE STEP 5: COUPON_VALIDATION] Calling CouponService.calculateDiscount for code: ${dto.coupon_code}`);
+      const couponRes = await this.couponService.calculateDiscount({
+        code: dto.coupon_code,
+        cart_total: subtotal,
+      });
+      if (couponRes.success) {
+        discount = couponRes.value.discountAmount;
+        validatedCouponId = couponRes.value.coupon.id;
+        console.log(`[TRACE STEP 5: COUPON_VALIDATION] SUCCESS | Discount: ${discount}`);
+      } else {
+        // Invalid/expired coupon — reject checkout, do not silently ignore
+        console.log(`[TRACE STEP 5: COUPON_VALIDATION] FAILURE | Error:`, couponRes.error);
+        return failure(couponRes.error);
+      }
+    }
+    const step5Time = Date.now() - step5Start;
+    console.log(`[TRACE STEP 5: COUPON_VALIDATION] Finished | Time: ${step5Time}ms`);
+    return success({ discount, validatedCouponId });
+  }
+
+  /**
+   * STEP 7 (+ fallback / STEP 8): attempts the single-transaction RPC-style
+   * checkout via OrderRepository, falling back to the standard step-by-step
+   * repository/service calls if that transaction fails.
+   */
+  private async createOrder(
+    userId: string,
+    dto: CreateOrderDTO,
+    selectedAddress: any,
+    preparedOrderItems: Record<string, unknown>[],
+    selectedPaymentMethod: string,
+    pricing: { subtotal: number; discount: number; tax: number; shipping: number; total: number },
+    mockRazorpayOrderId: string
+  ): Promise<Result<OrderCreationOutcome, AppError>> {
+    const { subtotal, discount, tax, shipping, total } = pricing;
+
+    const step7Start = Date.now();
+    console.log(`[TRACE STEP 7: RPC_INVOCATION] Calling OrderRepository.createCheckoutTransaction RPC`);
+    console.log(`RPC Params:`, {
+      userId,
+      orderData: { subtotal, discount, tax, shipping, total },
+      itemsCount: preparedOrderItems.length,
+      paymentData: { mockRazorpayOrderId, total },
+    });
+
+    const txRes = await this.orderRepo.createCheckoutTransaction(
+      userId,
+      {
+        items_price: subtotal,
+        discount_price: discount,
+        tax_price: tax,
+        shipping_price: shipping,
+        total_price: total,
+        order_status: OrderStatus.PLACED,
+        payment_method: selectedPaymentMethod,
+        shipping_address: selectedAddress,
+        order_notes: dto.order_notes || (dto as any).orderNotes || null,
+      },
+      preparedOrderItems,
+      {
+        payment_provider: 'razorpay',
+        provider_order_id: mockRazorpayOrderId,
+        amount: total,
+        currency: 'INR',
+        status: 'pending',
+        payment_method: selectedPaymentMethod,
+      },
+      {
+        courier_name: 'Shiprocket',
+        status: 'pending',
+      }
+    );
+    const step7Time = Date.now() - step7Start;
+
+    if (txRes.success && txRes.value && txRes.value.order) {
+      console.log(`[TRACE STEP 7: RPC_INVOCATION] RPC SUCCESS | Time: ${step7Time}ms | Returned JSON:`, txRes.value);
+      const createdOrder = txRes.value.order as Order;
+      let createdPayment = txRes.value.payment as Payment;
+      const createdShipment = txRes.value.shipment as Shipment;
+
+      // Online payments are created after the order exists so Razorpay can
+      // return a real provider order ID tied to this database order.
+      if (!createdPayment && selectedPaymentMethod !== 'cod') {
+        const payRes = await this.paymentService.initiateRazorpayPayment(
+          createdOrder.id,
+          total,
+          createdOrder.order_number
+        );
+        if (!payRes.success) return failure(payRes.error);
+        createdPayment = payRes.value.payment;
+      }
+
+      return success({ createdOrder, createdPayment, createdShipment });
+    }
+
+    console.log(`[TRACE STEP 7: RPC_INVOCATION] RPC FAILED | Time: ${step7Time}ms | Database Error:`, txRes.error);
+    console.log(`[TRACE STEP 7: FALLBACK] Initiating standard repository order creation fallback`);
+    return this.createOrderFallback(userId, dto, selectedAddress, preparedOrderItems, selectedPaymentMethod, pricing);
+  }
+
+  /**
+   * Fallback path used when the single-transaction RPC checkout fails:
+   * creates the order, order items, Razorpay payment, and shipment placeholder
+   * step by step via the individual services/repositories.
+   */
+  private async createOrderFallback(
+    userId: string,
+    dto: CreateOrderDTO,
+    selectedAddress: any,
+    preparedOrderItems: Record<string, unknown>[],
+    selectedPaymentMethod: string,
+    pricing: { subtotal: number; discount: number; tax: number; shipping: number; total: number }
+  ): Promise<Result<OrderCreationOutcome, AppError>> {
+    const { subtotal, discount, tax, shipping, total } = pricing;
+
+    const orderRes = await this.orderService.createOrder(userId, {
+      items_price: subtotal,
+      discount_price: discount,
+      tax_price: tax,
+      shipping_price: shipping,
+      total_price: total,
+      order_status: OrderStatus.PLACED,
+      payment_method: selectedPaymentMethod,
+      shipping_address: selectedAddress as any,
+      order_notes: dto.order_notes || (dto as any).orderNotes || null,
+    });
+
+    if (!orderRes.success) {
+      console.error(`[TRACE STEP 7: FALLBACK_ORDER_CREATE] FAILURE | Error:`, {
+        name: orderRes.error.name,
+        message: orderRes.error.message,
+        stack: orderRes.error.stack,
+        details: orderRes.error.details,
+      });
+      return failure(orderRes.error);
+    }
+    const createdOrder = orderRes.value;
+    console.log(`[TRACE STEP 7: FALLBACK_ORDER_CREATE] SUCCESS | OrderId: ${createdOrder.id}`);
+
+    const itemsRes = await this.orderService.createOrderItems(createdOrder.id, preparedOrderItems as any);
+    if (!itemsRes.success) {
+      console.error(`[TRACE STEP 7: FALLBACK_ORDER_ITEMS_CREATE] FAILURE | Error:`, {
+        name: itemsRes.error.name,
+        message: itemsRes.error.message,
+        stack: itemsRes.error.stack,
+        details: itemsRes.error.details,
+      });
+      return failure(itemsRes.error);
+    }
+    console.log(`[TRACE STEP 7: FALLBACK_ORDER_ITEMS_CREATE] SUCCESS`);
+
+    // STEP 8: RAZORPAY_ORDER_CREATION
+    const step8Start = Date.now();
+    console.log(`[TRACE STEP 8: RAZORPAY_ORDER_CREATION] Calling PaymentService.initiateRazorpayPayment`);
+    const payRes = await this.paymentService.initiateRazorpayPayment(createdOrder.id, total, createdOrder.order_number);
+    const step8Time = Date.now() - step8Start;
+
+    if (!payRes.success) {
+      console.error(`[TRACE STEP 8: RAZORPAY_ORDER_CREATION] FAILURE | Time: ${step8Time}ms | Error:`, payRes.error);
+      return failure(payRes.error);
+    }
+    const createdPayment = payRes.value.payment;
+    console.log(`[TRACE STEP 8: RAZORPAY_ORDER_CREATION] SUCCESS | Time: ${step8Time}ms | RazorpayOrderId: ${payRes.value.razorpayOrderId}`);
+
+    const shipRes = await this.shipmentService.createShipmentPlaceholder(createdOrder.id);
+    if (!shipRes.success) {
+      console.error(`[TRACE STEP 7: FALLBACK_SHIPMENT_CREATE] FAILURE | Error:`, shipRes.error);
+      return failure(shipRes.error);
+    }
+    const createdShipment = shipRes.value;
+
+    return success({ createdOrder, createdPayment, createdShipment });
+  }
+
+  /**
+   * STEP 9: CLEAR_CART & INCREMENT COUPON USAGE
+   */
+  private async finalizeCartAndCoupon(userId: string, validatedCouponId: string | null): Promise<void> {
+    const cartRes = await this.cartService.getCart(userId);
+    if (cartRes.success && cartRes.value.cart) {
+      await this.cartService.clearCart(cartRes.value.cart.id);
+    }
+
+    // Increment coupon usage count to prevent double-use
+    if (validatedCouponId) {
+      await this.couponService.incrementUsage(validatedCouponId);
+    }
+  }
+
   public async processCheckout(userId: string, dto: CreateOrderDTO): Promise<Result<CheckoutResult, AppError>> {
     console.log(`\n--- [CHECKOUT_SERVICE: ENTER] processCheckout for userId: ${userId} ---`);
     const startTime = Date.now();
@@ -87,140 +442,24 @@ export class CheckoutServiceImpl implements CheckoutService {
       console.log(`[TRACE STEP 1: VALIDATION] SUCCESS | Time: ${step1Time}ms`);
 
       // STEP 2: ADDRESS_LOOKUP
-      const step2Start = Date.now();
-      console.log(`[TRACE STEP 2: ADDRESS_LOOKUP] Checking address payload or user addresses`);
-      let selectedAddress: any = null;
-      const rawAddr = (dto as any).shippingAddress || (dto as any).shipping_address;
-
-      if (rawAddr) {
-        selectedAddress = {
-          full_name: rawAddr.name || rawAddr.full_name || 'Valued Customer',
-          phone: String(rawAddr.phone || ''),
-          address_line1: rawAddr.street || rawAddr.address_line1 || '',
-          address_line2: rawAddr.address_line2 || null,
-          city: rawAddr.city || '',
-          state: rawAddr.state || '',
-          pincode: String(rawAddr.pincode || rawAddr.postal_code || ''),
-          country: rawAddr.country || 'India',
-        };
-        console.log(`[TRACE STEP 2: ADDRESS_LOOKUP] Used inline address payload:`, selectedAddress);
-      } else {
-        console.log(`[TRACE STEP 2: ADDRESS_LOOKUP] Calling UserService.getUserAddresses for userId: ${userId}`);
-        const addrRes = await this.userService.getUserAddresses(userId);
-        if (addrRes.success && addrRes.value.length > 0) {
-          selectedAddress = addrRes.value.find((a) => a.id === (dto as any).shipping_address_id) || addrRes.value[0];
-          console.log(`[TRACE STEP 2: ADDRESS_LOOKUP] Found address in DB:`, selectedAddress);
-        }
-      }
-      const step2Time = Date.now() - step2Start;
-
-      if (!selectedAddress || !selectedAddress.address_line1 || !selectedAddress.city) {
-        console.log(`[TRACE STEP 2: ADDRESS_LOOKUP] FAILURE | Time: ${step2Time}ms | Error: Valid shipping address is required`);
-        return failure(new ValidationError('Valid shipping address is required for checkout'));
-      }
-      console.log(`[TRACE STEP 2: ADDRESS_LOOKUP] SUCCESS | Time: ${step2Time}ms`);
+      const addressRes = await this.resolveShippingAddress(userId, dto);
+      if (!addressRes.success) return failure(addressRes.error);
+      const selectedAddress = addressRes.value;
 
       // STEP 3: CART_LOOKUP
-      const step3Start = Date.now();
-      console.log(`[TRACE STEP 3: CART_LOOKUP] Resolving items from request dto or CartService`);
-      let rawItems: any[] = (dto as any).items || [];
-      if (!rawItems || rawItems.length === 0) {
-        console.log(`[TRACE STEP 3: CART_LOOKUP] Calling CartService.getCart for userId: ${userId}`);
-        const cartRes = await this.cartService.getCart(userId);
-        if (cartRes.success && cartRes.value.items) {
-          rawItems = cartRes.value.items;
-        }
-      }
-      const step3Time = Date.now() - step3Start;
-
-      if (!rawItems || rawItems.length === 0) {
-        console.log(`[TRACE STEP 3: CART_LOOKUP] FAILURE | Time: ${step3Time}ms | Error: Cart is empty`);
-        return failure(new ValidationError('Cart is empty. Cannot process checkout.'));
-      }
-      console.log(`[TRACE STEP 3: CART_LOOKUP] SUCCESS | Time: ${step3Time}ms | Items Count: ${rawItems.length}`, rawItems);
+      const cartItemsRes = await this.resolveCartItems(userId, dto);
+      if (!cartItemsRes.success) return failure(cartItemsRes.error);
+      const rawItems = cartItemsRes.value;
 
       // STEP 4: ORDER_PAYLOAD_CREATION & STOCK_VALIDATION (BUNDLE PRICING ENFORCED)
-      const step4Start = Date.now();
-      console.log(`[TRACE STEP 4: ORDER_PAYLOAD_CREATION & STOCK_VALIDATION] Mapping items to order snapshots with BUNDLE PRICING`);
-      const preparedOrderItems: Record<string, unknown>[] = [];
-      let subtotal = 0;
-
-      for (const item of rawItems) {
-        // qty from frontend represents number of BUNDLES (enforced by frontend selector)
-        const bundles = Math.max(BundlePricing.MIN_BUNDLES, Math.min(BundlePricing.MAX_BUNDLES_PER_ITEM, Math.floor(parseInt(item.qty || item.quantity) || 1)));
-        const bundlePricing = calculateBundlePricing(bundles);
-
-        // SERVER-SIDE PRICE ENFORCEMENT: Never trust frontend-sent price.
-        // Price is ALWAYS BundlePricing.BUNDLE_PRICE per bundle, regardless of what frontend sends.
-        const itemTotal = bundlePricing.lineTotal;
-        subtotal += itemTotal;
-
-        const rawId = item.productId || item.product_id || item.id || item._id;
-        const validProductId = stableProductUuid(rawId);
-
-        // Ensure product exists in database so foreign key constraint order_items.product_id -> products.id is satisfied
-        try {
-          const prodCheck = await this.productRepo.findById(validProductId);
-          if (!prodCheck.success || !prodCheck.value) {
-            const adminClient = getAdminClient();
-            await adminClient.from('products').upsert({
-              id: validProductId,
-              name: item.name || item.product_name || 'WIN-DIA Product',
-              price: BundlePricing.BUNDLE_PRICE,
-              count_in_stock: 999,
-              is_active: true,
-            });
-          }
-        } catch (_) {}
-
-        // Stock validation: check against packets to be SHIPPED (12 per bundle)
-        // This is the real quantity that leaves the warehouse
-        console.log(`[TRACE STEP 4: STOCK_VALIDATION] Calling InventoryService.validateStock for productId: ${validProductId}, packetsShipped: ${bundlePricing.packetsShipped}`);
-        const stockRes = await this.inventoryService.validateStock(validProductId, bundlePricing.packetsShipped);
-        if (!stockRes.success) {
-          console.log(`[TRACE STEP 4: STOCK_VALIDATION] Insufficient stock:`, stockRes.error);
-          return failure(new ValidationError(
-            `Insufficient stock for "${item.name || 'product'}". Requested ${bundles} bundle(s) (${bundlePricing.packetsShipped} packets) but not enough inventory available.`
-          ));
-        }
-
-        preparedOrderItems.push({
-          product_id: validProductId,
-          name: item.name || item.product_name || 'WIN-DIA Product',
-          // Store bundle price as the unit price (price per bundle)
-          price: BundlePricing.BUNDLE_PRICE,
-          // qty = number of bundles ordered
-          qty: bundles,
-          flavor: item.flavor || null,
-          net_weight_grams: Number(item.net_weight_grams || item.net_weight || item.netWeight || 200) * bundlePricing.packetsShipped,
-          image: item.image || item.image_url || null,
-        });
-      }
-      const step4Time = Date.now() - step4Start;
-      console.log(`[TRACE STEP 4: ORDER_PAYLOAD_CREATION] SUCCESS | Time: ${step4Time}ms | Subtotal: ${subtotal}`, preparedOrderItems);
+      const preparedRes = await this.prepareOrderItems(rawItems);
+      if (!preparedRes.success) return failure(preparedRes.error);
+      const { preparedOrderItems, subtotal } = preparedRes.value;
 
       // STEP 5: COUPON_VALIDATION
-      const step5Start = Date.now();
-      let discount = 0;
-      let validatedCouponId: string | null = null;
-      if (dto.coupon_code) {
-        console.log(`[TRACE STEP 5: COUPON_VALIDATION] Calling CouponService.calculateDiscount for code: ${dto.coupon_code}`);
-        const couponRes = await this.couponService.calculateDiscount({
-          code: dto.coupon_code,
-          cart_total: subtotal,
-        });
-        if (couponRes.success) {
-          discount = couponRes.value.discountAmount;
-          validatedCouponId = couponRes.value.coupon.id;
-          console.log(`[TRACE STEP 5: COUPON_VALIDATION] SUCCESS | Discount: ${discount}`);
-        } else {
-          // Invalid/expired coupon — reject checkout, do not silently ignore
-          console.log(`[TRACE STEP 5: COUPON_VALIDATION] FAILURE | Error:`, couponRes.error);
-          return failure(couponRes.error);
-        }
-      }
-      const step5Time = Date.now() - step5Start;
-      console.log(`[TRACE STEP 5: COUPON_VALIDATION] Finished | Time: ${step5Time}ms`);
+      const couponRes = await this.applyCoupon(dto, subtotal);
+      if (!couponRes.success) return failure(couponRes.error);
+      const { discount, validatedCouponId } = couponRes.value;
 
       // STEP 6: PRICING_CALCULATION (SERVER-SIDE ONLY — FREE DELIVERY ENFORCED)
       // Shipping is ALWAYS ₹0. This is hardcoded and cannot be overridden by frontend.
@@ -228,140 +467,24 @@ export class CheckoutServiceImpl implements CheckoutService {
       const { shipping, tax, total } = orderPricing;
       console.log(`[TRACE STEP 6: PRICING_CALCULATION] Pricing (FREE DELIVERY enforced):`, orderPricing);
 
-      // STEP 7: RPC_INVOCATION & ORDER_CREATION
-      const step7Start = Date.now();
+      // STEP 7 (+ fallback / STEP 8): ORDER_CREATION
       const mockRazorpayOrderId = `order_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-      let createdOrder: Order;
-      let createdPayment: Payment;
-      let createdShipment: Shipment;
-
-      console.log(`[TRACE STEP 7: RPC_INVOCATION] Calling OrderRepository.createCheckoutTransaction RPC`);
-      console.log(`RPC Params:`, {
-        userId,
-        orderData: { subtotal, discount, tax, shipping, total },
-        itemsCount: preparedOrderItems.length,
-        paymentData: { mockRazorpayOrderId, total },
-      });
-
       const selectedPaymentMethod = (dto as any).paymentMethod || (dto as any).payment_method || 'razorpay';
 
-      const txRes = await this.orderRepo.createCheckoutTransaction(
+      const orderCreationRes = await this.createOrder(
         userId,
-        {
-          items_price: subtotal,
-          discount_price: discount,
-          tax_price: tax,
-          shipping_price: shipping,
-          total_price: total,
-          order_status: OrderStatus.PLACED,
-          payment_method: selectedPaymentMethod,
-          shipping_address: selectedAddress,
-          order_notes: dto.order_notes || (dto as any).orderNotes || null,
-        },
+        dto,
+        selectedAddress,
         preparedOrderItems,
-        {
-          payment_provider: 'razorpay',
-          provider_order_id: mockRazorpayOrderId,
-          amount: total,
-          currency: 'INR',
-          status: 'pending',
-          payment_method: selectedPaymentMethod,
-        },
-        {
-          courier_name: 'Shiprocket',
-          status: 'pending',
-        }
+        selectedPaymentMethod,
+        { subtotal, discount, tax, shipping, total },
+        mockRazorpayOrderId
       );
-      const step7Time = Date.now() - step7Start;
-
-      if (txRes.success && txRes.value && txRes.value.order) {
-        console.log(`[TRACE STEP 7: RPC_INVOCATION] RPC SUCCESS | Time: ${step7Time}ms | Returned JSON:`, txRes.value);
-        createdOrder = txRes.value.order as Order;
-        createdPayment = txRes.value.payment as Payment;
-        createdShipment = txRes.value.shipment as Shipment;
-
-        // Online payments are created after the order exists so Razorpay can
-        // return a real provider order ID tied to this database order.
-        if (!createdPayment && selectedPaymentMethod !== 'cod') {
-          const payRes = await this.paymentService.initiateRazorpayPayment(
-            createdOrder.id,
-            total,
-            createdOrder.order_number
-          );
-          if (!payRes.success) return failure(payRes.error);
-          createdPayment = payRes.value.payment;
-        }
-      } else {
-        console.log(`[TRACE STEP 7: RPC_INVOCATION] RPC FAILED | Time: ${step7Time}ms | Database Error:`, txRes.error);
-        console.log(`[TRACE STEP 7: FALLBACK] Initiating standard repository order creation fallback`);
-
-        const orderRes = await this.orderService.createOrder(userId, {
-          items_price: subtotal,
-          discount_price: discount,
-          tax_price: tax,
-          shipping_price: shipping,
-          total_price: total,
-          order_status: OrderStatus.PLACED,
-          payment_method: selectedPaymentMethod,
-          shipping_address: selectedAddress as any,
-          order_notes: dto.order_notes || (dto as any).orderNotes || null,
-        });
-
-        if (!orderRes.success) {
-          console.error(`[TRACE STEP 7: FALLBACK_ORDER_CREATE] FAILURE | Error:`, {
-            name: orderRes.error.name,
-            message: orderRes.error.message,
-            stack: orderRes.error.stack,
-            details: orderRes.error.details,
-          });
-          return failure(orderRes.error);
-        }
-        createdOrder = orderRes.value;
-        console.log(`[TRACE STEP 7: FALLBACK_ORDER_CREATE] SUCCESS | OrderId: ${createdOrder.id}`);
-
-        const itemsRes = await this.orderService.createOrderItems(createdOrder.id, preparedOrderItems as any);
-        if (!itemsRes.success) {
-          console.error(`[TRACE STEP 7: FALLBACK_ORDER_ITEMS_CREATE] FAILURE | Error:`, {
-            name: itemsRes.error.name,
-            message: itemsRes.error.message,
-            stack: itemsRes.error.stack,
-            details: itemsRes.error.details,
-          });
-          return failure(itemsRes.error);
-        }
-        console.log(`[TRACE STEP 7: FALLBACK_ORDER_ITEMS_CREATE] SUCCESS`);
-
-        // STEP 8: RAZORPAY_ORDER_CREATION
-        const step8Start = Date.now();
-        console.log(`[TRACE STEP 8: RAZORPAY_ORDER_CREATION] Calling PaymentService.initiateRazorpayPayment`);
-        const payRes = await this.paymentService.initiateRazorpayPayment(createdOrder.id, total, createdOrder.order_number);
-        const step8Time = Date.now() - step8Start;
-
-        if (!payRes.success) {
-          console.error(`[TRACE STEP 8: RAZORPAY_ORDER_CREATION] FAILURE | Time: ${step8Time}ms | Error:`, payRes.error);
-          return failure(payRes.error);
-        }
-        createdPayment = payRes.value.payment;
-        console.log(`[TRACE STEP 8: RAZORPAY_ORDER_CREATION] SUCCESS | Time: ${step8Time}ms | RazorpayOrderId: ${payRes.value.razorpayOrderId}`);
-
-        const shipRes = await this.shipmentService.createShipmentPlaceholder(createdOrder.id);
-        if (!shipRes.success) {
-          console.error(`[TRACE STEP 7: FALLBACK_SHIPMENT_CREATE] FAILURE | Error:`, shipRes.error);
-          return failure(shipRes.error);
-        }
-        createdShipment = shipRes.value;
-      }
+      if (!orderCreationRes.success) return failure(orderCreationRes.error);
+      const { createdOrder, createdPayment, createdShipment } = orderCreationRes.value;
 
       // STEP 9: CLEAR_CART & INCREMENT COUPON USAGE
-      const cartRes = await this.cartService.getCart(userId);
-      if (cartRes.success && cartRes.value.cart) {
-        await this.cartService.clearCart(cartRes.value.cart.id);
-      }
-
-      // Increment coupon usage count to prevent double-use
-      if (validatedCouponId) {
-        await this.couponService.incrementUsage(validatedCouponId);
-      }
+      await this.finalizeCartAndCoupon(userId, validatedCouponId);
 
       const totalProcessTime = Date.now() - startTime;
       console.log(`--- [CHECKOUT_SERVICE: EXIT_SUCCESS] Total Time: ${totalProcessTime}ms | OrderNumber: ${createdOrder.order_number} ---\n`);

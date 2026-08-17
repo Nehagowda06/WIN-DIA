@@ -11,6 +11,8 @@ import {
   UserRole,
 } from '../enums/entity.enums';
 
+// ── Users & Access ───────────────────────────────────────────────────────────
+
 export interface Profile extends BaseEntity {
   email: string;
   full_name: Nullable<string>;
@@ -30,6 +32,30 @@ export interface Address extends BaseEntity {
   pincode: string;
   is_default: boolean;
 }
+
+export interface LoginAttempt extends BaseEntity {
+  email: string;
+  ip_address: Nullable<string>;
+  user_agent: Nullable<string>;
+  is_successful: boolean;
+}
+
+export interface AdminSession extends BaseEntity {
+  user_id: string;
+  token_hash: string;
+  ip_address: Nullable<string>;
+  expires_at: string;
+}
+
+export interface OtpVerification extends BaseEntity {
+  phone_or_email: string;
+  otp_code: string;
+  purpose: OtpPurpose;
+  expires_at: string;
+  is_used: boolean;
+}
+
+// ── Catalog ──────────────────────────────────────────────────────────────────
 
 export interface Category extends BaseEntity {
   name: string;
@@ -84,6 +110,17 @@ export interface ProductImage extends BaseEntity {
   is_primary: boolean;
 }
 
+export interface ProductReview extends BaseEntity {
+  product_id: string;
+  user_id: string;
+  rating: number;
+  title: Nullable<string>;
+  comment: Nullable<string>;
+  status: ReviewStatus;
+}
+
+// ── Cart & Wishlist ──────────────────────────────────────────────────────────
+
 export interface Wishlist extends BaseEntity {
   user_id: string;
   product_id: string;
@@ -99,6 +136,8 @@ export interface CartItem extends BaseEntity {
   product_id: string;
   quantity: number;
 }
+
+// ── Orders ───────────────────────────────────────────────────────────────────
 
 export interface Order extends BaseEntity {
   order_number: string;
@@ -139,6 +178,22 @@ export interface OrderStatusHistory extends BaseEntity {
   created_by: Nullable<string>;
 }
 
+export interface Coupon extends BaseEntity {
+  code: string;
+  description: Nullable<string>;
+  discount_type: CouponType;
+  discount_value: number;
+  min_order_amount: Nullable<number>;
+  max_discount_amount: Nullable<number>;
+  usage_limit: Nullable<number>;
+  used_count: number;
+  starts_at: Nullable<string>;
+  expires_at: Nullable<string>;
+  is_active: boolean;
+}
+
+// ── Payments ─────────────────────────────────────────────────────────────────
+
 export interface Payment extends BaseEntity {
   order_id: string;
   payment_provider: PaymentProvider;
@@ -157,6 +212,8 @@ export interface PaymentEvent extends BaseEntity {
   payload: Record<string, unknown>;
 }
 
+// ── Shipping ─────────────────────────────────────────────────────────────────
+
 export interface Shipment extends BaseEntity {
   order_id: string;
   courier_name: Nullable<string>;
@@ -172,28 +229,7 @@ export interface ShipmentTrackingEvent extends BaseEntity {
   status: ShipmentStatus;
 }
 
-export interface ProductReview extends BaseEntity {
-  product_id: string;
-  user_id: string;
-  rating: number;
-  title: Nullable<string>;
-  comment: Nullable<string>;
-  status: ReviewStatus;
-}
-
-export interface Coupon extends BaseEntity {
-  code: string;
-  description: Nullable<string>;
-  discount_type: CouponType;
-  discount_value: number;
-  min_order_amount: Nullable<number>;
-  max_discount_amount: Nullable<number>;
-  usage_limit: Nullable<number>;
-  used_count: number;
-  starts_at: Nullable<string>;
-  expires_at: Nullable<string>;
-  is_active: boolean;
-}
+// ── Support & Content ────────────────────────────────────────────────────────
 
 export interface ContactMessage extends BaseEntity {
   name: string;
@@ -201,28 +237,6 @@ export interface ContactMessage extends BaseEntity {
   subject: Nullable<string>;
   message: string;
   status: ContactMessageStatus;
-}
-
-export interface OtpVerification extends BaseEntity {
-  phone_or_email: string;
-  otp_code: string;
-  purpose: OtpPurpose;
-  expires_at: string;
-  is_used: boolean;
-}
-
-export interface LoginAttempt extends BaseEntity {
-  email: string;
-  ip_address: Nullable<string>;
-  user_agent: Nullable<string>;
-  is_successful: boolean;
-}
-
-export interface AdminSession extends BaseEntity {
-  user_id: string;
-  token_hash: string;
-  ip_address: Nullable<string>;
-  expires_at: string;
 }
 
 export interface Setting extends BaseEntity {
