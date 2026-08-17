@@ -9,7 +9,7 @@ import toast from "react-hot-toast";
 import { useDispatch } from "react-redux";
 
 import { glutenFreeProducts } from "@/src/frontend/data/products";
-import { addToCart } from "@/src/frontend/redux/slices/cartSlice";
+import { addToCart, setBuyNowItem } from "@/src/frontend/redux/slices/cartSlice";
 import { addToWishlist, removeFromWishlist } from "@/src/frontend/redux/slices/wishlistSlice";
 
 import styles from "./GlutenFree.module.scss";
@@ -203,8 +203,7 @@ export function ProductRange({ heading, headingId, products, theme }: ProductRan
                 updateInteraction(product.id, { quantity: nextQuantity });
               }}
               onBuyNow={() => {
-                dispatch(addToCart(toStoreProduct(product, theme), 1));
-                toast.success("Added to cart");
+                dispatch(setBuyNowItem({ product: toStoreProduct(product, theme), qty: 1 }));
                 router.push("/checkout");
               }}
             />

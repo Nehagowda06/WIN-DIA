@@ -67,12 +67,12 @@ export default function StoreNav() {
 
           {/* WISHLIST */}
           <Link href="/wishlist">
-            <FiHeart /> {wishCount}
+            <FiHeart /> {user ? wishCount : 0}
           </Link>
 
           {/* CART */}
           <Link href="/cart">
-            <FiShoppingCart /> {cartCount}
+            <FiShoppingCart /> {user ? cartCount : 0}
           </Link>
 
           {/* LOGIN / PROFILE */}

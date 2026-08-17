@@ -20,6 +20,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [taglineIndex, setTaglineIndex] = useState(0);
 
+  // Clear form fields when the page mounts (e.g., after logout)
+  useEffect(() => {
+    setEmail('');
+    setPassword('');
+    setError('');
+  }, []);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setTaglineIndex((prev) => (prev + 1) % TAGLINES.length);
@@ -67,7 +74,10 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: { prompt: 'select_account' },
+      },
     });
   };
 
@@ -116,23 +126,29 @@ export default function LoginPage() {
 
           <div className={styles.divider}><span>or</span></div>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} autoComplete="off">
             <input
               type="email"
+              name="windia-email"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={styles.input}
               required
               autoFocus
+              autoComplete="off"
+              data-lpignore="true"
             />
             <input
               type="password"
+              name="windia-pass"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className={styles.input}
               required
+              autoComplete="off"
+              data-lpignore="true"
             />
 
             <div className={styles.formRow}>

@@ -5,7 +5,7 @@ const normalize = (item, qty = 1) => ({ ...item, _id: item?._id || item?.id, id:
 
 const cartSlice = createSlice({
   name: "cart",
-  initialState: { cartItems: [], shippingAddress: null, paymentMethod: null, promoApplied: false },
+  initialState: { cartItems: [], buyNowItem: null, shippingAddress: null, paymentMethod: null, promoApplied: false },
   reducers: {
     setCart: (s, a) => { s.cartItems = Array.isArray(a.payload) ? a.payload.map((i) => normalize(i)) : []; },
     addToCart: {
@@ -17,6 +17,8 @@ const cartSlice = createSlice({
       },
       prepare: (product, qty = 1) => ({ payload: { product, qty } }),
     },
+    setBuyNowItem: (s, a) => { s.buyNowItem = a.payload ? normalize(a.payload.product || a.payload, a.payload.qty || 1) : null; },
+    clearBuyNowItem: (s) => { s.buyNowItem = null; },
     removeFromCart: (s, a) => { s.cartItems = s.cartItems.filter((i) => getId(i) !== a.payload); },
     updateQuantity: (s, a) => { const item = s.cartItems.find((i) => getId(i) === a.payload.id); if (item) item.qty = Math.max(1, Number(a.payload.qty)); },
     clearCart: (s) => { s.cartItems = []; },
@@ -26,5 +28,5 @@ const cartSlice = createSlice({
   },
 });
 
-export const { setCart, addToCart, removeFromCart, updateQuantity, clearCart, saveShippingAddress, savePaymentMethod, setPromoApplied } = cartSlice.actions;
+export const { setCart, addToCart, setBuyNowItem, clearBuyNowItem, removeFromCart, updateQuantity, clearCart, saveShippingAddress, savePaymentMethod, setPromoApplied } = cartSlice.actions;
 export default cartSlice.reducer;

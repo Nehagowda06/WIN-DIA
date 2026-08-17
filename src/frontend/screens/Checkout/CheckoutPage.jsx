@@ -10,7 +10,7 @@ import {
   FiChevronRight, FiLoader
 } from "react-icons/fi";
 import toast from "react-hot-toast";
-import { saveShippingAddress, savePaymentMethod, clearCart } from "@/src/frontend/redux/slices/cartSlice";
+import { saveShippingAddress, savePaymentMethod, clearCart, clearBuyNowItem } from "@/src/frontend/redux/slices/cartSlice";
 import { useAuth } from "@/src/frontend/hooks/useAuth";
 import { validateAddress } from "@/src/frontend/lib/validation";
 import styles from "./CheckoutPage.module.css";
@@ -32,8 +32,11 @@ const STATES = ["Karnataka","Tamil Nadu","Kerala","Maharashtra","Delhi","Gujarat
 export default function CheckoutPage() {
   const dispatch = useDispatch();
   const router = useRouter();
-  const { cartItems, promoApplied } = useSelector((s) => s.cart);
+  const { cartItems, buyNowItem, promoApplied } = useSelector((s) => s.cart);
   const { user, authFetch } = useAuth();
+
+  // If buyNowItem is set, checkout only that single item; otherwise use full cart
+  const checkoutItems = buyNowItem ? [buyNowItem] : cartItems;
 
   const [step, setStep] = useState(1);
   const [addresses, setAddresses] = useState([]);
@@ -68,8 +71,20 @@ export default function CheckoutPage() {
     setAddresses([]);
     setSelectedAddr(null);
     authFetch("/api/addresses").then((r) => r.json()).then((d) => {
-      if (d.success) {
-        const normalized = (d.addresses || []).map((a) => ({ ...a, _id: a.id, isDefault: a.is_default }));
+      const rawAddresses = d.addresses || d.data || [];
+      if (rawAddresses.length > 0) {
+        const normalized = rawAddresses.map((a) => ({
+          ...a,
+          _id: a.id,
+          name: a.full_name || a.name,
+          street: a.address_line1 || a.street,
+          city: a.city,
+          state: a.state,
+          pincode: a.pincode,
+          phone: a.phone,
+          type: a.type || "home",
+          isDefault: a.is_default,
+        }));
         setAddresses(normalized);
         const def = normalized.find((a) => a.isDefault) || normalized[0];
         if (def) setSelectedAddr(def._id);
@@ -96,7 +111,7 @@ export default function CheckoutPage() {
   };
 
   // Calculations — SERVER-SIDE is the source of truth, this is display only
-  const subtotal = cartItems.reduce((a, i) => a + i.price * i.qty, 0);
+  const subtotal = checkoutItems.reduce((a, i) => a + i.price * i.qty, 0);
   const discount = couponApplied ? subtotal * 0.1 : 0;
   const shipping = 0; // FREE DELIVERY — always ₹0, enforced server-side
   const tax = (subtotal - discount) * 0.05;
@@ -114,14 +129,38 @@ export default function CheckoutPage() {
     }
 
     try {
-      const res = await authFetch("/api/addresses", { method: "POST", body: JSON.stringify(form) });
+      const res = await authFetch("/api/addresses", {
+        method: "POST",
+        body: JSON.stringify({
+          full_name: form.name,
+          phone: form.phone,
+          address_line1: form.street,
+          address_line2: null,
+          city: form.city,
+          state: form.state,
+          pincode: form.pincode,
+          is_default: form.isDefault,
+        }),
+      });
       const data = await res.json();
-      if (!data.success) {
+      if (data.error) {
         saveLocalAddress();
         toast.success("Address saved for checkout");
         return;
       }
-      const saved = { ...data.address, _id: data.address.id, isDefault: data.address.is_default };
+      const addr = data.address;
+      const saved = {
+        ...addr,
+        _id: addr.id,
+        name: addr.full_name || form.name,
+        street: addr.address_line1 || form.street,
+        city: addr.city,
+        state: addr.state,
+        pincode: addr.pincode,
+        phone: addr.phone,
+        type: form.type,
+        isDefault: addr.is_default,
+      };
       setAddresses((prev) => [saved, ...prev]);
       setSelectedAddr(saved._id);
       setShowForm(false);
@@ -150,7 +189,7 @@ export default function CheckoutPage() {
       const res = await authFetch("/api/orders", {
         method: "POST",
         body: JSON.stringify({
-          items: cartItems.map((i) => ({
+          items: checkoutItems.map((i) => ({
             productId: i._id || i.id,
             id: i.id || i._id,
             name: i.name,
@@ -160,7 +199,7 @@ export default function CheckoutPage() {
             flavor: i.flavor,
             netWeight: i.netWeight,
           })),
-          shippingAddress: { name: addr.name, phone: addr.phone, street: addr.street, city: addr.city, state: addr.state, pincode: addr.pincode },
+          shippingAddress: { name: addr.name || addr.full_name, phone: addr.phone, street: addr.street || addr.address_line1, city: addr.city, state: addr.state, pincode: addr.pincode },
           paymentMethod: payMethod, orderNotes: notes,
           couponCode: couponApplied ? couponCode : null,
         }),
@@ -169,6 +208,7 @@ export default function CheckoutPage() {
       if (!data.success) { toast.error(data.error || "Could not place order"); setPlacing(false); return; }
 
       if (!data.requiresPayment) {
+        dispatch(clearBuyNowItem());
         dispatch(clearCart());
         router.push(`/order-confirmation?orderId=${data.order.id}`);
         return;
@@ -194,7 +234,7 @@ export default function CheckoutPage() {
               body: JSON.stringify({ orderId: data.order.id, razorpay_order_id: response.razorpay_order_id, razorpay_payment_id: response.razorpay_payment_id, razorpay_signature: response.razorpay_signature }),
             });
             const vData = await vRes.json();
-            if (vData.success) { dispatch(clearCart()); toast.success("Payment successful!"); router.push(`/order-confirmation?orderId=${data.order.id}`); }
+            if (vData.success) { dispatch(clearBuyNowItem()); dispatch(clearCart()); toast.success("Payment successful!"); router.push(`/order-confirmation?orderId=${data.order.id}`); }
             else toast.error(vData.error || "Payment verification failed");
           } finally { setPlacing(false); }
         },
@@ -205,7 +245,7 @@ export default function CheckoutPage() {
     } catch { toast.error("Something went wrong"); setPlacing(false); }
   };
 
-  if (!cartItems.length) return (
+  if (!checkoutItems.length) return (
     <div className={styles.emptyWrap}>
       <div className={styles.emptyCard}>
         <h2>Nothing to checkout</h2>
@@ -325,7 +365,10 @@ export default function CheckoutPage() {
                       {addresses.length === 0 && (
                         <div className={styles.noAddr}>
                           <FiMapPin />
-                          <p>No saved addresses. Add one above.</p>
+                          <p>No saved addresses yet.</p>
+                          <button className={styles.addAddrBtn} onClick={() => setShowForm(true)}>
+                            <FiPlus /> Add Your First Address
+                          </button>
                         </div>
                       )}
                       {addresses.map((a) => {
@@ -420,7 +463,7 @@ export default function CheckoutPage() {
               <div className="gold-divider" style={{ margin: "12px 0 16px" }} />
 
               <div className={styles.summaryItems}>
-                {cartItems.map((item) => (
+                {checkoutItems.map((item) => (
                   <div key={item._id || item.id} className={styles.summaryItem}>
                     <img src={item.image || "/images/product-methi.jpg"} alt={item.name} />
                     <div>

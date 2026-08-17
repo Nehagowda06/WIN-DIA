@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { container, ServiceTokens } from '@/src/backend/providers/container.provider';
+import { ServiceTokens } from '@/src/backend/providers/container.provider';
 import { CartService } from '@/src/backend/services/cart.service';
 import { getAuthUserContext, handleServiceResult } from '@/src/backend/utils/route-helper.util';
 import { createErrorResponse } from '@/src/backend/types/api-response.types';
@@ -13,16 +13,14 @@ function handleUnexpectedError(err: any) {
 
 export async function GET(request: Request) {
   try {
-    const authHeader = request.headers.get('authorization');
     const authRes = await getAuthUserContext(request);
-    const userId = authRes.success ? authRes.value.id : undefined;
+    if (!authRes.success) {
+      return handleServiceResult(authRes);
+    }
 
-    const { searchParams } = new URL(request.url);
-    const sessionId = searchParams.get('sessionId') || undefined;
-
-    const scope = authRes.success ? authRes.value.scope : container.createRequestScope(authHeader || undefined);
-    const cartService = scope.resolve<CartService>(ServiceTokens.CartService);
-    const result = await cartService.getCart(userId, sessionId);
+    const userId = authRes.value.id;
+    const cartService = authRes.value.scope.resolve<CartService>(ServiceTokens.CartService);
+    const result = await cartService.getCart(userId);
 
     return handleServiceResult(result);
   } catch (err: any) {
@@ -32,7 +30,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get('authorization');
+    const authRes = await getAuthUserContext(request);
+    if (!authRes.success) {
+      return handleServiceResult(authRes);
+    }
+
     const body = await request.json().catch(() => ({}));
     // Accept product_id; fall back to variant_id for backwards-compat with older clients
     const { cart_id, product_id, variant_id, quantity } = body;
@@ -45,8 +47,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const scope = container.createRequestScope(authHeader || undefined);
-    const cartService = scope.resolve<CartService>(ServiceTokens.CartService);
+    const cartService = authRes.value.scope.resolve<CartService>(ServiceTokens.CartService);
+
+    // Verify the cart belongs to this user
+    const cartCheck = await cartService.getCart(authRes.value.id);
+    if (!cartCheck.success || cartCheck.value.cart.id !== cart_id) {
+      return NextResponse.json(
+        createErrorResponse('FORBIDDEN', 'You do not have access to this cart'),
+        { status: 403 }
+      );
+    }
+
     const result = await cartService.addItem(cart_id, {
       product_id: resolvedProductId,
       quantity: parseInt(quantity || '1', 10),
@@ -60,7 +71,11 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const authHeader = request.headers.get('authorization');
+    const authRes = await getAuthUserContext(request);
+    if (!authRes.success) {
+      return handleServiceResult(authRes);
+    }
+
     const body = await request.json().catch(() => ({}));
     // Accept product_id; fall back to variant_id for backwards-compat with older clients
     const { cart_id, product_id, variant_id, quantity } = body;
@@ -73,8 +88,17 @@ export async function PUT(request: Request) {
       );
     }
 
-    const scope = container.createRequestScope(authHeader || undefined);
-    const cartService = scope.resolve<CartService>(ServiceTokens.CartService);
+    const cartService = authRes.value.scope.resolve<CartService>(ServiceTokens.CartService);
+
+    // Verify the cart belongs to this user
+    const cartCheck = await cartService.getCart(authRes.value.id);
+    if (!cartCheck.success || cartCheck.value.cart.id !== cart_id) {
+      return NextResponse.json(
+        createErrorResponse('FORBIDDEN', 'You do not have access to this cart'),
+        { status: 403 }
+      );
+    }
+
     const result = await cartService.updateItemQuantity(cart_id, resolvedProductId, {
       quantity: parseInt(quantity, 10),
     });
@@ -87,7 +111,11 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const authHeader = request.headers.get('authorization');
+    const authRes = await getAuthUserContext(request);
+    if (!authRes.success) {
+      return handleServiceResult(authRes);
+    }
+
     const { searchParams } = new URL(request.url);
     const cartId = searchParams.get('cartId') || searchParams.get('cart_id');
     // Accept product_id or variant_id (backwards-compat with older clients)
@@ -101,8 +129,17 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const scope = container.createRequestScope(authHeader || undefined);
-    const cartService = scope.resolve<CartService>(ServiceTokens.CartService);
+    const cartService = authRes.value.scope.resolve<CartService>(ServiceTokens.CartService);
+
+    // Verify the cart belongs to this user
+    const cartCheck = await cartService.getCart(authRes.value.id);
+    if (!cartCheck.success || cartCheck.value.cart.id !== cartId) {
+      return NextResponse.json(
+        createErrorResponse('FORBIDDEN', 'You do not have access to this cart'),
+        { status: 403 }
+      );
+    }
+
     if (productId) {
       const result = await cartService.removeItem(cartId, productId);
       return handleServiceResult(result);

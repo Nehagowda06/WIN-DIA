@@ -25,9 +25,10 @@ export default function CartPage() {
   const [promoApplied, setPromoApplied] = useState(false);
 
   useEffect(() => {
-    try { dispatch(setCart(JSON.parse(localStorage.getItem("cartItems") || "[]"))); } catch {}
-    Promise.resolve().then(() => setMounted(true));
-  }, [dispatch]);
+    // Cart is hydrated by the Persistence component in providers.jsx (user-scoped).
+    // No need to re-hydrate from localStorage here.
+    setMounted(true);
+  }, []);
 
   const subtotal = cartItems.reduce((a, i) => a + i.price * i.qty, 0);
   const discount = promoApplied ? subtotal * 0.1 : 0;
