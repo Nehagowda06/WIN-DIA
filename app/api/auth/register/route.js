@@ -27,7 +27,13 @@ export async function POST(request) {
     // TODO: add rate limiting per IP/email (e.g. Upstash Ratelimit) to prevent
     // this route being spammed to trigger repeated OTP emails.
 
-    const supabase = await createSupabaseServerClient();
+    // NOTE: we intentionally do NOT use createSupabaseServerClient() for account
+    // creation below. That client is bound to request/response cookies, so if
+    // the Supabase project has "Confirm email" disabled, a client-side signUp()
+    // call auto-confirms the user AND writes a live session into the browser's
+    // cookies immediately — logging the user in before OTP verification ever runs.
+    // We only need the server client later, to establish a session ourselves
+    // once OTP succeeds (that already happens in verify-otp/route.js).
     const supabaseAdmin = createSupabaseAdminClient();
 
     /* === Check for an existing profile with this email or phone === */
@@ -53,22 +59,25 @@ export async function POST(request) {
       userId = existingProfile.id;
       await supabaseAdmin.auth.admin.updateUserById(userId, { password });
     } else {
-      /* === No profile row — try a fresh signup === */
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      /* === No profile row — try a fresh signup via the ADMIN API ===
+         admin.createUser() never touches request cookies, so no session
+         is created here. email_confirm is explicitly false: the account
+         stays unconfirmed (and therefore unable to log in) until the OTP
+         step calls updateUserById({ email_confirm: true }). */
+      const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
+        email_confirm: false,
       });
 
-      if (signUpError) {
-        /* === Only search for an orphaned user if the error indicates the
-           email is already registered — avoids an expensive listUsers scan
-           on unrelated errors like weak password or rate limits. === */
+      if (createError) {
         const isDuplicateError =
-          signUpError.message?.toLowerCase().includes('already registered') ||
-          signUpError.code === 'user_already_exists';
+          createError.message?.toLowerCase().includes('already registered') ||
+          createError.code === 'email_exists' ||
+          createError.code === 'user_already_exists';
 
         if (!isDuplicateError) {
-          return NextResponse.json({ error: signUpError.message }, { status: 400 });
+          return NextResponse.json({ error: createError.message }, { status: 400 });
         }
 
         const { data: listData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
@@ -92,7 +101,7 @@ export async function POST(request) {
           );
         }
       } else {
-        userId = signUpData.user?.id;
+        userId = createData.user?.id;
       }
     }
 
