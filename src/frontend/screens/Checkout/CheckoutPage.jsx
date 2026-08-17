@@ -71,8 +71,20 @@ export default function CheckoutPage() {
     setAddresses([]);
     setSelectedAddr(null);
     authFetch("/api/addresses").then((r) => r.json()).then((d) => {
-      if (d.success) {
-        const normalized = (d.addresses || []).map((a) => ({ ...a, _id: a.id, isDefault: a.is_default }));
+      const rawAddresses = d.addresses || d.data || [];
+      if (rawAddresses.length > 0) {
+        const normalized = rawAddresses.map((a) => ({
+          ...a,
+          _id: a.id,
+          name: a.full_name || a.name,
+          street: a.address_line1 || a.street,
+          city: a.city,
+          state: a.state,
+          pincode: a.pincode,
+          phone: a.phone,
+          type: a.type || "home",
+          isDefault: a.is_default,
+        }));
         setAddresses(normalized);
         const def = normalized.find((a) => a.isDefault) || normalized[0];
         if (def) setSelectedAddr(def._id);
@@ -117,14 +129,38 @@ export default function CheckoutPage() {
     }
 
     try {
-      const res = await authFetch("/api/addresses", { method: "POST", body: JSON.stringify(form) });
+      const res = await authFetch("/api/addresses", {
+        method: "POST",
+        body: JSON.stringify({
+          full_name: form.name,
+          phone: form.phone,
+          address_line1: form.street,
+          address_line2: null,
+          city: form.city,
+          state: form.state,
+          pincode: form.pincode,
+          is_default: form.isDefault,
+        }),
+      });
       const data = await res.json();
-      if (!data.success) {
+      if (data.error) {
         saveLocalAddress();
         toast.success("Address saved for checkout");
         return;
       }
-      const saved = { ...data.address, _id: data.address.id, isDefault: data.address.is_default };
+      const addr = data.address;
+      const saved = {
+        ...addr,
+        _id: addr.id,
+        name: addr.full_name || form.name,
+        street: addr.address_line1 || form.street,
+        city: addr.city,
+        state: addr.state,
+        pincode: addr.pincode,
+        phone: addr.phone,
+        type: form.type,
+        isDefault: addr.is_default,
+      };
       setAddresses((prev) => [saved, ...prev]);
       setSelectedAddr(saved._id);
       setShowForm(false);
@@ -163,7 +199,7 @@ export default function CheckoutPage() {
             flavor: i.flavor,
             netWeight: i.netWeight,
           })),
-          shippingAddress: { name: addr.name, phone: addr.phone, street: addr.street, city: addr.city, state: addr.state, pincode: addr.pincode },
+          shippingAddress: { name: addr.name || addr.full_name, phone: addr.phone, street: addr.street || addr.address_line1, city: addr.city, state: addr.state, pincode: addr.pincode },
           paymentMethod: payMethod, orderNotes: notes,
           couponCode: couponApplied ? couponCode : null,
         }),
@@ -329,7 +365,10 @@ export default function CheckoutPage() {
                       {addresses.length === 0 && (
                         <div className={styles.noAddr}>
                           <FiMapPin />
-                          <p>No saved addresses. Add one above.</p>
+                          <p>No saved addresses yet.</p>
+                          <button className={styles.addAddrBtn} onClick={() => setShowForm(true)}>
+                            <FiPlus /> Add Your First Address
+                          </button>
                         </div>
                       )}
                       {addresses.map((a) => {
