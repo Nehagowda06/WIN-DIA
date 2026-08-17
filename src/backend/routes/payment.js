@@ -27,27 +27,66 @@ function getDevUser(req) {
   return { id: devId, email: "devtest@windia.com" };
 }
 
+function isDevBypass(req) {
+  return process.env.NODE_ENV === "development" && Boolean(req.headers["x-dev-user-id"]);
+}
+
+// ── Shared helpers ───────────────────────────────────────────────────────────
+function sendError(res, message, status) {
+  const { payload, status: s } = errorPayload(message, status);
+  return res.status(s).json(payload);
+}
+
+function sendSuccess(res, data) {
+  const { payload, status } = successPayload(data);
+  return res.status(status).json(payload);
+}
+
+async function requireAuthedUser(req, res) {
+  const user = (await getAuthedUser(req, supabase)) || getDevUser(req);
+  if (!user) {
+    sendError(res, "Please sign in", 401);
+    return null;
+  }
+  return user;
+}
+
+// Returns true (and writes the response) if the request should be blocked.
+function blockIfNoOrderAccess(req, res, order, userId) {
+  if (!isDevBypass(req) && order.user_id !== userId) {
+    sendError(res, "You do not have access to this order", 403);
+    return true;
+  }
+  return false;
+}
+
+function razorpayCheckoutPayload(orderId, amount, currency) {
+  return {
+    razorpay: {
+      orderId,
+      amount,
+      currency,
+      keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+    },
+  };
+}
+
 // ── POST /api/payment/create-order ──────────────────────────────────────────
 // Called by checkout after the order row is already created in DB.
 // Creates a Razorpay order and returns the payment params for the frontend SDK.
 router.post("/create-order", async (req, res) => {
-  const user = (await getAuthedUser(req, supabase)) || getDevUser(req);
-  if (!user) {
-    const { payload, status } = errorPayload("Please sign in", 401);
-    return res.status(status).json(payload);
-  }
+  const user = await requireAuthedUser(req, res);
+  if (!user) return;
 
   const ip = getClientIp(req);
   const limit = rateLimit(`payment-create:${user.id}:${ip}`, 10, 10 * 60 * 1000);
   if (!limit.allowed) {
-    const { payload, status } = errorPayload("Too many requests. Please wait a few minutes.", 429);
-    return res.status(status).json(payload);
+    return sendError(res, "Too many requests. Please wait a few minutes.", 429);
   }
 
   const { orderId } = req.body || {};
   if (!orderId) {
-    const { payload, status } = errorPayload("orderId is required", 400);
-    return res.status(status).json(payload);
+    return sendError(res, "orderId is required", 400);
   }
 
   // Fetch the order to get the confirmed total (never trust amount from client)
@@ -59,31 +98,25 @@ router.post("/create-order", async (req, res) => {
 
   if (fetchErr || !order) {
     console.error("Order fetch error:", fetchErr?.message, fetchErr?.cause, "orderId:", orderId);
-    const { payload, status } = errorPayload("Order not found", 404);
-    return res.status(status).json(payload);
+    return sendError(res, "Order not found", 404);
   }
-  // Skip ownership check in dev bypass mode
-  const isDevBypass = process.env.NODE_ENV === "development" && req.headers["x-dev-user-id"];
-  if (!isDevBypass && order.user_id !== user.id) {
-    const { payload, status } = errorPayload("You do not have access to this order", 403);
-    return res.status(status).json(payload);
-  }
+
+  if (blockIfNoOrderAccess(req, res, order, user.id)) return;
+
   if (order.payment_status === "paid") {
-    const { payload, status } = errorPayload("This order has already been paid", 409);
-    return res.status(status).json(payload);
+    return sendError(res, "This order has already been paid", 409);
   }
 
   // Reuse existing Razorpay order if one was already created (e.g. page refresh)
   if (order.razorpay_order_id) {
-    const { payload, status } = successPayload({
-      razorpay: {
-        orderId: order.razorpay_order_id,
-        amount: Math.round(order.total_price * 100),
-        currency: "INR",
-        keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-      },
-    });
-    return res.status(status).json(payload);
+    return sendSuccess(
+      res,
+      razorpayCheckoutPayload(
+        order.razorpay_order_id,
+        Math.round(order.total_price * 100),
+        "INR"
+      )
+    );
   }
 
   try {
@@ -100,21 +133,13 @@ router.post("/create-order", async (req, res) => {
       .update({ razorpay_order_id: rpOrder.id })
       .eq("id", order.id);
 
-    const { payload, status } = successPayload({
-      razorpay: {
-        orderId: rpOrder.id,
-        amount: rpOrder.amount,
-        currency: rpOrder.currency,
-        keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-      },
-    });
-    return res.status(status).json(payload);
+    return sendSuccess(
+      res,
+      razorpayCheckoutPayload(rpOrder.id, rpOrder.amount, rpOrder.currency)
+    );
   } catch (err) {
     console.error("Razorpay order creation failed:", err.message);
-    const { payload, status } = errorPayload(
-      "Payment gateway error. Check your Razorpay keys in .env.", 503
-    );
-    return res.status(status).json(payload);
+    return sendError(res, "Payment gateway error. Check your Razorpay keys in .env.", 503);
   }
 });
 
@@ -122,16 +147,12 @@ router.post("/create-order", async (req, res) => {
 // Called by frontend after the Razorpay checkout modal closes successfully.
 // Verifies the HMAC signature and marks the order as paid.
 router.post("/verify", async (req, res) => {
-  const user = (await getAuthedUser(req, supabase)) || getDevUser(req);
-  if (!user) {
-    const { payload, status } = errorPayload("Please sign in", 401);
-    return res.status(status).json(payload);
-  }
+  const user = await requireAuthedUser(req, res);
+  if (!user) return;
 
   const { orderId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body || {};
   if (!orderId || !razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-    const { payload, status } = errorPayload("Missing payment verification fields", 400);
-    return res.status(status).json(payload);
+    return sendError(res, "Missing payment verification fields", 400);
   }
 
   const { data: order, error: fetchErr } = await supabaseAdmin
@@ -141,18 +162,13 @@ router.post("/verify", async (req, res) => {
     .single();
 
   if (fetchErr || !order) {
-    const { payload, status } = errorPayload("Order not found", 404);
-    return res.status(status).json(payload);
+    return sendError(res, "Order not found", 404);
   }
-  // Skip ownership check in dev bypass mode
-  const isDevBypass = process.env.NODE_ENV === "development" && req.headers["x-dev-user-id"];
-  if (!isDevBypass && order.user_id !== user.id) {
-    const { payload, status } = errorPayload("You do not have access to this order", 403);
-    return res.status(status).json(payload);
-  }
+
+  if (blockIfNoOrderAccess(req, res, order, user.id)) return;
+
   if (order.razorpay_order_id !== razorpay_order_id) {
-    const { payload, status } = errorPayload("Payment does not match this order", 400);
-    return res.status(status).json(payload);
+    return sendError(res, "Payment does not match this order", 400);
   }
 
   const valid = verifyPaymentSignature({
@@ -172,11 +188,11 @@ router.post("/verify", async (req, res) => {
   });
 
   if (!valid) {
-    const { payload, status } = errorPayload(
+    return sendError(
+      res,
       "Payment verification failed. If money was deducted, it will be auto-refunded or resolved via support.",
       400
     );
-    return res.status(status).json(payload);
   }
 
   if (order.payment_status !== "paid") {
@@ -199,8 +215,7 @@ router.post("/verify", async (req, res) => {
     );
   }
 
-  const { payload, status } = successPayload({ verified: true, orderId: order.id });
-  return res.status(status).json(payload);
+  return sendSuccess(res, { verified: true, orderId: order.id });
 });
 
 // ── POST /api/payment/webhook ────────────────────────────────────────────────
