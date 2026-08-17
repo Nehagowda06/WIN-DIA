@@ -22,7 +22,7 @@ export const glutenFreeProducts = [
   {
     id: "methi",
     title: "Fiber Rich Thins",
-    name: "Garlic Flavour",
+    name: "Methi Flavour",
     flavour: "Methi",
     image: methiImage,
     description: "A bold, savoury crunch layered with warm roasted garlic notes.",
@@ -34,7 +34,7 @@ export const glutenFreeProducts = [
   {
     id: "moringa",
     title: "Fiber Rich Thins",
-    name: "Curry Leaf Flavour",
+    name: "Moringa Leaf Flavour",
     flavour: "Moringa",
     image: moringaImage,
     description: "A fragrant, savoury bite finished with aromatic curry leaf.",

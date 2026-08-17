@@ -843,7 +843,7 @@ function DipsSection() {
           ))}
         </div>
         <p className="win-rc-dips-scroll-hint">
-          <span className="win-rc-eyebrow-bar" /> Scroll to explore more dips
+          <span className="win-rc-eyebrow-bar" /> Swipe to explore more dips
         </p>
       </div>
     </section>

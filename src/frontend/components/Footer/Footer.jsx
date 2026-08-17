@@ -82,22 +82,22 @@ export default function Footer() {
               </li>
 
               <li>
-                <Link href="/about">
-                  Our Story
-                </Link>
-              </li>
+  <Link href="/our-story/about">
+    Our Story
+  </Link>
+</li>
 
-              <li>
-                <Link href="/health-benefits">
-                  Health Benefits
-                </Link>
-              </li>
+<li>
+  <Link href="/health-benefits">
+    Health Benefits
+  </Link>
+</li>
 
-              <li>
-                <Link href="/contact">
-                  Contact
-                </Link>
-              </li>
+<li>
+  <Link href="/our-story/contact">
+    Contact
+  </Link>
+</li>
 
               <li>
                 <Link href="/account">
