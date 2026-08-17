@@ -130,12 +130,19 @@ export const localProducts = [
 export const normalizeProduct = (product: Record<string, unknown>): StoreProduct => {
   const id = String(product.id ?? product._id ?? "");
 
+  // Handle category as joined object { slug, name } or plain string
+  const rawCategory = product.category;
+  const category =
+    typeof rawCategory === "object" && rawCategory !== null
+      ? String((rawCategory as Record<string, unknown>).slug ?? "snacks")
+      : String(rawCategory ?? "snacks");
+
   return {
     id,
     _id: String(product._id ?? id),
     slug: String(product.slug ?? id),
     name: String(product.name ?? "WIN-DIA Product"),
-    category: String(product.category ?? "snacks"),
+    category,
     flavor: String(product.flavor ?? product.flavour ?? ""),
     description: String(product.description ?? ""),
     price: Number(product.price ?? 0),
