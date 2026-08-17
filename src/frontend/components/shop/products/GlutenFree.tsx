@@ -454,6 +454,7 @@ function Sparkles({ className }: { readonly className: string }) {
 }
 
 /** Gluten-free product range displayed on the shop landing page. */
-export function GlutenFree() {
-  return <ProductRange heading="The Gluten Free Range" headingId="gluten-free-heading" products={glutenFreeProducts} theme="gluten-free" />;
+export function GlutenFree({ products }: { products?: readonly Product[] }) {
+  const data = products?.length ? products : glutenFreeProducts;
+  return <ProductRange heading="The Gluten Free Range" headingId="gluten-free-heading" products={data} theme="gluten-free" />;
 }

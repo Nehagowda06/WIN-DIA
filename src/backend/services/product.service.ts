@@ -15,6 +15,7 @@ export interface ProductService {
   listProducts(query: PaginationQueryDTO): Promise<Result<{ items: Product[]; total: number }, AppError>>;
   getFeaturedProducts(limit?: number): Promise<Result<Product[], AppError>>;
   getRelatedProducts(productId: string, limit?: number): Promise<Result<Product[], AppError>>;
+  getProductsByCategory(categorySlug: string): Promise<Result<Product[], AppError>>;
   createProduct(dto: CreateProductDTO): Promise<Result<Product, AppError>>;
   updateProduct(id: string, dto: Partial<CreateProductDTO>): Promise<Result<Product, AppError>>;
   deleteProduct(id: string): Promise<Result<boolean, AppError>>;
@@ -105,6 +106,15 @@ export class ProductServiceImpl implements ProductService {
     const existing = await this.getProductById(id);
     if (!existing.success) return failure(existing.error);
     return this.productRepo.delete(id);
+  }
+
+  public async getProductsByCategory(categorySlug: string): Promise<Result<Product[], AppError>> {
+    const catRes = await this.categoryRepo.findBySlug(categorySlug);
+    if (!catRes.success) return failure(catRes.error);
+    if (!catRes.value) {
+      return success([]);
+    }
+    return this.productRepo.findAll({ category_id: catRes.value.id, is_active: true });
   }
 
   public async getVariants(productId: string): Promise<Result<ProductVariant[], AppError>> {
