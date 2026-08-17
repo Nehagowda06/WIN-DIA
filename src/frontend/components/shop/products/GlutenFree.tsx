@@ -16,6 +16,7 @@ import styles from "./GlutenFree.module.scss";
 
 type Product = {
   readonly id: string;
+  readonly dbId?: string;
   readonly title: string;
   readonly name: string;
   readonly flavour: string;
@@ -43,12 +44,13 @@ type ProductInteraction = {
 };
 
 function toStoreProduct(product: Product, collection: ProductRangeProps["theme"]) {
-  const id = `${collection}-${product.id}`;
+  // Use the real Supabase UUID if available (from API), otherwise fall back to slug-based ID
+  const id = product.dbId || `${collection}-${product.id}`;
 
   return {
     id,
     _id: id,
-    slug: id,
+    slug: `${collection}-${product.id}`,
     name: product.name,
     category: collection,
     flavor: product.flavour,

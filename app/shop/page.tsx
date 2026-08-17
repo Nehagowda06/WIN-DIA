@@ -27,6 +27,7 @@ async function fetchProductsByCategory(categorySlug: string) {
     // Map Supabase product shape to the frontend Product shape expected by ProductRange
     return products.map((p: Record<string, unknown>) => ({
       id: String(p.slug ?? p.id ?? ""),
+      dbId: String(p.id ?? ""),
       title: "Fiber Rich Thins",
       name: `${String(p.flavor ?? "")} Flavour`,
       flavour: String(p.flavor ?? ""),

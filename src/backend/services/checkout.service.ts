@@ -156,18 +156,88 @@ export class CheckoutServiceImpl implements CheckoutService {
         subtotal += itemTotal;
 
         const rawId = item.productId || item.product_id || item.id || item._id;
-        const validProductId = stableProductUuid(rawId);
+        let validProductId: string;
 
-        // Ensure product exists in database so foreign key constraint order_items.product_id -> products.id is satisfied
+        // PRODUCT RESOLUTION: Try to find the real product in the database.
+        // Priority: 1) Direct UUID lookup, 2) Slug lookup, 3) Flavor/name lookup
+        // This prevents ghost product creation when frontend sends slug-based IDs.
+        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+        if (uuidPattern.test(rawId)) {
+          // Frontend sent a real UUID — use it directly
+          const prodCheck = await this.productRepo.findById(rawId);
+          if (prodCheck.success && prodCheck.value) {
+            validProductId = rawId;
+          } else {
+            // UUID doesn't match any product — try slug/name fallback
+            validProductId = rawId;
+          }
+        } else {
+          // Frontend sent a slug-based ID (e.g., "gluten-free-jeera" or "jeera-thins")
+          // Try to resolve it to a real product
+          let resolvedProduct = null;
+
+          // Strategy 1: Try finding by slug directly
+          const slugVariants = [
+            rawId,                              // e.g., "gluten-free-jeera"
+            rawId.replace(/^(gluten-free|everyday)-/, ''), // strip prefix → "jeera"
+            `${rawId}-thins`,                   // e.g., "jeera-thins"
+            rawId.replace(/^(gluten-free|everyday)-/, '') + '-thins', // "jeera-thins"
+          ];
+
+          for (const slug of slugVariants) {
+            const slugRes = await this.productRepo.findBySlug(slug);
+            if (slugRes.success && slugRes.value) {
+              resolvedProduct = slugRes.value;
+              break;
+            }
+          }
+
+          // Strategy 2: Search by flavor (extracted from item name or slug)
+          if (!resolvedProduct) {
+            const flavor = item.flavor || item.flavour ||
+              rawId.replace(/^(gluten-free|everyday)-/, '').replace(/-thins$/, '');
+            if (flavor) {
+              const allProducts = await this.productRepo.findAll({ is_active: true });
+              if (allProducts.success) {
+                resolvedProduct = allProducts.value.find(
+                  (p) => p.flavor?.toLowerCase() === flavor.toLowerCase() ||
+                         p.name?.toLowerCase().includes(flavor.toLowerCase()) ||
+                         p.slug?.toLowerCase().includes(flavor.toLowerCase())
+                ) || null;
+              }
+            }
+          }
+
+          if (resolvedProduct) {
+            validProductId = resolvedProduct.id;
+          } else {
+            // Last resort: use stableProductUuid to maintain backward compatibility
+            // This ensures FK constraint is satisfied, but logs a warning
+            validProductId = stableProductUuid(rawId);
+            console.warn(
+              `[CheckoutService] Could not resolve product for ID "${rawId}". ` +
+              `Using generated UUID ${validProductId}. Product may need to be seeded in the database.`
+            );
+          }
+        }
+
+        // Only create a placeholder product if the resolved ID doesn't exist in DB.
+        // This is a safety net — in production all products should be pre-seeded.
         try {
           const prodCheck = await this.productRepo.findById(validProductId);
           if (!prodCheck.success || !prodCheck.value) {
+            console.warn(
+              `[CheckoutService] Product ${validProductId} not found in DB for item "${item.name}". ` +
+              `Creating placeholder. Ensure products are properly seeded.`
+            );
             const adminClient = getAdminClient();
             await adminClient.from('products').upsert({
               id: validProductId,
               name: item.name || item.product_name || 'WIN-DIA Product',
+              slug: rawId.replace(/^(gluten-free|everyday)-/, ''),
               price: BundlePricing.BUNDLE_PRICE,
-              count_in_stock: 999,
+              count_in_stock: 100,
               is_active: true,
             });
           }
