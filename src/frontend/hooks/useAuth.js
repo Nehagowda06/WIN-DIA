@@ -77,6 +77,14 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     await supabase.auth.signOut();
+    // Clear cart/wishlist from localStorage to prevent data leaking to next user
+    if (user?.id) {
+      localStorage.removeItem(`cartItems_${user.id}`);
+      localStorage.removeItem(`wishlistItems_${user.id}`);
+    }
+    // Also clear legacy un-keyed entries
+    localStorage.removeItem("cartItems");
+    localStorage.removeItem("wishlistItems");
     setUser(null);
     setToken(null);
     setIsAdmin(false);
