@@ -201,13 +201,16 @@ export class RequestScopedContainer {
         return new OrderServiceImpl(
           this.resolve(RepositoryTokens.OrderRepository),
           this.resolve(RepositoryTokens.OrderItemRepository),
-          this.resolve(RepositoryTokens.OrderStatusHistoryRepository)
+          this.resolve(RepositoryTokens.OrderStatusHistoryRepository),
+          this.resolve(ServiceTokens.InventoryService)
         ) as any;
       case ServiceTokens.PaymentService:
         return new PaymentServiceImpl(
           this.resolve(RepositoryTokens.PaymentRepository),
           this.resolve(RepositoryTokens.PaymentEventRepository),
-          this.resolve(RepositoryTokens.OrderRepository)
+          this.resolve(RepositoryTokens.OrderRepository),
+          this.resolve(RepositoryTokens.OrderItemRepository),
+          this.resolve(ServiceTokens.InventoryService)
         ) as any;
       case ServiceTokens.ShipmentService:
         return new ShipmentServiceImpl(
