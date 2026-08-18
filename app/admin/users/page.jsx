@@ -18,8 +18,12 @@ function useAdminUsers() {
     authFetch("/api/admin/users")
       .then((res) => res.json())
       .then((data) => {
-        if (data.success) setUsers(data.users);
-        else toast.error(data.error || "Could not load users");
+        if (data.success) {
+          const items = data.data?.items || data.users || (Array.isArray(data.data) ? data.data : data.data ? [data.data] : []);
+          setUsers(Array.isArray(items) ? items : []);
+        } else {
+          toast.error(data.error || "Could not load users");
+        }
       })
       .finally(() => setLoading(false));
   }, [authFetch]);

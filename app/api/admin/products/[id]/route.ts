@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { container, ServiceTokens } from '@/src/backend/providers/container.provider';
+import { ServiceTokens } from '@/src/backend/providers/container.provider';
 import { ProductService } from '@/src/backend/services/product.service';
 import { getAdminUserContext, handleServiceResult } from '@/src/backend/utils/route-helper.util';
 import { createErrorResponse } from '@/src/backend/types/api-response.types';
@@ -17,7 +17,7 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json().catch(() => ({}));
 
-    const productService = container.resolve<ProductService>(ServiceTokens.ProductService);
+    const productService = adminRes.value.scope.resolve<ProductService>(ServiceTokens.ProductService);
     const result = await productService.updateProduct(id, body);
 
     return handleServiceResult(result);
@@ -40,7 +40,7 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const productService = container.resolve<ProductService>(ServiceTokens.ProductService);
+    const productService = adminRes.value.scope.resolve<ProductService>(ServiceTokens.ProductService);
     const result = await productService.deleteProduct(id);
 
     return handleServiceResult(result);

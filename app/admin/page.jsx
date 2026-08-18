@@ -109,7 +109,6 @@ function RecentOrdersPanel({ orders }) {
     <section className={styles.panel}>
       <div className={styles.panelHeader}>
         <h2>Recent Orders</h2>
-        <span className={styles.muted}>Newest {RECENT_ORDERS_LIMIT}</span>
       </div>
       <div className={styles.tableWrap}>
         <table className={styles.table}>
@@ -148,7 +147,6 @@ export default async function AdminDashboardPage() {
           <h1>Admin Dashboard</h1>
           <p className={styles.muted}>Live overview from Supabase orders, products, and profiles.</p>
         </div>
-        <span className={styles.badge}>Owner tools</span>
       </div>
 
       <StatsGrid stats={stats} />
