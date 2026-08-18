@@ -5,7 +5,7 @@ import { WishlistRepository } from '../repositories/wishlist.repository';
 import { ProductRepository } from '../repositories/product.repository';
 import { CartService } from './cart.service';
 import { logger } from '../utils/logger.util';
-import { container, RepositoryTokens } from '../providers/container.provider';
+import { container, RepositoryTokens, ServiceTokens } from '../providers/container.provider';
 
 export interface WishlistService {
   getWishlist(userId: string): Promise<Result<Wishlist[], AppError>>;
@@ -30,6 +30,7 @@ export class WishlistServiceImpl implements WishlistService {
 
   public async addToWishlist(userId: string, productId: string): Promise<Result<Wishlist, AppError>> {
     logger.info(`[WishlistService.addToWishlist] User ${userId} adding product ${productId}`);
+
     const existing = await this.wishlistRepo.findByUserId(userId);
     if (!existing.success) return failure(existing.error);
 
@@ -47,7 +48,9 @@ export class WishlistServiceImpl implements WishlistService {
 
   public async moveToCart(userId: string, productId: string): Promise<Result<boolean, AppError>> {
     logger.info(`[WishlistService.moveToCart] User ${userId} moving product ${productId} to cart`);
-    const cartService = container.resolve<CartService>('CartService');
+
+    const cartService = container.resolve<CartService>(ServiceTokens.CartService);
+
     const cartRes = await cartService.getCart(userId);
     if (!cartRes.success) return failure(cartRes.error);
 

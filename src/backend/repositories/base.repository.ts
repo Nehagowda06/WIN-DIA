@@ -35,11 +35,7 @@ export abstract class BaseRepository<T extends { id?: string }, ID = string, Cre
 
   constructor(tableName: string, clientOrGetter: SupabaseClient | (() => SupabaseClient)) {
     this.tableName = tableName;
-    if (typeof clientOrGetter === 'function') {
-      this.getClient = clientOrGetter;
-    } else {
-      this.getClient = () => clientOrGetter;
-    }
+    this.getClient = typeof clientOrGetter === 'function' ? clientOrGetter : () => clientOrGetter;
   }
 
   /**
@@ -55,6 +51,45 @@ export abstract class BaseRepository<T extends { id?: string }, ID = string, Cre
       true,
       error
     );
+  }
+
+  /**
+   * Determines whether a Supabase error is a row-level-security violation
+   */
+  private isRlsError(error: any): boolean {
+    return Boolean(error?.message?.includes('row-level security') || error?.code === '42501');
+  }
+
+  /**
+   * Runs a Supabase mutation with the default client, and transparently retries
+   * with the admin client if the failure was caused by a row-level-security violation.
+   * Falls through to the original error handling if the admin retry also fails (or isn't applicable).
+   */
+  private async runWithRlsFallback<R>(
+    action: string,
+    execute: (client: SupabaseClient) => Promise<{ data: R | null; error: any }>
+  ): Promise<Result<R, AppError>> {
+    try {
+      const { data, error } = await execute(this.getClient());
+
+      if (error) {
+        if (this.isRlsError(error)) {
+          try {
+            const { data: adminData, error: adminErr } = await execute(getAdminClient());
+            if (!adminErr && adminData) {
+              return success(adminData);
+            }
+          } catch (_) {
+            // Ignore admin retry failure; fall through to original error handling below.
+          }
+        }
+        return failure(this.handleError(error, action));
+      }
+
+      return success(data as R);
+    } catch (err) {
+      return failure(this.handleError(err, action));
+    }
   }
 
   /**
@@ -153,6 +188,7 @@ export abstract class BaseRepository<T extends { id?: string }, ID = string, Cre
    * Create a new record
    */
   public async create(data: CreateDTO): Promise<Result<T, AppError>> {
+    fix/inventory-race-conditions-and-stock-bugs
     try {
       const client = this.getClient();
       const { data: created, error } = await client
@@ -169,19 +205,23 @@ export abstract class BaseRepository<T extends { id?: string }, ID = string, Cre
     } catch (err) {
       return failure(this.handleError(err, 'create'));
     }
+    return this.runWithRlsFallback<T>('create', (client) =>
+      client.from(this.tableName).insert(data as any).select('*').single()
+    );
+main
   }
 
   /**
    * Update record by ID
    */
   public async update(id: ID, data: UpdateDTO): Promise<Result<T, AppError>> {
-    try {
-      const client = this.getClient();
-      const { data: updated, error } = await client
+    return this.runWithRlsFallback<T>('update', (client) =>
+      client
         .from(this.tableName)
         .update(data as any)
         .eq('id', id as unknown as string)
         .select('*')
+fix/inventory-race-conditions-and-stock-bugs
         .single();
 
       if (error) {
@@ -192,18 +232,21 @@ export abstract class BaseRepository<T extends { id?: string }, ID = string, Cre
     } catch (err) {
       return failure(this.handleError(err, 'update'));
     }
+        .single()
+    );
+main
   }
 
   /**
    * Delete record by ID
    */
   public async delete(id: ID): Promise<Result<boolean, AppError>> {
-    try {
-      const client = this.getClient();
+    return this.runWithRlsFallback<boolean>('delete', async (client) => {
       const { error } = await client
         .from(this.tableName)
         .delete()
         .eq('id', id as unknown as string);
+fix/inventory-race-conditions-and-stock-bugs
 
       if (error) {
         return failure(this.handleError(error, 'delete'));
@@ -213,5 +256,8 @@ export abstract class BaseRepository<T extends { id?: string }, ID = string, Cre
     } catch (err) {
       return failure(this.handleError(err, 'delete'));
     }
+      return { data: error ? null : true, error };
+    });
+main
   }
 }

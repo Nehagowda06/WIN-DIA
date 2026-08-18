@@ -442,9 +442,6 @@ export default function CheckoutPage() {
                       ))}
                     </div>
                   </div>
-
-                  <div className={styles.secureNote}><FiShield /> Your payment is 256-bit SSL encrypted</div>
-
                   <div className={styles.stepFooter}>
                     <button className={styles.backBtn2} onClick={() => setStep(1)}><FiArrowLeft /> Back</button>
                     <button className={styles.proceedBtn} onClick={handlePlaceOrder} disabled={placing}>
