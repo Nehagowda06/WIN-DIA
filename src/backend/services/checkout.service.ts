@@ -193,24 +193,41 @@ export class CheckoutServiceImpl implements CheckoutService {
             }
           }
 
-          // Strategy 2: Search by flavor (extracted from item name or slug)
+          // Strategy 2: Search by flavor/name (extracted from item data or slug)
           if (!resolvedProduct) {
             const flavor = item.flavor || item.flavour ||
-              rawId.replace(/^(gluten-free|everyday)-/, '').replace(/-thins$/, '');
-            if (flavor) {
-              const allProducts = await this.productRepo.findAll({ is_active: true });
-              if (allProducts.success) {
-                resolvedProduct = allProducts.value.find(
-                  (p) => p.flavor?.toLowerCase() === flavor.toLowerCase() ||
-                         p.name?.toLowerCase().includes(flavor.toLowerCase()) ||
-                         p.slug?.toLowerCase().includes(flavor.toLowerCase())
-                ) || null;
-              }
+              rawId.replace(/^(gluten-free|everyday)-/, '').replace(/-thins$/, '').replace(/-/g, ' ');
+            const itemName = item.name || '';
+            
+            const allProducts = await this.productRepo.findAll({ is_active: true });
+            console.log(`[CheckoutService] All active products in DB: ${allProducts.success ? allProducts.value.length : 'QUERY FAILED'}`);
+            if (allProducts.success && allProducts.value.length > 0) {
+              console.log(`[CheckoutService] Products available:`, allProducts.value.map(p => `${p.id} | ${p.name} | slug=${p.slug} | flavor=${p.flavor} | stock=${p.count_in_stock}`));
+              
+              resolvedProduct = allProducts.value.find(
+                (p) => {
+                  const pFlavor = (p.flavor || '').toLowerCase();
+                  const pName = (p.name || '').toLowerCase();
+                  const pSlug = (p.slug || '').toLowerCase();
+                  const searchFlavor = flavor.toLowerCase();
+                  const searchName = itemName.toLowerCase().replace(' flavour', '').replace(' flavor', '').trim();
+
+                  return pFlavor === searchFlavor ||
+                         pFlavor.includes(searchFlavor) ||
+                         searchFlavor.includes(pFlavor) ||
+                         pName.includes(searchFlavor) ||
+                         pSlug.includes(searchFlavor) ||
+                         (searchName && pName.includes(searchName)) ||
+                         (searchName && pFlavor.includes(searchName)) ||
+                         (searchName && pSlug.includes(searchName));
+                }
+              ) || null;
             }
           }
 
           if (resolvedProduct) {
             validProductId = resolvedProduct.id;
+            console.log(`[CheckoutService] Resolved product "${rawId}" → ${resolvedProduct.id} (${resolvedProduct.name}, stock: ${resolvedProduct.count_in_stock})`);
           } else {
             // Last resort: use stableProductUuid to maintain backward compatibility
             // This ensures FK constraint is satisfied, but logs a warning
@@ -245,10 +262,11 @@ export class CheckoutServiceImpl implements CheckoutService {
 
         // Stock validation: check against packets to be SHIPPED (12 per bundle)
         // This is the real quantity that leaves the warehouse
+        console.log(`[TRACE STEP 4: STOCK_VALIDATION] Product resolved: id=${validProductId}, name="${item.name}", rawId="${rawId}"`);
         console.log(`[TRACE STEP 4: STOCK_VALIDATION] Calling InventoryService.validateStock for productId: ${validProductId}, packetsShipped: ${bundlePricing.packetsShipped}`);
         const stockRes = await this.inventoryService.validateStock(validProductId, bundlePricing.packetsShipped);
         if (!stockRes.success) {
-          console.log(`[TRACE STEP 4: STOCK_VALIDATION] Insufficient stock:`, stockRes.error);
+          console.log(`[TRACE STEP 4: STOCK_VALIDATION] Insufficient stock for productId=${validProductId}:`, stockRes.error);
           return failure(new ValidationError(
             `Insufficient stock for "${item.name || 'product'}". Requested ${bundles} bundle(s) (${bundlePricing.packetsShipped} packets) but not enough inventory available.`
           ));
