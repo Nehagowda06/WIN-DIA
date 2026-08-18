@@ -1,5 +1,5 @@
-import { supabaseAdmin } from "@/src/lib/supabase-admin";
-import { errorResponse, successResponse } from "@/src/lib/security";
+import { supabaseAdmin } from "@/backend/lib/supabase-admin";
+import { errorResponse, successResponse } from "@/backend/lib/security";
 
 export async function GET() {
   const { data, error } = await supabaseAdmin.from("page_content").select("key, value");
