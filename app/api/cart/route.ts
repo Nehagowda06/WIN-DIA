@@ -49,19 +49,10 @@ export async function POST(request: Request) {
 
     const cartService = authRes.value.scope.resolve<CartService>(ServiceTokens.CartService);
 
-    // Verify the cart belongs to this user
-    const cartCheck = await cartService.getCart(authRes.value.id);
-    if (!cartCheck.success || cartCheck.value.cart.id !== cart_id) {
-      return NextResponse.json(
-        createErrorResponse('FORBIDDEN', 'You do not have access to this cart'),
-        { status: 403 }
-      );
-    }
-
     const result = await cartService.addItem(cart_id, {
       product_id: resolvedProductId,
       quantity: parseInt(quantity || '1', 10),
-    });
+    }, authRes.value.id);
 
     return handleServiceResult(result, 201);
   } catch (err: any) {
@@ -90,18 +81,9 @@ export async function PUT(request: Request) {
 
     const cartService = authRes.value.scope.resolve<CartService>(ServiceTokens.CartService);
 
-    // Verify the cart belongs to this user
-    const cartCheck = await cartService.getCart(authRes.value.id);
-    if (!cartCheck.success || cartCheck.value.cart.id !== cart_id) {
-      return NextResponse.json(
-        createErrorResponse('FORBIDDEN', 'You do not have access to this cart'),
-        { status: 403 }
-      );
-    }
-
     const result = await cartService.updateItemQuantity(cart_id, resolvedProductId, {
       quantity: parseInt(quantity, 10),
-    });
+    }, authRes.value.id);
 
     return handleServiceResult(result);
   } catch (err: any) {
@@ -131,21 +113,12 @@ export async function DELETE(request: Request) {
 
     const cartService = authRes.value.scope.resolve<CartService>(ServiceTokens.CartService);
 
-    // Verify the cart belongs to this user
-    const cartCheck = await cartService.getCart(authRes.value.id);
-    if (!cartCheck.success || cartCheck.value.cart.id !== cartId) {
-      return NextResponse.json(
-        createErrorResponse('FORBIDDEN', 'You do not have access to this cart'),
-        { status: 403 }
-      );
-    }
-
     if (productId) {
-      const result = await cartService.removeItem(cartId, productId);
+      const result = await cartService.removeItem(cartId, productId, authRes.value.id);
       return handleServiceResult(result);
     }
 
-    const result = await cartService.clearCart(cartId);
+    const result = await cartService.clearCart(cartId, authRes.value.id);
     return handleServiceResult(result);
   } catch (err: any) {
     return handleUnexpectedError(err);

@@ -123,7 +123,7 @@ export class RequestScopedContainer {
       case RepositoryTokens.CategoryRepository:
         return new SupabaseCategoryRepository(this.client) as any;
       case RepositoryTokens.ProductRepository:
-        return new SupabaseProductRepository(this.client) as any;
+        return new SupabaseProductRepository(getAdminClient()) as any;
       case RepositoryTokens.ProductVariantRepository:
         return new SupabaseProductVariantRepository(this.client) as any;
       case RepositoryTokens.ProductImageRepository:

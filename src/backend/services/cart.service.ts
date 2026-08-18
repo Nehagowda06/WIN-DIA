@@ -11,10 +11,10 @@ import { container, RepositoryTokens } from '../providers/container.provider';
 
 export interface CartService {
   getCart(userId?: string, sessionId?: string): Promise<Result<{ cart: Cart; items: CartItem[] }, AppError>>;
-  addItem(cartId: string, dto: AddToCartDTO): Promise<Result<CartItem, AppError>>;
-  updateItemQuantity(cartId: string, productId: string, dto: UpdateCartItemDTO): Promise<Result<CartItem, AppError>>;
-  removeItem(cartId: string, productId: string): Promise<Result<boolean, AppError>>;
-  clearCart(cartId: string): Promise<Result<boolean, AppError>>;
+  addItem(cartId: string, dto: AddToCartDTO, userId?: string): Promise<Result<CartItem, AppError>>;
+  updateItemQuantity(cartId: string, productId: string, dto: UpdateCartItemDTO, userId?: string): Promise<Result<CartItem, AppError>>;
+  removeItem(cartId: string, productId: string, userId?: string): Promise<Result<boolean, AppError>>;
+  clearCart(cartId: string, userId?: string): Promise<Result<boolean, AppError>>;
   mergeGuestCart(sessionId: string, userId: string): Promise<Result<{ cart: Cart; items: CartItem[] }, AppError>>;
   calculateSubtotal(items: CartItem[]): Promise<Result<number, AppError>>;
 }
@@ -64,8 +64,14 @@ export class CartServiceImpl implements CartService {
     return success({ cart, items: itemsRes.value });
   }
 
-  public async addItem(cartId: string, dto: AddToCartDTO): Promise<Result<CartItem, AppError>> {
+  public async addItem(cartId: string, dto: AddToCartDTO, userId?: string): Promise<Result<CartItem, AppError>> {
     logger.info(`[CartService.addItem] Adding product ${dto.product_id} to cart ${cartId}`);
+
+    // Ownership check: if userId is provided, verify cart belongs to this user
+    if (userId) {
+      const ownershipCheck = await this.verifyCartOwnership(cartId, userId);
+      if (!ownershipCheck.success) return failure(ownershipCheck.error);
+    }
 
     // Validate the product exists and is active using ProductRepository
     const productRes = await this.productRepo.findById(dto.product_id);
@@ -89,7 +95,13 @@ export class CartServiceImpl implements CartService {
     });
   }
 
-  public async updateItemQuantity(cartId: string, productId: string, dto: UpdateCartItemDTO): Promise<Result<CartItem, AppError>> {
+  public async updateItemQuantity(cartId: string, productId: string, dto: UpdateCartItemDTO, userId?: string): Promise<Result<CartItem, AppError>> {
+    // Ownership check
+    if (userId) {
+      const ownershipCheck = await this.verifyCartOwnership(cartId, userId);
+      if (!ownershipCheck.success) return failure(ownershipCheck.error);
+    }
+
     const itemRes = await this.cartItemRepo.findItem(cartId, productId);
     if (!itemRes.success) return failure(itemRes.error);
     if (!itemRes.value) {
@@ -104,7 +116,13 @@ export class CartServiceImpl implements CartService {
     return this.cartItemRepo.update(itemRes.value.id, { quantity: dto.quantity });
   }
 
-  public async removeItem(cartId: string, productId: string): Promise<Result<boolean, AppError>> {
+  public async removeItem(cartId: string, productId: string, userId?: string): Promise<Result<boolean, AppError>> {
+    // Ownership check
+    if (userId) {
+      const ownershipCheck = await this.verifyCartOwnership(cartId, userId);
+      if (!ownershipCheck.success) return failure(ownershipCheck.error);
+    }
+
     const itemRes = await this.cartItemRepo.findItem(cartId, productId);
     if (!itemRes.success) return failure(itemRes.error);
     if (!itemRes.value) {
@@ -113,8 +131,27 @@ export class CartServiceImpl implements CartService {
     return this.cartItemRepo.delete(itemRes.value.id);
   }
 
-  public async clearCart(cartId: string): Promise<Result<boolean, AppError>> {
+  public async clearCart(cartId: string, userId?: string): Promise<Result<boolean, AppError>> {
+    // Ownership check
+    if (userId) {
+      const ownershipCheck = await this.verifyCartOwnership(cartId, userId);
+      if (!ownershipCheck.success) return failure(ownershipCheck.error);
+    }
+
     return this.cartItemRepo.deleteByCartId(cartId);
+  }
+
+  /**
+   * Verifies that the given cartId belongs to the given userId.
+   * Prevents one user from mutating another user's cart.
+   */
+  private async verifyCartOwnership(cartId: string, userId: string): Promise<Result<boolean, AppError>> {
+    const cartRes = await this.cartRepo.findByUserId(userId);
+    if (!cartRes.success) return failure(cartRes.error);
+    if (!cartRes.value || cartRes.value.id !== cartId) {
+      return failure(new ValidationError('You do not have access to this cart'));
+    }
+    return success(true);
   }
 
   public async mergeGuestCart(sessionId: string, userId: string): Promise<Result<{ cart: Cart; items: CartItem[] }, AppError>> {
