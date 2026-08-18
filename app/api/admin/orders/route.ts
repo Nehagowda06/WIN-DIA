@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { container, ServiceTokens } from '@/src/backend/providers/container.provider';
+import { ServiceTokens } from '@/src/backend/providers/container.provider';
 import { OrderService } from '@/src/backend/services/order.service';
 import { getAdminUserContext, handleServiceResult } from '@/src/backend/utils/route-helper.util';
 import { createErrorResponse } from '@/src/backend/types/api-response.types';
@@ -15,7 +15,8 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const pageSize = parseInt(searchParams.get('pageSize') || '50', 10);
 
-    const orderService = container.resolve<OrderService>(ServiceTokens.OrderService);
+    const orderService = adminRes.value.scope.resolve<OrderService>(ServiceTokens.OrderService);
+    // Empty userId = list ALL orders (admin view)
     const result = await orderService.getUserOrders('', { page, pageSize });
 
     return handleServiceResult(result);
@@ -44,7 +45,7 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const orderService = container.resolve<OrderService>(ServiceTokens.OrderService);
+    const orderService = adminRes.value.scope.resolve<OrderService>(ServiceTokens.OrderService);
     const result = await orderService.updateOrderStatus(orderId, status, notes, adminRes.value.id);
 
     return handleServiceResult(result);

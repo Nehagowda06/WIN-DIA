@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { container, ServiceTokens } from '@/src/backend/providers/container.provider';
+import { ServiceTokens } from '@/src/backend/providers/container.provider';
 import { CouponService } from '@/src/backend/services/coupon.service';
 import { getAdminUserContext, handleServiceResult } from '@/src/backend/utils/route-helper.util';
 import { createErrorResponse } from '@/src/backend/types/api-response.types';
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const couponService = container.resolve<CouponService>(ServiceTokens.CouponService);
+    const couponService = adminRes.value.scope.resolve<CouponService>(ServiceTokens.CouponService);
     const result = await couponService.createCoupon(body);
 
     return handleServiceResult(result, 201);
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const couponService = container.resolve<CouponService>(ServiceTokens.CouponService);
+    const couponService = adminRes.value.scope.resolve<CouponService>(ServiceTokens.CouponService);
     const result = await couponService.getCouponByCode(code);
 
     return handleServiceResult(result);

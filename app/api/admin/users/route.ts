@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { container, ServiceTokens } from '@/src/backend/providers/container.provider';
+import { ServiceTokens, RepositoryTokens } from '@/src/backend/providers/container.provider';
 import { UserService } from '@/src/backend/services/user.service';
+import { ProfileRepository } from '@/src/backend/repositories/profile.repository';
 import { getAdminUserContext, handleServiceResult } from '@/src/backend/utils/route-helper.util';
 import { createErrorResponse } from '@/src/backend/types/api-response.types';
 
@@ -14,14 +15,15 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId') || searchParams.get('id');
 
-    const userService = container.resolve<UserService>(ServiceTokens.UserService);
-
     if (userId) {
+      const userService = adminRes.value.scope.resolve<UserService>(ServiceTokens.UserService);
       const result = await userService.getProfile(userId);
       return handleServiceResult(result);
     }
 
-    const result = await userService.getProfile(adminRes.value.id);
+    // List all users for admin view
+    const profileRepo = adminRes.value.scope.resolve<ProfileRepository>(RepositoryTokens.ProfileRepository);
+    const result = await profileRepo.findWithPagination(1, 100);
     return handleServiceResult(result);
   } catch (err: any) {
     return NextResponse.json(
@@ -48,7 +50,7 @@ export async function PUT(request: Request) {
       );
     }
 
-    const userService = container.resolve<UserService>(ServiceTokens.UserService);
+    const userService = adminRes.value.scope.resolve<UserService>(ServiceTokens.UserService);
     const result = await userService.updateProfile(userId, dto);
 
     return handleServiceResult(result);

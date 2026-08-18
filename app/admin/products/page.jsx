@@ -38,8 +38,12 @@ function useAdminProducts() {
     authFetch("/api/admin/products")
       .then((res) => res.json())
       .then((data) => {
-        if (data.success) setProducts(data.products);
-        else toast.error(data.error || "Could not load products");
+        if (data.success) {
+          const items = data.data?.items || data.products || data.data || [];
+          setProducts(Array.isArray(items) ? items : []);
+        } else {
+          toast.error(data.error || "Could not load products");
+        }
       })
       .finally(() => setLoading(false));
   }, [authFetch]);

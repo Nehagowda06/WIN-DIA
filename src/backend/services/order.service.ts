@@ -155,7 +155,12 @@ export class OrderServiceImpl implements OrderService {
   }
 
   public async getUserOrders(userId: string, options?: { page?: number; pageSize?: number }): Promise<Result<{ items: Order[]; total: number }, AppError>> {
-    return this.orderRepo.findWithPagination(options?.page || 1, options?.pageSize || 20, { user_id: userId }, 'created_at', 'desc');
+    // If userId is empty, return ALL orders (admin use case)
+    const filter: Record<string, unknown> = {};
+    if (userId) {
+      filter.user_id = userId;
+    }
+    return this.orderRepo.findWithPagination(options?.page || 1, options?.pageSize || 20, filter, 'created_at', 'desc');
   }
 
   public async updateOrderStatus(orderId: string, status: OrderStatus, note?: string, updatedBy?: string): Promise<Result<Order, AppError>> {
