@@ -1,3 +1,5 @@
+import { NextResponse } from "next/server";
+
 // Ported from windia-integrated-version3-main/src/lib/security.js
 // Change: replaced NextResponse.json() with plain objects — Express routes
 //         call res.status().json() themselves using these return values.
@@ -33,6 +35,19 @@ export function errorPayload(message, status = 400, extra = {}) {
 /** Standard success payload */
 export function successPayload(data = {}, status = 200) {
   return { payload: { success: true, ...data }, status };
+}
+
+
+/** Next.js App Router version — wraps errorPayload in a NextResponse. */
+export function errorResponse(message, status = 400, extra = {}) {
+  const { payload } = errorPayload(message, status, extra);
+  return NextResponse.json(payload, { status });
+}
+
+/** Next.js App Router version — wraps successPayload in a NextResponse. */
+export function successResponse(data = {}, status = 200) {
+  const { payload } = successPayload(data, status);
+  return NextResponse.json(payload, { status });
 }
 
 /**
