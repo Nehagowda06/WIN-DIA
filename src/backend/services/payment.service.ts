@@ -13,6 +13,7 @@ import { getEnv } from '../config/env.config';
 import { logger } from '../utils/logger.util';
 import { container, RepositoryTokens, ServiceTokens } from '../providers/container.provider';
 import { getRazorpayClient } from '../lib/razorpay.js';
+import { PaymentError } from '../errors/domain-errors';
 
 const RAZORPAY_CURRENCY = 'INR';
 
