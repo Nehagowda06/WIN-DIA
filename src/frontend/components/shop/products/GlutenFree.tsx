@@ -20,7 +20,7 @@ type Product = {
   readonly title: string;
   readonly name: string;
   readonly flavour: string;
-  readonly image: StaticImageData;
+  readonly image: string | StaticImageData;
   readonly description: string;
   readonly price: string;
   readonly offer?: string;
@@ -56,7 +56,7 @@ function toStoreProduct(product: Product, collection: ProductRangeProps["theme"]
     flavor: product.flavour,
     description: product.description,
     price: Number(product.price.replace(/[^0-9.]/g, "")),
-    image: product.image.src,
+    image: typeof product.image === "string" ? product.image : product.image.src,
     countInStock: 100,
     netWeight: 200,
   };
