@@ -2,7 +2,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { Result, failure, success } from '../types/result.types';
 import { AppError } from '../errors/app-error';
 import { ErrorCode, HttpStatus } from '../constants/http-status.constants';
-import { getServerClient } from '../config/supabase.config';
+import { getServerClient, getAdminClient } from '../config/supabase.config';
 import { logger } from '../utils/logger.util';
 import { calculatePagination } from '../utils/pagination.util';
 
@@ -187,54 +187,25 @@ export abstract class BaseRepository<T extends { id?: string }, ID = string, Cre
   /**
    * Create a new record
    */
-  public async create(data: CreateDTO): Promise<Result<T, AppError>> {
-    fix/inventory-race-conditions-and-stock-bugs
-    try {
-      const client = this.getClient();
-      const { data: created, error } = await client
-        .from(this.tableName)
-        .insert(data as any)
-        .select('*')
-        .single();
-
-      if (error) {
-        return failure(this.handleError(error, 'create'));
-      }
-
-      return success(created as T);
-    } catch (err) {
-      return failure(this.handleError(err, 'create'));
-    }
-    return this.runWithRlsFallback<T>('create', (client) =>
-      client.from(this.tableName).insert(data as any).select('*').single()
-    );
-main
+    public async create(data: CreateDTO): Promise<Result<T, AppError>> {
+    return this.runWithRlsFallback<T>('create', async (client) => {
+      return await client.from(this.tableName).insert(data as any).select('*').single();
+    });
   }
+
 
   /**
    * Update record by ID
    */
   public async update(id: ID, data: UpdateDTO): Promise<Result<T, AppError>> {
-    return this.runWithRlsFallback<T>('update', (client) =>
-      client
+    return this.runWithRlsFallback<T>('update', async (client) => {
+      return await client
         .from(this.tableName)
         .update(data as any)
         .eq('id', id as unknown as string)
         .select('*')
-fix/inventory-race-conditions-and-stock-bugs
         .single();
-
-      if (error) {
-        return failure(this.handleError(error, 'update'));
-      }
-
-      return success(updated as T);
-    } catch (err) {
-      return failure(this.handleError(err, 'update'));
-    }
-        .single()
-    );
-main
+    });
   }
 
   /**
@@ -246,18 +217,8 @@ main
         .from(this.tableName)
         .delete()
         .eq('id', id as unknown as string);
-fix/inventory-race-conditions-and-stock-bugs
 
-      if (error) {
-        return failure(this.handleError(error, 'delete'));
-      }
-
-      return success(true);
-    } catch (err) {
-      return failure(this.handleError(err, 'delete'));
-    }
       return { data: error ? null : true, error };
     });
-main
   }
 }

@@ -54,6 +54,8 @@ interface OrderCreationOutcome {
   createdShipment: Shipment;
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export class CheckoutServiceImpl implements CheckoutService {
   private userService: UserService;
   private cartService: CartService;
@@ -153,19 +155,94 @@ export class CheckoutServiceImpl implements CheckoutService {
   }
 
   /**
-   * Ensures a product row exists so the order_items.product_id foreign key
-   * constraint is satisfied, mirroring the original best-effort upsert.
+   * Resolves a raw cart-item product reference (UUID, slug, or flavor/name)
+   * to a real product ID already in the database, falling back to a stable
+   * generated UUID only as a last resort. This prevents "ghost" product rows
+   * being created when the frontend sends slug-based IDs instead of UUIDs.
    */
-  private async ensureProductExists(validProductId: string, item: any): Promise<void> {
+  private async resolveProductId(rawId: string, item: any): Promise<string> {
+    if (UUID_PATTERN.test(rawId)) {
+      // Frontend sent a real UUID — use it directly (existence is checked
+      // later in ensureProductExists).
+      return rawId;
+    }
+
+    // Frontend sent a slug-based ID (e.g., "gluten-free-jeera" or "jeera-thins")
+    // Strategy 1: try resolving by slug variants.
+    const slugVariants = [
+      rawId,
+      rawId.replace(/^(gluten-free|everyday)-/, ''),
+      `${rawId}-thins`,
+      rawId.replace(/^(gluten-free|everyday)-/, '') + '-thins',
+    ];
+
+    for (const slug of slugVariants) {
+      const slugRes = await this.productRepo.findBySlug(slug);
+      if (slugRes.success && slugRes.value) {
+        console.log(`[CheckoutService] Resolved product "${rawId}" via slug "${slug}" → ${slugRes.value.id} (${slugRes.value.name})`);
+        return slugRes.value.id;
+      }
+    }
+
+    // Strategy 2: search by flavor/name.
+    const flavor = item.flavor || item.flavour ||
+      rawId.replace(/^(gluten-free|everyday)-/, '').replace(/-thins$/, '').replace(/-/g, ' ');
+    const itemName = item.name || '';
+
+    const allProducts = await this.productRepo.findAll({ is_active: true });
+    if (allProducts.success && allProducts.value.length > 0) {
+      const resolvedProduct = allProducts.value.find((p) => {
+        const pFlavor = (p.flavor || '').toLowerCase();
+        const pName = (p.name || '').toLowerCase();
+        const pSlug = (p.slug || '').toLowerCase();
+        const searchFlavor = flavor.toLowerCase();
+        const searchName = itemName.toLowerCase().replace(' flavour', '').replace(' flavor', '').trim();
+
+        return pFlavor === searchFlavor ||
+               pFlavor.includes(searchFlavor) ||
+               searchFlavor.includes(pFlavor) ||
+               pName.includes(searchFlavor) ||
+               pSlug.includes(searchFlavor) ||
+               (searchName && pName.includes(searchName)) ||
+               (searchName && pFlavor.includes(searchName)) ||
+               (searchName && pSlug.includes(searchName));
+      });
+
+      if (resolvedProduct) {
+        console.log(`[CheckoutService] Resolved product "${rawId}" via flavor/name → ${resolvedProduct.id} (${resolvedProduct.name}, stock: ${resolvedProduct.count_in_stock})`);
+        return resolvedProduct.id;
+      }
+    }
+
+    // Last resort: stable generated UUID so the FK constraint is satisfied.
+    const fallbackId = stableProductUuid(rawId);
+    console.warn(
+      `[CheckoutService] Could not resolve product for ID "${rawId}". ` +
+      `Using generated UUID ${fallbackId}. Product may need to be seeded in the database.`
+    );
+    return fallbackId;
+  }
+
+  /**
+   * Ensures a product row exists so the order_items.product_id foreign key
+   * constraint is satisfied. Only creates a placeholder if the resolved ID
+   * doesn't already exist — in production all products should be pre-seeded.
+   */
+  private async ensureProductExists(validProductId: string, rawId: string, item: any): Promise<void> {
     try {
       const prodCheck = await this.productRepo.findById(validProductId);
       if (!prodCheck.success || !prodCheck.value) {
+        console.warn(
+          `[CheckoutService] Product ${validProductId} not found in DB for item "${item.name}". ` +
+          `Creating placeholder. Ensure products are properly seeded.`
+        );
         const adminClient = getAdminClient();
         await adminClient.from('products').upsert({
           id: validProductId,
           name: item.name || item.product_name || 'WIN-DIA Product',
+          slug: rawId.replace(/^(gluten-free|everyday)-/, ''),
           price: BundlePricing.BUNDLE_PRICE,
-          count_in_stock: 999,
+          count_in_stock: 100,
           is_active: true,
         });
       }
@@ -174,8 +251,9 @@ export class CheckoutServiceImpl implements CheckoutService {
 
   /**
    * STEP 4: ORDER_PAYLOAD_CREATION & STOCK_VALIDATION (BUNDLE PRICING ENFORCED)
-   * Maps raw cart items to order-item snapshots, enforcing server-side bundle
-   * pricing and validating stock for each item.
+   * Maps raw cart items to order-item snapshots, resolving real product IDs
+   * (UUID → slug → flavor/name, with generated-UUID fallback), enforcing
+   * server-side bundle pricing, and validating stock for each item.
    */
   private async prepareOrderItems(rawItems: any[]): Promise<Result<PreparedOrderItems, AppError>> {
     const step4Start = Date.now();
@@ -194,17 +272,18 @@ export class CheckoutServiceImpl implements CheckoutService {
       subtotal += itemTotal;
 
       const rawId = item.productId || item.product_id || item.id || item._id;
-      const validProductId = stableProductUuid(rawId);
+      const validProductId = await this.resolveProductId(rawId, item);
 
-      // Ensure product exists in database so foreign key constraint order_items.product_id -> products.id is satisfied
-      await this.ensureProductExists(validProductId, item);
+      // Only create a placeholder product if the resolved ID doesn't exist in DB.
+      await this.ensureProductExists(validProductId, rawId, item);
 
       // Stock validation: check against packets to be SHIPPED (12 per bundle)
       // This is the real quantity that leaves the warehouse
+      console.log(`[TRACE STEP 4: STOCK_VALIDATION] Product resolved: id=${validProductId}, name="${item.name}", rawId="${rawId}"`);
       console.log(`[TRACE STEP 4: STOCK_VALIDATION] Calling InventoryService.validateStock for productId: ${validProductId}, packetsShipped: ${bundlePricing.packetsShipped}`);
       const stockRes = await this.inventoryService.validateStock(validProductId, bundlePricing.packetsShipped);
       if (!stockRes.success) {
-        console.log(`[TRACE STEP 4: STOCK_VALIDATION] Insufficient stock:`, stockRes.error);
+        console.log(`[TRACE STEP 4: STOCK_VALIDATION] Insufficient stock for productId=${validProductId}:`, stockRes.error);
         return failure(new ValidationError(
           `Insufficient stock for "${item.name || 'product'}". Requested ${bundles} bundle(s) (${bundlePricing.packetsShipped} packets) but not enough inventory available.`
         ));
@@ -452,157 +531,9 @@ export class CheckoutServiceImpl implements CheckoutService {
       const rawItems = cartItemsRes.value;
 
       // STEP 4: ORDER_PAYLOAD_CREATION & STOCK_VALIDATION (BUNDLE PRICING ENFORCED)
- fix/inventory-race-conditions-and-stock-bugs
-      const step4Start = Date.now();
-      console.log(`[TRACE STEP 4: ORDER_PAYLOAD_CREATION & STOCK_VALIDATION] Mapping items to order snapshots with BUNDLE PRICING`);
-      const preparedOrderItems: Record<string, unknown>[] = [];
-      let subtotal = 0;
-
-      for (const item of rawItems) {
-        // qty from frontend represents number of BUNDLES (enforced by frontend selector)
-        const bundles = Math.max(BundlePricing.MIN_BUNDLES, Math.min(BundlePricing.MAX_BUNDLES_PER_ITEM, Math.floor(parseInt(item.qty || item.quantity) || 1)));
-        const bundlePricing = calculateBundlePricing(bundles);
-
-        // SERVER-SIDE PRICE ENFORCEMENT: Never trust frontend-sent price.
-        // Price is ALWAYS BundlePricing.BUNDLE_PRICE per bundle, regardless of what frontend sends.
-        const itemTotal = bundlePricing.lineTotal;
-        subtotal += itemTotal;
-
-        const rawId = item.productId || item.product_id || item.id || item._id;
-        let validProductId: string;
-
-        // PRODUCT RESOLUTION: Try to find the real product in the database.
-        // Priority: 1) Direct UUID lookup, 2) Slug lookup, 3) Flavor/name lookup
-        // This prevents ghost product creation when frontend sends slug-based IDs.
-        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-        if (uuidPattern.test(rawId)) {
-          // Frontend sent a real UUID — use it directly
-          const prodCheck = await this.productRepo.findById(rawId);
-          if (prodCheck.success && prodCheck.value) {
-            validProductId = rawId;
-          } else {
-            // UUID doesn't match any product — try slug/name fallback
-            validProductId = rawId;
-          }
-        } else {
-          // Frontend sent a slug-based ID (e.g., "gluten-free-jeera" or "jeera-thins")
-          // Try to resolve it to a real product
-          let resolvedProduct = null;
-
-          // Strategy 1: Try finding by slug directly
-          const slugVariants = [
-            rawId,                              // e.g., "gluten-free-jeera"
-            rawId.replace(/^(gluten-free|everyday)-/, ''), // strip prefix → "jeera"
-            `${rawId}-thins`,                   // e.g., "jeera-thins"
-            rawId.replace(/^(gluten-free|everyday)-/, '') + '-thins', // "jeera-thins"
-          ];
-
-          for (const slug of slugVariants) {
-            const slugRes = await this.productRepo.findBySlug(slug);
-            if (slugRes.success && slugRes.value) {
-              resolvedProduct = slugRes.value;
-              break;
-            }
-          }
-
-          // Strategy 2: Search by flavor/name (extracted from item data or slug)
-          if (!resolvedProduct) {
-            const flavor = item.flavor || item.flavour ||
-              rawId.replace(/^(gluten-free|everyday)-/, '').replace(/-thins$/, '').replace(/-/g, ' ');
-            const itemName = item.name || '';
-            
-            const allProducts = await this.productRepo.findAll({ is_active: true });
-            console.log(`[CheckoutService] All active products in DB: ${allProducts.success ? allProducts.value.length : 'QUERY FAILED'}`);
-            if (allProducts.success && allProducts.value.length > 0) {
-              console.log(`[CheckoutService] Products available:`, allProducts.value.map(p => `${p.id} | ${p.name} | slug=${p.slug} | flavor=${p.flavor} | stock=${p.count_in_stock}`));
-              
-              resolvedProduct = allProducts.value.find(
-                (p) => {
-                  const pFlavor = (p.flavor || '').toLowerCase();
-                  const pName = (p.name || '').toLowerCase();
-                  const pSlug = (p.slug || '').toLowerCase();
-                  const searchFlavor = flavor.toLowerCase();
-                  const searchName = itemName.toLowerCase().replace(' flavour', '').replace(' flavor', '').trim();
-
-                  return pFlavor === searchFlavor ||
-                         pFlavor.includes(searchFlavor) ||
-                         searchFlavor.includes(pFlavor) ||
-                         pName.includes(searchFlavor) ||
-                         pSlug.includes(searchFlavor) ||
-                         (searchName && pName.includes(searchName)) ||
-                         (searchName && pFlavor.includes(searchName)) ||
-                         (searchName && pSlug.includes(searchName));
-                }
-              ) || null;
-            }
-          }
-
-          if (resolvedProduct) {
-            validProductId = resolvedProduct.id;
-            console.log(`[CheckoutService] Resolved product "${rawId}" → ${resolvedProduct.id} (${resolvedProduct.name}, stock: ${resolvedProduct.count_in_stock})`);
-          } else {
-            // Last resort: use stableProductUuid to maintain backward compatibility
-            // This ensures FK constraint is satisfied, but logs a warning
-            validProductId = stableProductUuid(rawId);
-            console.warn(
-              `[CheckoutService] Could not resolve product for ID "${rawId}". ` +
-              `Using generated UUID ${validProductId}. Product may need to be seeded in the database.`
-            );
-          }
-        }
-
-        // Only create a placeholder product if the resolved ID doesn't exist in DB.
-        // This is a safety net — in production all products should be pre-seeded.
-        try {
-          const prodCheck = await this.productRepo.findById(validProductId);
-          if (!prodCheck.success || !prodCheck.value) {
-            console.warn(
-              `[CheckoutService] Product ${validProductId} not found in DB for item "${item.name}". ` +
-              `Creating placeholder. Ensure products are properly seeded.`
-            );
-            const adminClient = getAdminClient();
-            await adminClient.from('products').upsert({
-              id: validProductId,
-              name: item.name || item.product_name || 'WIN-DIA Product',
-              slug: rawId.replace(/^(gluten-free|everyday)-/, ''),
-              price: BundlePricing.BUNDLE_PRICE,
-              count_in_stock: 100,
-              is_active: true,
-            });
-          }
-        } catch (_) {}
-
-        // Stock validation: check against packets to be SHIPPED (12 per bundle)
-        // This is the real quantity that leaves the warehouse
-        console.log(`[TRACE STEP 4: STOCK_VALIDATION] Product resolved: id=${validProductId}, name="${item.name}", rawId="${rawId}"`);
-        console.log(`[TRACE STEP 4: STOCK_VALIDATION] Calling InventoryService.validateStock for productId: ${validProductId}, packetsShipped: ${bundlePricing.packetsShipped}`);
-        const stockRes = await this.inventoryService.validateStock(validProductId, bundlePricing.packetsShipped);
-        if (!stockRes.success) {
-          console.log(`[TRACE STEP 4: STOCK_VALIDATION] Insufficient stock for productId=${validProductId}:`, stockRes.error);
-          return failure(new ValidationError(
-            `Insufficient stock for "${item.name || 'product'}". Requested ${bundles} bundle(s) (${bundlePricing.packetsShipped} packets) but not enough inventory available.`
-          ));
-        }
-
-        preparedOrderItems.push({
-          product_id: validProductId,
-          name: item.name || item.product_name || 'WIN-DIA Product',
-          // Store bundle price as the unit price (price per bundle)
-          price: BundlePricing.BUNDLE_PRICE,
-          // qty = number of bundles ordered
-          qty: bundles,
-          flavor: item.flavor || null,
-          net_weight_grams: Number(item.net_weight_grams || item.net_weight || item.netWeight || 200) * bundlePricing.packetsShipped,
-          image: item.image || item.image_url || null,
-        });
-      }
-      const step4Time = Date.now() - step4Start;
-      console.log(`[TRACE STEP 4: ORDER_PAYLOAD_CREATION] SUCCESS | Time: ${step4Time}ms | Subtotal: ${subtotal}`, preparedOrderItems);
       const preparedRes = await this.prepareOrderItems(rawItems);
       if (!preparedRes.success) return failure(preparedRes.error);
       const { preparedOrderItems, subtotal } = preparedRes.value;
-      main
 
       // STEP 5: COUPON_VALIDATION
       const couponRes = await this.applyCoupon(dto, subtotal);
