@@ -10,10 +10,9 @@ import WhatsAppButton from "@/src/frontend/components/WhatsAppButton/WhatsAppBut
 
 import jeeraBg  from './jeera-bg.jpg'
 import garlicBg  from './garlic-bg.jpg'
-import methiBg   from './methi-bg.jpg'
 import curryBg  from './curry-bg.jpg'
-import moringaBg from './moringa-bg.jpg'
 import onionBg   from './onion-bg.jpg'
+import all4 from './all-4.jpg'
 
 // ── Why Us — wood background
 import woodBg from './bg-image-wood.png'
@@ -100,6 +99,7 @@ const SLIDES = [
   { type: 'flavour', flavour: 'Garlic',    background: garlicBg.src,  bg: '#E1ACAC', accent: '#f4c89a', textColor: '#fff5f0', tagline: 'Bold & Punchy',      headline: 'Garlic\nFlavour',  sub: 'Intense roasted garlic in every crisp, wholesome bite.',         badge: 'High Fibre · 0% Maida · Low GI', imgPlaceholderColor: '#a03535' },
   { type: 'flavour', flavour: 'Onion',    background: onionBg.src,   bg: '#A888B5', accent: '#f0c4f0', textColor: '#fff0ff', tagline: 'Sweet & Savoury',    headline: 'Onion\nFlavour',   sub: 'Caramelised onion warmth baked into every thin crisp.',          badge: 'High Fibre · 0% Maida · Low GI', imgPlaceholderColor: '#8c4f8c' },
   { type: 'flavour', flavour: 'Curry',    background: curryBg.src,   bg: '#468432', accent: '#d4e89a', textColor: '#f5fff0', tagline: 'Distinctly Desi',    headline: 'Curry\nFlavour',   sub: 'Aromatic curry flavour in every crunchy bite.',                  badge: 'High Fibre · 0% Maida · Low GI', imgPlaceholderColor: '#637d25' },
+  { type: 'flavour', flavour: 'All Flavours', background: all4.src,  bg: '#637d25', accent: '#d4e89a', textColor: '#f5fff0', tagline: 'The Complete Collection', headline: 'All\nFlavours', sub: 'Discover every delicious WIN-DIA Thins flavour.', badge: 'High Fibre · 0% Maida · Low GI', imgPlaceholderColor: '#637d25' }
 ]
 
 const DURATION = 5000

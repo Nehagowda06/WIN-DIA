@@ -1,7 +1,11 @@
 import jeeraImage from "@/src/frontend/assets/images/products/gluten-free/jeera.png";
+import jeerabackImage from "@/src/frontend/assets/images/products/gluten-free/jeeraback.png";
 import everydayCurryLeafImage from "@/src/frontend/assets/images/products/everyday/curryleaf.png";
+import everydayCurryLeafbackImage from "@/src/frontend/assets/images/products/everyday/curryleafback.png";
 import everydayGarlicImage from "@/src/frontend/assets/images/products/everyday/garlic.png";
+import everydayGarlicbackImage from "@/src/frontend/assets/images/products/everyday/garlicback.png";
 import everydayOnionImage from "@/src/frontend/assets/images/products/everyday/onion.png";
+import everydayOnionbackImage from "@/src/frontend/assets/images/products/everyday/onionback.png";
 import comboImage from "@/src/frontend/assets/images/products/combo/combo-offer.png";
 
 export const glutenFreeProducts = [
@@ -10,7 +14,7 @@ export const glutenFreeProducts = [
     title: "Fiber Rich Thins",
     name: "Jeera Flavour",
     flavour: "Jeera",
-    image: jeeraImage,
+    image: [jeeraImage, jeerabackImage],
     description: "Roasted jeera, deep and comforting in every bite.",
     price: "₹640",
     offer: "12-Packet Bundle",
@@ -28,7 +32,7 @@ export const everydayProducts = [
     title: "Everyday Thins",
     name: "Onion Flavour",
     flavour: "Onion",
-    image: everydayOnionImage,
+    image: [everydayOnionImage, everydayOnionbackImage],
     description: "A satisfying daily crunch with naturally savoury onion flavour.",
     price: "₹640",
     offer: "12-Packet Bundle",
@@ -41,7 +45,7 @@ export const everydayProducts = [
     title: "Everyday Thins",
     name: "Garlic Flavour",
     flavour: "Garlic",
-    image: everydayGarlicImage,
+    image: [everydayGarlicImage, everydayGarlicbackImage],
     description: "A comforting garlic-forward snack for everyday moments.",
     price: "₹640",
     offer: "12-Packet Bundle",
@@ -53,7 +57,7 @@ export const everydayProducts = [
     title: "Everyday Thins",
     name: "Curry Leaf Flavour",
     flavour: "Curry Leaf",
-    image: everydayCurryLeafImage,
+    image: [everydayCurryLeafImage, everydayCurryLeafbackImage],
     description: "A light, flavourful crunch with a herbaceous curry leaf finish.",
     price: "₹640",
     offer: "12-Packet Bundle",
@@ -99,7 +103,7 @@ type StoreProduct = {
   readonly flavor: string;
   readonly description: string;
   readonly price: number;
-  readonly image: string;
+  readonly image: string | string[];
   readonly countInStock: number;
   readonly netWeight: number;
 };
@@ -110,7 +114,7 @@ const asStoreProduct = (
 ): StoreProduct => {
   const id = `${collection}-${product.id}`;
 
-  return {
+    return {
     id,
     _id: id,
     slug: id,
@@ -119,11 +123,13 @@ const asStoreProduct = (
     flavor: product.flavour,
     description: product.description,
     price: Number(product.price.replace(/[^0-9.]/g, "")),
-    image: product.image.src,
+
+    image: product.image[0].src,
+
     countInStock: 100,
     netWeight: 200,
   };
-};
+}; 
 
 /** Storefront fallback data used when Supabase has no active products yet. */
 export const localProducts = [

@@ -1,23 +1,27 @@
 import type { StaticImageData } from "next/image";
 
 /**
- * The shape of a single product, same fields your GlutenFree/Everyday/
- * ComboOffer data already used (title, name, flavour, image, description,
- * price, plus the optional offer/delivery/rating/review fields).
- * Every file that touches a product (cards, grid, detail page) imports
- * this one type so they can never drift out of sync with each other.
+ * The shape of a single product.
  *
- * `image` can be either a locally-imported StaticImageData (static product
- * data) or a plain string URL (products fetched from the API/Supabase).
+ * `image` supports:
+ * - One locally imported Next.js image
+ * - One normal URL string
+ * - Multiple images for products with front/back images
  */
 export type Product = {
   readonly id: string;
   readonly title: string;
   readonly name: string;
   readonly flavour: string;
-  readonly image: StaticImageData | string;
+
+  readonly image:
+    | StaticImageData
+    | string
+    | readonly (StaticImageData | string)[];
+
   readonly description: string;
   readonly price: string;
+
   readonly offer?: string;
   readonly offerDetails?: string;
   readonly delivery?: string;
@@ -26,27 +30,75 @@ export type Product = {
   readonly reviewList?: readonly string[];
 };
 
-/** Which product range a product belongs to — used to tell products apart across collections. */
-export type ProductTheme = "gluten-free" | "everyday" | "combo";
+/**
+ * Product collection/theme.
+ */
+export type ProductTheme =
+  | "gluten-free"
+  | "everyday"
+  | "combo";
 
 /**
- * Builds the id used in the product's URL and as its React key, e.g.
- * theme "everyday" + product.id "oat-thins" -> "everyday-oat-thins".
- * This is the SAME id used everywhere: card links, the /product/[id] page,
- * and cart/wishlist entries — so a product always resolves to one id.
+ * Builds the ID used in the product URL and React key.
+ *
+ * Example:
+ * "everyday" + "garlic"
+ * → "everyday-garlic"
  */
-export function toRouteId(theme: ProductTheme, product: Pick<Product, "id">) {
+export function toRouteId(
+  theme: ProductTheme,
+  product: Pick<Product, "id">
+) {
   return `${theme}-${product.id}`;
 }
 
 /**
- * Converts a Product (your product data shape) into the shape the redux
- * cart/wishlist slices expect (id, _id, slug, name, category, flavor,
- * description, price as a number, image as a plain string, etc).
- * Called right before dispatch(addToCart(...)) or dispatch(addToWishlist(...)).
+ * Converts a Product into the format expected by
+ * the Redux cart and wishlist.
+ *
+ * The product can have:
+ *
+ * image: garlicImage
+ *
+ * OR
+ *
+ * image: [garlicImage, garlicBackImage]
+ *
+ * OR
+ *
+ * image: "https://example.com/image.png"
+ *
+ * Redux receives a single image URL.
  */
-export function toStoreProduct(product: Product, theme: ProductTheme) {
+export function toStoreProduct(
+  product: Product,
+  theme: ProductTheme
+) {
   const id = toRouteId(theme, product);
+
+  let image: string;
+
+  // Case 1: image is a normal URL string
+  if (typeof product.image === "string") {
+    image = product.image;
+  }
+
+  // Case 2: image is a single imported Next.js image
+  else if ("src" in product.image) {
+    image = product.image.src;
+  }
+
+  // Case 3: image is an array of images
+  else {
+    const firstImage = product.image[0];
+
+    if (typeof firstImage === "string") {
+      image = firstImage;
+    } else {
+      image = firstImage.src;
+    }
+  }
+
   return {
     id,
     _id: id,
@@ -55,12 +107,14 @@ export function toStoreProduct(product: Product, theme: ProductTheme) {
     category: theme,
     flavor: product.flavour,
     description: product.description,
-    // price comes in as a display string like "₹249" — strip everything
-    // that isn't a digit or a decimal point so redux gets a plain number.
-    price: Number(product.price.replace(/[^0-9.]/g, "")),
-    // image may be a locally-imported StaticImageData or an API URL string —
-    // normalize to a plain string either way.
-    image: typeof product.image === "string" ? product.image : product.image.src,
+
+    // Convert "₹640" → 640
+    price: Number(
+      product.price.replace(/[^0-9.]/g, "")
+    ),
+
+    image,
+
     countInStock: 100,
     netWeight: 200,
   };

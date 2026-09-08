@@ -3,17 +3,27 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState, type TouchEvent } from "react";
 import toast from "react-hot-toast";
 import { useDispatch } from "react-redux";
 
 import { addToCart } from "@/src/frontend/redux/slices/cartSlice";
-import { addToWishlist, removeFromWishlist } from "@/src/frontend/redux/slices/wishlistSlice";
+import {
+  addToWishlist,
+  removeFromWishlist,
+} from "@/src/frontend/redux/slices/wishlistSlice";
 import { supabase } from "@/src/frontend/lib/supabase/client";
 
 import { ProductCard } from "./ProductCard";
-import { findProductByRouteId, getRecommendations } from "./productLookup";
-import { toStoreProduct, type Product, type ProductTheme } from "./productShared";
+import {
+  findProductByRouteId,
+  getRecommendations,
+} from "./productLookup";
+import {
+  toStoreProduct,
+  type Product,
+  type ProductTheme,
+} from "./productShared";
 
 import styles from "./ProductDetail.module.scss";
 
@@ -30,49 +40,163 @@ export function ProductDetail({ routeId }: ProductDetailProps) {
       <section className={styles.section}>
         <div className={styles.notFound}>
           <p className={styles.infoEyebrow}>Windia Thins</p>
-          <h1 className={styles.infoName}>We couldn&apos;t find that product</h1>
-          <p className={styles.description}>It may have been renamed or removed.</p>
-          <Link className={styles.backLink} href="/">Back to shop</Link>
+
+          <h1 className={styles.infoName}>
+            We couldn&apos;t find that product
+          </h1>
+
+          <p className={styles.description}>
+            It may have been renamed or removed.
+          </p>
+
+          <Link className={styles.backLink} href="/">
+            Back to shop
+          </Link>
         </div>
       </section>
     );
   }
 
-  return <ProductDetailContent product={match.product} theme={match.theme} routeId={routeId} />;
+  return (
+    <ProductDetailContent
+      product={match.product}
+      theme={match.theme}
+      routeId={routeId}
+    />
+  );
 }
 
-function ProductDetailContent({ product, theme, routeId }: { product: Product; theme: ProductTheme; routeId: string }) {
+function ProductDetailContent({
+  product,
+  theme,
+  routeId,
+}: {
+  product: Product;
+  theme: ProductTheme;
+  routeId: string;
+}) {
   const dispatch = useDispatch();
   const router = useRouter();
 
+  /* -----------------------------
+     Main product state
+  ----------------------------- */
+
   const [quantity, setQuantityState] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [recQuantities, setRecQuantities] = useState<Record<string, number>>({});
-  const [recWishlisted, setRecWishlisted] = useState<Record<string, boolean>>({});
+
+  /* -----------------------------
+     Product image carousel
+  ----------------------------- */
+
+  const detailImages = Array.isArray(product.image)
+    ? product.image
+    : [product.image];
+
+  const [detailImageIndex, setDetailImageIndex] = useState(0);
+
+  const touchStartX = useRef<number | null>(null);
+
+  const nextDetailImage = () => {
+    setDetailImageIndex((current) =>
+      current === detailImages.length - 1 ? 0 : current + 1
+    );
+  };
+
+  const previousDetailImage = () => {
+    setDetailImageIndex((current) =>
+      current === 0 ? detailImages.length - 1 : current - 1
+    );
+  };
+
+  const handleDetailTouchStart = (
+    event: TouchEvent<HTMLDivElement>
+  ) => {
+    touchStartX.current = event.touches[0].clientX;
+  };
+
+  const handleDetailTouchEnd = (
+    event: TouchEvent<HTMLDivElement>
+  ) => {
+    if (touchStartX.current === null) return;
+
+    const touchEndX = event.changedTouches[0].clientX;
+
+    const difference =
+      touchStartX.current - touchEndX;
+
+    if (Math.abs(difference) > 50) {
+      if (difference > 0) {
+        nextDetailImage();
+      } else {
+        previousDetailImage();
+      }
+    }
+
+    touchStartX.current = null;
+  };
+
+  /* -----------------------------
+     Recommendations state
+  ----------------------------- */
+
+  const [recQuantities, setRecQuantities] =
+    useState<Record<string, number>>({});
+
+  const [recWishlisted, setRecWishlisted] =
+    useState<Record<string, boolean>>({});
+
+  /* -----------------------------
+     Authentication
+  ----------------------------- */
 
   const requireAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (!user) {
       router.push(`/login?next=/product/${routeId}`);
       return false;
     }
+
     return true;
   };
 
+  /* -----------------------------
+     Main product quantity
+  ----------------------------- */
+
   const setQuantity = async (next: number) => {
     const nextQuantity = Math.max(0, next);
+
     if (nextQuantity > quantity) {
       if (!(await requireAuth())) return;
-      dispatch(addToCart(toStoreProduct(product, theme), nextQuantity - quantity));
+
+      dispatch(
+        addToCart(
+          toStoreProduct(product, theme),
+          nextQuantity - quantity
+        )
+      );
+
       toast.success("Added to cart");
     }
+
     setQuantityState(nextQuantity);
   };
 
+  /* -----------------------------
+     Main product wishlist
+  ----------------------------- */
+
   const toggleWishlist = async () => {
     const next = !isWishlisted;
+
     if (next && !(await requireAuth())) return;
+
     const storeProduct = toStoreProduct(product, theme);
+
     if (next) {
       dispatch(addToWishlist(storeProduct));
       toast.success("Saved to wishlist");
@@ -80,122 +204,371 @@ function ProductDetailContent({ product, theme, routeId }: { product: Product; t
       dispatch(removeFromWishlist(storeProduct.id));
       toast("Removed from wishlist");
     }
+
     setIsWishlisted(next);
   };
 
+  /* -----------------------------
+     Buy Now
+  ----------------------------- */
+
   const buyNow = async () => {
     if (!(await requireAuth())) return;
-    dispatch(addToCart(toStoreProduct(product, theme), 1));
+
+    dispatch(
+      addToCart(
+        toStoreProduct(product, theme),
+        1
+      )
+    );
+
     toast.success("Added to cart");
+
     router.push("/checkout");
   };
 
-  const recommendations = getRecommendations(routeId, theme, 4);
+  /* -----------------------------
+     Recommendations
+  ----------------------------- */
 
-  const setRecQuantity = async (recRouteId: string, recProduct: Product, recTheme: ProductTheme, next: number) => {
+  const recommendations = getRecommendations(
+    routeId,
+    theme,
+    4
+  );
+
+  /* -----------------------------
+     Recommendation quantity
+  ----------------------------- */
+
+  const setRecQuantity = async (
+    recRouteId: string,
+    recProduct: Product,
+    recTheme: ProductTheme,
+    next: number
+  ) => {
     const nextQuantity = Math.max(0, next);
-    const current = recQuantities[recRouteId] ?? 0;
+
+    const current =
+      recQuantities[recRouteId] ?? 0;
+
     if (nextQuantity > current) {
       if (!(await requireAuth())) return;
-      dispatch(addToCart(toStoreProduct(recProduct, recTheme), nextQuantity - current));
+
+      dispatch(
+        addToCart(
+          toStoreProduct(recProduct, recTheme),
+          nextQuantity - current
+        )
+      );
+
       toast.success("Added to cart");
     }
-    setRecQuantities((q) => ({ ...q, [recRouteId]: nextQuantity }));
+
+    setRecQuantities((q) => ({
+      ...q,
+      [recRouteId]: nextQuantity,
+    }));
   };
 
-  const toggleRecWishlist = async (recRouteId: string, recProduct: Product, recTheme: ProductTheme) => {
-    const next = !recWishlisted[recRouteId];
+  /* -----------------------------
+     Recommendation wishlist
+  ----------------------------- */
+
+  const toggleRecWishlist = async (
+    recRouteId: string,
+    recProduct: Product,
+    recTheme: ProductTheme
+  ) => {
+    const next =
+      !recWishlisted[recRouteId];
+
     if (next && !(await requireAuth())) return;
-    const storeProduct = toStoreProduct(recProduct, recTheme);
+
+    const storeProduct =
+      toStoreProduct(
+        recProduct,
+        recTheme
+      );
+
     if (next) {
       dispatch(addToWishlist(storeProduct));
       toast.success("Saved to wishlist");
     } else {
-      dispatch(removeFromWishlist(storeProduct.id));
+      dispatch(
+        removeFromWishlist(storeProduct.id)
+      );
+
       toast("Removed from wishlist");
     }
-    setRecWishlisted((w) => ({ ...w, [recRouteId]: next }));
+
+    setRecWishlisted((w) => ({
+      ...w,
+      [recRouteId]: next,
+    }));
   };
 
+  /* -----------------------------
+     Page
+  ----------------------------- */
+
   return (
-    <section className={styles.section} data-navbar-theme={theme}>
+    <section
+      className={styles.section}
+      data-navbar-theme={theme}
+    >
       <div className={styles.detail}>
-        <div className={styles.detailImage}>
-          <Image src={product.image} alt={`Windia Thins ${product.name}`} fill sizes="(max-width: 768px) 100vw, 45vw" priority />
-        </div>
+
+        {/* =========================
+    PRODUCT IMAGE GALLERY
+========================= */}
+
+<div
+  className={styles.detailImage}
+  onTouchStart={handleDetailTouchStart}
+  onTouchEnd={handleDetailTouchEnd}
+>
+  {/* Bundle badge */}
+  <div className={styles.bundleBadge}>
+    12-PACKET BUNDLE
+  </div>
+
+  {/* Wishlist heart */}
+  <button
+    type="button"
+    className={styles.imageWishlist}
+    onClick={toggleWishlist}
+    aria-label="Add to wishlist"
+  >
+    {isWishlisted ? "♥" : "♡"}
+  </button>
+
+  {/* Product image */}
+  <Image
+    src={detailImages[detailImageIndex]}
+    alt={`Windia Thins ${product.name} - Image ${
+      detailImageIndex + 1
+    }`}
+    fill
+    className={styles.detailProductImage}
+    sizes="(max-width: 768px) 100vw, 45vw"
+    priority={detailImageIndex === 0}
+  />
+
+  {/* Previous */}
+  {detailImages.length > 1 && (
+    <button
+      type="button"
+      className={`${styles.detailArrow} ${styles.detailPrevButton}`}
+      onClick={previousDetailImage}
+      aria-label="Previous product image"
+    >
+      ‹
+    </button>
+  )}
+
+  {/* Next */}
+  {detailImages.length > 1 && (
+    <button
+      type="button"
+      className={`${styles.detailArrow} ${styles.detailNextButton}`}
+      onClick={nextDetailImage}
+      aria-label="Next product image"
+    >
+      ›
+    </button>
+  )}
+
+  {/* Dots */}
+  {detailImages.length > 1 && (
+    <div className={styles.detailImageDots}>
+      {detailImages.map((_, index) => (
+        <button
+          key={index}
+          type="button"
+          className={`${styles.detailImageDot} ${
+            index === detailImageIndex
+              ? styles.detailImageDotActive
+              : ""
+          }`}
+          onClick={() => setDetailImageIndex(index)}
+          aria-label={`Show product image ${index + 1}`}
+        />
+      ))}
+    </div>
+  )}
+</div>
+
+        {/* =========================
+            PRODUCT INFORMATION
+        ========================= */}
 
         <div className={styles.detailContent}>
-          <p className={styles.infoEyebrow}>{product.title}</p>
-          <h1 className={styles.infoName}>{product.name}</h1>
-          <p className={styles.flavour}>Flavour: {product.flavour}</p>
 
-          {product.rating && (
-            <p className={styles.ratingRow}>
-              ★ {product.rating}
-              {product.reviews && <span className={styles.reviewCount}> ({product.reviews} reviews)</span>}
+          {/* Product eyebrow */}
+
+          <p className={styles.infoEyebrow}>
+            {product.title}
+          </p>
+
+          {/* Product name */}
+
+          <h1 className={styles.infoName}>
+            {product.name}
+          </h1>
+
+          {/* Description */}
+
+          <p className={styles.description}>
+            {product.description}
+          </p>
+
+          {/* Price */}
+
+          <p className={styles.price}>
+            {product.price}
+          </p>
+
+          {/* Offer */}
+
+          {product.offer && (
+            <p className={styles.offer}>
+              {product.offer}
             </p>
           )}
 
-          <p className={styles.description}>{product.description}</p>
-          <p className={styles.detailPrice}>{product.price}</p>
-          {product.offerDetails && <p className={styles.offerDetails}>{product.offerDetails}</p>}
-          {product.delivery && <p className={styles.delivery}>{product.delivery}</p>}
+          {/* Offer details */}
 
-          {product.reviewList && product.reviewList.length > 0 && (
-            <ul className={styles.reviewList}>
-              {product.reviewList.map((review, i) => (
-                <li key={i} className={styles.review}>{review}</li>
-              ))}
-            </ul>
+          {product.offerDetails && (
+            <p className={styles.offerDetails}>
+              {product.offerDetails}
+            </p>
           )}
 
-          <div className={styles.detailActions}>
+          {/* Delivery */}
+
+          {product.delivery && (
+            <p className={styles.delivery}>
+              {product.delivery}
+            </p>
+          )}
+
+          {/* Quantity controls */}
+
+          <div className={styles.quantity}>
             <button
-              className={`${styles.wishlistButton} ${isWishlisted ? styles.wishlistActive : ""}`}
               type="button"
-              aria-label={`${isWishlisted ? "Remove" : "Add"} ${product.name} ${isWishlisted ? "from" : "to"} wishlist`}
-              onClick={toggleWishlist}
+              onClick={() =>
+                setQuantity(quantity - 1)
+              }
+              disabled={quantity === 0}
+              aria-label="Decrease quantity"
             >
-              {isWishlisted ? "♥" : "♡"}
+              −
             </button>
 
-            {quantity === 0 ? (
-              <button className={styles.addToCartButton} type="button" onClick={() => setQuantity(1)}>
-                Add to cart
-              </button>
-            ) : (
-              <div className={styles.quantityControl}>
-                <button type="button" aria-label={`Remove one ${product.name}`} onClick={() => setQuantity(quantity - 1)}>−</button>
-                <span aria-live="polite">{quantity}</span>
-                <button type="button" aria-label={`Add one ${product.name}`} onClick={() => setQuantity(quantity + 1)}>+</button>
-              </div>
-            )}
+            <span>{quantity}</span>
 
-            <button className={`${styles.addToCartButton} ${styles.buyNowButton}`} type="button" onClick={buyNow}>
-              Buy now
+            <button
+              type="button"
+              onClick={() =>
+                setQuantity(quantity + 1)
+              }
+              aria-label="Increase quantity"
+            >
+              +
             </button>
           </div>
+
+          {/* Add to cart */}
+
+          <button
+            type="button"
+            onClick={() =>
+              setQuantity(quantity + 1)
+            }
+            className={styles.addToCart}
+          >
+            Add to Cart
+          </button>
+
+          {/* Buy now */}
+
+          <button
+            type="button"
+            onClick={buyNow}
+            className={styles.buyNow}
+          >
+            Buy Now
+          </button>
+
+         
         </div>
       </div>
 
+      {/* =========================
+          RECOMMENDATIONS
+      ========================= */}
+
       {recommendations.length > 0 && (
-        <div className={styles.recommendations}>
-          <h2 className={styles.recommendationsHeading}>You might also like</h2>
-          <ul className={styles.recommendationsGrid}>
-            {recommendations.map(({ product: recProduct, theme: recTheme, routeId: recRouteId }) => (
-              <ProductCard
-                key={recRouteId}
-                product={recProduct}
-                theme={recTheme}
-                quantity={recQuantities[recRouteId] ?? 0}
-                isWishlisted={!!recWishlisted[recRouteId]}
-                onQuantityChange={(q) => setRecQuantity(recRouteId, recProduct, recTheme, q)}
-                onToggleWishlist={() => toggleRecWishlist(recRouteId, recProduct, recTheme)}
-              />
-            ))}
+        <div
+          className={styles.recommendations}
+        >
+          <h2
+            className={
+              styles.recommendationsHeading
+            }
+          >
+            You might also like
+          </h2>
+
+          <ul
+            className={
+              styles.recommendationsGrid
+            }
+          >
+            {recommendations.map(
+              ({
+                product: recProduct,
+                theme: recTheme,
+                routeId: recRouteId,
+              }) => (
+                <ProductCard
+                  key={recRouteId}
+                  product={recProduct}
+                  theme={recTheme}
+                  quantity={
+                    recQuantities[
+                      recRouteId
+                    ] ?? 0
+                  }
+                  isWishlisted={
+                    !!recWishlisted[
+                      recRouteId
+                    ]
+                  }
+                  onQuantityChange={(q) =>
+                    setRecQuantity(
+                      recRouteId,
+                      recProduct,
+                      recTheme,
+                      q
+                    )
+                  }
+                  onToggleWishlist={() =>
+                    toggleRecWishlist(
+                      recRouteId,
+                      recProduct,
+                      recTheme
+                    )
+                  }
+                />
+              )
+            )}
           </ul>
         </div>
       )}
     </section>
   );
 }
+

@@ -1,9 +1,18 @@
+/* =========================================
+   PRODUCT DETAIL PAGE
+========================================= */
+
 .section {
   background: #fff3e9;
   color: #5a341a;
   min-height: 100vh;
-  padding: clamp(2.5rem, 5vw, 4.5rem) clamp(1.25rem, 4vw, 4.5rem) 5rem;
+  padding: clamp(2.5rem, 5vw, 4.5rem)
+    clamp(1.25rem, 4vw, 4.5rem) 5rem;
 }
+
+/* =========================================
+   MAIN PRODUCT LAYOUT
+========================================= */
 
 .detail {
   display: grid;
@@ -11,179 +20,717 @@
   gap: clamp(1.5rem, 4vw, 3.5rem);
   max-width: 68rem;
   margin: 0 auto;
+  align-items: start;
 }
+
+/* =========================================
+   PRODUCT IMAGE GALLERY
+========================================= */
 
 .detailImage {
   position: relative;
-  min-height: 32rem;
+  width: 100%;
+  height: 560px;
+
   background: #f2e2d2;
-  border-radius: 16px;
+  border-radius: 18px;
+
   overflow: hidden;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  touch-action: pan-y;
 }
 
-.detailImage img { object-fit: cover; object-position: center; }
+/* Actual product image */
 
-.detailContent { padding-top: 0.5rem; }
+.detailProductImage {
+  object-fit: contain !important;
+
+  width: 94% !important;
+  height: 94% !important;
+
+  left: 3% !important;
+  top: 3% !important;
+
+  z-index: 1;
+}
+
+/* =========================================
+   BUNDLE BADGE
+========================================= */
+
+.bundleBadge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+
+  z-index: 10;
+
+  padding: 7px 15px;
+
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #d9c8b6;
+
+  color: #4b2d1c;
+
+  font-family: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+
+  white-space: nowrap;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* =========================================
+   IMAGE WISHLIST HEART
+========================================= */
+
+.imageWishlist {
+  position: absolute;
+
+  top: 14px;
+  right: 14px;
+
+  z-index: 10;
+
+  width: 42px;
+  height: 42px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.96);
+
+  color: #4b2d1c;
+
+  font-size: 25px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+
+  transition: transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.imageWishlist:hover {
+  transform: scale(1.06);
+  background: #ffffff;
+}
+
+/* =========================================
+   IMAGE ARROWS
+========================================= */
+
+.detailArrow {
+  position: absolute;
+
+  top: 50%;
+  z-index: 10;
+
+  width: 50px;
+  height: 50px;
+
+  transform: translateY(-50%);
+
+  border: none;
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.96);
+
+  color: #4b2d1c;
+
+  font-size: 34px;
+  font-weight: 300;
+  line-height: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.detailArrow:hover {
+  background: #ffffff;
+  transform: translateY(-50%) scale(1.06);
+}
+
+.detailPrevButton {
+  left: 14px;
+}
+
+.detailNextButton {
+  right: 14px;
+}
+
+/* =========================================
+   IMAGE DOTS
+========================================= */
+
+.detailImageDots {
+  position: absolute;
+
+  bottom: 15px;
+  left: 50%;
+
+  z-index: 10;
+
+  transform: translateX(-50%);
+
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+}
+
+.detailImageDot {
+  width: 9px;
+  height: 9px;
+
+  padding: 0;
+
+  border: none;
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.7);
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.detailImageDotActive {
+  background: #ffffff;
+  transform: scale(1.3);
+}
+
+/* =========================================
+   PRODUCT INFORMATION
+========================================= */
+
+.detailContent {
+  padding-top: 0.5rem;
+}
 
 .infoEyebrow {
   margin: 0;
-  font-family: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+
+  font-family:
+    "Barlow Condensed",
+    "Arial Narrow",
+    Arial,
+    sans-serif;
+
   font-size: 0.85rem;
+
   letter-spacing: 0.09em;
+
   text-transform: uppercase;
+
   color: #8a5b34;
 }
 
 .infoName {
   margin: 0.3rem 0 0;
-  font-family: "The Seasons", "Bodoni MT", Didot, "Iowan Old Style", serif;
+
+  font-family:
+    "The Seasons",
+    "Bodoni MT",
+    Didot,
+    "Iowan Old Style",
+    serif;
+
   font-size: clamp(2.1rem, 3.4vw, 3rem);
+
   font-weight: 400;
+
   line-height: 0.98;
 }
 
-.flavour { margin: 0.6rem 0 0; font-size: 0.98rem; }
-
-.ratingRow {
-  margin: 0.5rem 0 0;
-  font-family: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
-  font-size: 0.85rem;
-}
-
-.reviewCount { color: #8a5b34; }
-
 .description {
   margin: 1rem 0 0;
-  font-family: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+
+  font-family:
+    "Barlow Condensed",
+    "Arial Narrow",
+    Arial,
+    sans-serif;
+
   font-size: 1.02rem;
+
   line-height: 1.5;
+
   max-width: 34rem;
 }
 
-.detailPrice { margin: 1rem 0 0; font-weight: 500; font-size: 1.6rem; }
+/* =========================================
+   PRICE
+========================================= */
 
-.offerDetails, .delivery {
+.price {
   margin: 0.4rem 0 0;
-  font-size: 0.92rem;
+
+  font-size: 1.25rem;
+
+  font-weight: 500;
+
+  color: #5a341a;
+}
+
+/* =========================================
+   OFFER
+========================================= */
+
+.offer {
+  margin: 0.4rem 0 0;
+
+  font-size: 0.98rem;
+
   font-weight: 500;
 }
 
-.reviewList { margin: 1.25rem 0 0; padding: 0; list-style: none; max-width: 34rem; }
+.offerDetails {
+  margin: 0.2rem 0 0;
 
-.review {
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 0.5px solid rgba(90, 52, 26, 0.15);
   font-size: 0.92rem;
-  line-height: 1.35;
+
+  font-weight: 500;
 }
 
-.detailActions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-  margin-top: 2rem;
+.delivery {
+  margin: 0.4rem 0 0;
+
+  font-size: 0.92rem;
+
+  font-weight: 500;
 }
+
+/* =========================================
+   QUANTITY
+========================================= */
+
+.quantity {
+  display: flex;
+
+  align-items: center;
+
+  width: fit-content;
+
+  margin-top: 1.5rem;
+
+  border: 1px solid rgba(90, 52, 26, 0.25);
+
+  border-radius: 8px;
+
+  overflow: hidden;
+
+  background: #ffffff;
+}
+
+.quantity button {
+  width: 42px;
+  height: 42px;
+
+  border: none;
+
+  background: transparent;
+
+  color: #5a341a;
+
+  font-size: 1.2rem;
+
+  cursor: pointer;
+
+  transition: background 0.15s ease;
+}
+
+.quantity button:hover {
+  background: #f2e2d2;
+}
+
+.quantity button:disabled {
+  opacity: 0.4;
+
+  cursor: not-allowed;
+}
+
+.quantity span {
+  width: 42px;
+
+  text-align: center;
+
+  font-family:
+    "Barlow Condensed",
+    "Arial Narrow",
+    Arial,
+    sans-serif;
+
+  font-size: 1rem;
+}
+
+/* =========================================
+   ADD TO CART
+========================================= */
+
+.addToCart {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  min-width: 180px;
+
+  margin-top: 1rem;
+
+  padding: 0.85rem 1.5rem;
+
+  border: 1px solid #5a341a;
+
+  border-radius: 8px;
+
+  background: #5a341a;
+
+  color: #fff3e9;
+
+  font-family:
+    "Barlow Condensed",
+    "Arial Narrow",
+    Arial,
+    sans-serif;
+
+  font-size: 1rem;
+
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.addToCart:hover {
+  background: #402512;
+
+  transform: translateY(-1px);
+}
+
+/* =========================================
+   BUY NOW
+========================================= */
+
+.buyNow {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  min-width: 140px;
+
+  margin-top: 1rem;
+  margin-left: 0.6rem;
+
+  padding: 0.85rem 1.5rem;
+
+  border: 1px solid #7a2e22;
+
+  border-radius: 8px;
+
+  background: #7a2e22;
+
+  color: #fff3e9;
+
+  font-family:
+    "Barlow Condensed",
+    "Arial Narrow",
+    Arial,
+    sans-serif;
+
+  font-size: 1rem;
+
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.buyNow:hover {
+  background: #5c211a;
+
+  transform: translateY(-1px);
+}
+
+/* =========================================
+   WISHLIST
+========================================= */
 
 .wishlistButton {
-  display: grid;
-  width: 2.6rem;
-  aspect-ratio: 1;
-  padding: 0;
-  color: #5a341a;
-  background: #ffffff;
-  border: 0.5px solid rgba(90, 52, 26, 0.2);
-  border-radius: 50%;
-  font-size: 1.1rem;
-  place-items: center;
-  cursor: pointer;
-  transition: transform 140ms ease;
-  &:hover, &:focus-visible { transform: scale(1.06); }
-  &:focus-visible { outline: 2px solid #5a341a; outline-offset: 2px; }
-}
+  display: inline-flex;
 
-.wishlistActive { color: #a63d2d; }
-
-.addToCartButton, .quantityControl {
-  flex: 1 1 10rem;
-  color: #fff3e9;
-  background: #5a341a;
-  border: 1px solid #5a341a;
-  border-radius: 8px;
-  font-family: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-
-.addToCartButton {
-  padding: 0.75rem;
-  cursor: pointer;
-  transition: background-color 160ms ease;
-  &:hover, &:focus-visible { background: #402512; }
-  &:focus-visible { outline: 2px solid #5a341a; outline-offset: 2px; }
-}
-
-.quantityControl {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
   align-items: center;
-}
+  justify-content: center;
 
-.quantityControl button {
-  height: 2.6rem;
-  padding: 0;
-  color: #fff3e9;
-  background: transparent;
-  border: 0;
-  font-size: 1.2rem;
+  min-width: 180px;
+
+  min-height: 44px;
+
+  margin-top: 0.9rem;
+
+  padding: 0.7rem 1.2rem;
+
+  color: #5a341a;
+
+  background: #ffffff;
+
+  border: 1px solid rgba(90, 52, 26, 0.25);
+
+  border-radius: 8px;
+
+  font-family:
+    "Barlow Condensed",
+    "Arial Narrow",
+    Arial,
+    sans-serif;
+
+  font-size: 0.95rem;
+
   cursor: pointer;
-  &:focus-visible { outline: 2px solid #fff3e9; outline-offset: -2px; }
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
 }
-.quantityControl span { text-align: center; font-size: 0.9rem; }
 
-.buyNowButton { background: #7a2e22; border-color: #7a2e22; &:hover, &:focus-visible { background: #5c211a; } }
+.wishlistButton:hover {
+  background: #f8eee6;
 
-/* Not found state */
-.notFound { max-width: 34rem; margin: 0 auto; text-align: center; }
+  transform: translateY(-1px);
+}
+
+/* =========================================
+   NOT FOUND
+========================================= */
+
+.notFound {
+  max-width: 34rem;
+
+  margin: 0 auto;
+
+  text-align: center;
+}
+
 .backLink {
   display: inline-block;
+
   margin-top: 1.5rem;
+
   color: #5a341a;
-  font-family: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+
+  font-family:
+    "Barlow Condensed",
+    "Arial Narrow",
+    Arial,
+    sans-serif;
+
   font-weight: 500;
+
   text-decoration: underline;
 }
 
-/* Recommendations */
+/* =========================================
+   RECOMMENDATIONS
+========================================= */
+
 .recommendations {
   max-width: 68rem;
+
   margin: clamp(3.5rem, 6vw, 5.5rem) auto 0;
 }
 
 .recommendationsHeading {
   margin: 0 0 1.25rem;
-  font-family: "The Seasons", "Bodoni MT", Didot, "Iowan Old Style", serif;
+
+  font-family:
+    "The Seasons",
+    "Bodoni MT",
+    Didot,
+    "Iowan Old Style",
+    serif;
+
   font-size: clamp(1.6rem, 2.4vw, 2.1rem);
+
   font-weight: 400;
 }
 
 .recommendationsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+
+  grid-template-columns:
+    repeat(auto-fit, minmax(220px, 1fr));
+
   gap: clamp(1rem, 1.8vw, 1.5rem);
+
   margin: 0;
   padding: 0;
+
   list-style: none;
 }
-@media (max-width: 720px) {
-  .detail { grid-template-columns: 1fr; }
-  .detailImage { min-height: 32rem; }
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 900px) {
+  .detail {
+    gap: 2rem;
+  }
+
+  .detailImage {
+    height: 500px;
+  }
+
+  .infoName {
+    font-size: clamp(2rem, 5vw, 2.7rem);
+  }
 }
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 720px) {
+  .section {
+    padding: 2rem 1rem 4rem;
+  }
+
+  .detail {
+    grid-template-columns: 1fr;
+
+    gap: 2rem;
+  }
+
+  .detailImage {
+    height: 500px;
+
+    border-radius: 16px;
+  }
+
+  .detailProductImage {
+  object-fit: contain !important;
+
+  width: 100% !important;
+  height: 100% !important;
+
+  left: 0 !important;
+  top: 0 !important;
+
+  z-index: 1;
+}
+
+  .bundleBadge {
+    top: 12px;
+    left: 12px;
+
+    font-size: 12px;
+
+    padding: 6px 12px;
+  }
+
+  .imageWishlist {
+    top: 12px;
+    right: 12px;
+
+    width: 40px;
+    height: 40px;
+
+    font-size: 23px;
+  }
+
+  .detailArrow {
+    width: 44px;
+    height: 44px;
+
+    font-size: 30px;
+  }
+
+  .detailPrevButton {
+    left: 12px;
+  }
+
+  .detailNextButton {
+    right: 12px;
+  }
+
+  .detailImageDots {
+    bottom: 12px;
+  }
+
+  .infoName {
+    font-size: 2.5rem;
+  }
+
+  .addToCart,
+  .buyNow {
+    width: 100%;
+
+    margin-left: 0;
+  }
+
+  .wishlistButton {
+    width: 100%;
+  }
+}
+
+/* =========================================
+   SMALL MOBILE
+========================================= */
+
+@media (max-width: 480px) {
+  .detailImage {
+    height: 440px;
+  }
+
+  .detailProductImage {
+    width: 82% !important;
+    height: 88% !important;
+
+    left: 9% !important;
+    top: 6% !important;
+  }
+
+  .infoName {
+    font-size: 2.2rem;
+  }
+}
+
+/* =========================================
+   RECOMMENDATIONS MOBILE
+========================================= */
 
 @media (max-width: 640px) {
   .recommendationsGrid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.4rem;
+    grid-template-columns: repeat(2, 1fr);
+
+    gap: 0.6rem;
   }
 }

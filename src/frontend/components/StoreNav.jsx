@@ -18,7 +18,6 @@ export default function StoreNav() {
   const { user, isAdmin, adminChecked } = useAuth();
   const pathname = usePathname();
   const showAdminLink = user && adminChecked && isAdmin;
-
   const cartCount = useSelector((s) =>
     s.cart.cartItems.reduce((sum, item) => sum + Number(item.qty || 1), 0)
   );

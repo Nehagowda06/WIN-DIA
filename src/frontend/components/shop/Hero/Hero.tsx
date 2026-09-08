@@ -32,7 +32,7 @@ export function Hero() {
           <>
             100% Natural
             <br />
-            GI &lt; 44
+            GI &lt; 48
           </>
         }
         headingId="shop-hero-heading"
