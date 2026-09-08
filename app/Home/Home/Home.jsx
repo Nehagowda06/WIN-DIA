@@ -659,13 +659,13 @@ function FeaturedProducts() {
 const reviews = [
   { rating: 5.0, quote: "I bought these for healthier snacking, but they've become a small ritual in our home. Every evening tea now feels incomplete without them. The jeera flavour especially has this warmth that just feels like home.", author: "Priya Mehta", location: "Bengaluru", product: "Garlic Thins" },
 
-  { rating: 4.7, quote: "Finding something wholesome that my whole family enjoys is rare. These crisps somehow bring together flavour, tradition, and comfort in every bite. My kids ask for them after school and my parents love them with chai.", author: "Anjali Rao", location: "Mysuru", product: "Moringa Thins" },
+  { rating: 4.7, quote: "Finding something wholesome that my whole family enjoys is rare. These crisps somehow bring together flavour, tradition, and comfort in every bite. My kids ask for them after school and my parents love them with chai.", author: "Anjali Rao", location: "Mysuru", product: "Jeera Thins" },
 
-  { rating: 4.5, quote: "The first bite reminded me of homemade snacks we grew up with. It feels comforting to find something traditional that fits today's lifestyle. I've tried nearly every flavour now and honestly can't pick a favourite.", author: "Rohit", location: "Bangalore", product: "Methi Thins" },
+  { rating: 4.5, quote: "The first bite reminded me of homemade snacks we grew up with. It feels comforting to find something traditional that fits today's lifestyle. I've tried nearly every flavour now and honestly can't pick a favourite.", author: "Rohit", location: "Bangalore", product: "Onion Thins" },
 
   { rating: 4.8, quote: "What started as curiosity turned into a pantry essential. They've become my go-to for busy days, quiet evenings, and everything in between. I love that I don't feel guilty reaching for a second handful.", author: "Meera Krishnan", location: "Chennai", product: "Curry Thins" },
 
-  { rating: 4.3, quote: "Some snacks satisfy cravings. These feel different — wholesome, familiar, and made with care you can actually taste. I ordered once thinking I'd try it out, and within a week I was placing my second order.", author: "Nisha Patel", location: "Hyderabad", product: "Methi Thins" },
+  { rating: 4.3, quote: "Some snacks satisfy cravings. These feel different — wholesome, familiar, and made with care you can actually taste. I ordered once thinking I'd try it out, and within a week I was placing my second order.", author: "Nisha Patel", location: "Hyderabad", product: "Jeera Thins" },
 ]
 
 /* ---------- Video card ---------- */
@@ -1121,7 +1121,7 @@ function Testimonials() {
    ============================================================ */
 
 function FounderSection(){
-  <h1>Healthy Khakhra</h1>
+  <h1>Healthy Thins</h1>
   const reducedMotion = useReducedMotion();
   const viewProps = (delay = 0) => (
     reducedMotion

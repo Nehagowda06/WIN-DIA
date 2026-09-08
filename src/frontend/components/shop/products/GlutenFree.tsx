@@ -108,7 +108,7 @@ type GlutenFreeProps = {
 export function GlutenFree({ products }: GlutenFreeProps) {
   return (
     <ProductRange
-      heading="Health & Wellness"
+      heading="Gut Health"
       headingId="gluten-free-heading"
       products={products ?? glutenFreeProducts}
       theme="gluten-free"

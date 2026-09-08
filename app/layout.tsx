@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     template: "%s | WIN-DIA",
   },
   description:
-    "Premium low-GI, gluten-free khakhra snacks delivered pan-India.",
+    "Premium low-GI, gluten-free Thins snacks delivered pan-India.",
 };
 
 export default function RootLayout({

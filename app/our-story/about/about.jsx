@@ -58,7 +58,7 @@ const founders = [
       "Managing Director, Kalpavristi Coco Foods, championing WIN-DIA's mission of heritage-rooted wellness food.",
     fullBio: [
       "Tejaswini is Managing Director at Kalpavristi Coco Foods, the company behind WIN-DIA. She leads the company's operations with a hands-on, disciplined approach, blending strategic thinking with a genuine passion for building something meaningful.",
-      "Driven by a vision to make Indian traditional foods globally relevant, she has been instrumental in shaping WIN-DIA's direction — rooted in heritage, built for the future, and known for offerings like the coconut flour khakhra.",
+      "Driven by a vision to make Indian traditional foods globally relevant, she has been instrumental in shaping WIN-DIA's direction — rooted in heritage, built for the future, and known for offerings like the coconut flour Thins.",
     ],
   },
   {

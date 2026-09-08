@@ -84,7 +84,7 @@ export default function CartPage() {
       <motion.div className={styles.emptyCard} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
         <div className={styles.emptyIcon}><FiShoppingCart /></div>
         <h2>Your cart is empty</h2>
-        <p>Explore our premium khakhra collection</p>
+        <p>Explore our premium Thins collection</p>
         <Link href="/shop" className={styles.shopBtn}>Explore Shop <FiArrowRight /></Link>
       </motion.div>
     </div>
