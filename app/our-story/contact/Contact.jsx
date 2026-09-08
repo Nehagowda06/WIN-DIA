@@ -146,6 +146,8 @@ const Contact = () => {
     <h3 className="win-card-title-vertical">Social</h3>
 
     <div className="win-social-links-vertical">
+
+      {/* Instagram */}
       <a
         href="https://www.instagram.com/Kalpavristi_Coco_FAB/"
         target="_blank"
@@ -157,15 +159,29 @@ const Contact = () => {
       >
         Instagram
       </a>
+
+      {/* LinkedIn */}
+      <a
+        href="https://www.linkedin.com/in/g-tejaswini-281a7b340/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="win-social-link-vertical"
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+      >
+        LinkedIn
+      </a>
+
     </div>
   </div>
 </div>
+
               </div>
             </div>
-          </div>
+          </div>          
         </div>
       </section>
-
       {/* Contact Form Section */}
       <section className="win-form-section">
         <div className="win-container">

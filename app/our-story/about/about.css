@@ -1579,14 +1579,17 @@
 
 .about-founder-modal-panel {
   position: relative;
-  width: 100%;
-  max-width: 1020px;
-  max-height: 88vh;
+  width: min(820px, 90vw);
+  max-height: 90vh;
+
   overflow: hidden;
-  border-radius: 22px;
+
+  border-radius: 24px;
+
   box-shadow:
     0 50px 100px rgba(0, 0, 0, 0.45),
     0 0 0 0.5px rgba(200, 169, 107, 0.25);
+
   animation: modalIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
@@ -1660,32 +1663,49 @@
 
 
 /* ==================================================
-   MODAL GRID — SPLIT SCREEN
-================================================== */
-
-.about-founder-modal-grid {
-  display: block;
-  min-height: 0;
-
+   MODAL GRID — SPLIT SCREEN/* Let the actual content scroll 
   max-height: calc(100dvh - 2rem);
   overflow-y: auto;
   overflow-x: hidden;
 
   border-radius: 16px;
+================================================== */
 
-  padding-bottom: 6rem;
-  box-sizing: border-box;
+.about-founder-modal-grid {
+  display: block;
+
+  width: 100%;
+
+  max-height: calc(90vh - 0px);
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  border-radius: 24px;
 }
 
 /* ==================================================
    MODAL LEFT — PHOTO PANEL
 ================================================== */
-
 .about-founder-modal-image-wrapper {
-  position: relative;
+  width: 100%;
+  height: 420px;
+  min-height: 420px;
   overflow: hidden;
+  position: relative;
   background: #3a5a3a;
 }
+
+.about-founder-modal-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+}
+
+
+
 
 /* Deep sage + blush diagonal overlay */
 .about-founder-modal-image-wrapper::after {
@@ -1716,13 +1736,14 @@
 ================================================== */
 
 .about-founder-modal-content {
-  padding: 3.75rem 3.75rem 3rem;
+  padding: 2rem 1.75rem 5rem;
   background: #f5ede0;
   display: flex;
   flex-direction: column;
   justify-content: center;
   overflow-y: auto;
   position: relative;
+  overflow: visible;
 }
 
 /* Faint decorative quote mark */
@@ -1839,13 +1860,7 @@
      MOBILE FOUNDER MODAL
   ================================= */
 
-  .about-founder-modal-backdrop {
-    align-items: flex-start;
-    padding: 1rem;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
+  
   .about-founder-modal-panel {
     position: relative;
     width: 100%;
@@ -1925,6 +1940,103 @@
 
 .about-founder-modal-close {
   z-index: 10000 !important;
+}
+
+/* ==================================================
+   hellooooooo
+================================================== */
+@media (max-width: 768px) {
+
+  .about-founder-modal-backdrop {
+    align-items: flex-start;
+    padding: 1rem;
+    padding-bottom: 5rem;
+
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .about-founder-modal-panel {
+    position: relative;
+
+    width: 100%;
+    max-width: 100%;
+
+    max-height: calc(100dvh - 6rem);
+
+    overflow: hidden;
+
+    border-radius: 18px;
+  }
+
+  .about-founder-modal-grid {
+    display: block;
+
+    width: 100%;
+    max-height: calc(100dvh - 6rem);
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    /* Keep scrolling smooth */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* =========================
+     FOUNDER IMAGE
+  ========================= */
+
+  .about-founder-modal-image-wrapper {
+    position: relative;
+
+    width: 100%;
+    height: 260px;
+    min-height: 260px;
+
+    overflow: hidden;
+  }
+
+  .about-founder-modal-image {
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: contain;
+    object-position: center;
+  }
+
+  /* =========================
+     FOUNDER TEXT
+  ========================= */
+
+  .about-founder-modal-content {
+    overflow: visible;
+
+    padding: 1.75rem 1.5rem 6rem;
+  }
+
+  /* =========================
+     CLOSE BUTTON
+  ========================= */
+
+  .about-founder-modal-close {
+    position: absolute;
+
+    top: 0.75rem;
+    right: 0.75rem;
+
+    z-index: 10000 !important;
+
+    width: 40px;
+    height: 40px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+  }
 }
 
 /* ==================================================
