@@ -319,7 +319,7 @@ function DigestiveWellness() {
 function GlycemicIndex() {
   const [ref, visible] = useInView(0.2);
   const foods = [
-    { name: 'WIN-DIA Khakhra', gi: 48, level: 'LOW',    color: '#2D6A4F' },
+    { name: 'WIN-DIA Thins', gi: 48, level: 'LOW',    color: '#2D6A4F' },
     { name: 'Brown Rice',      gi: 68, level: 'MEDIUM',  color: '#D4A373' },
     { name: 'White Bread',     gi: 75, level: 'HIGH',    color: '#E86A4A' },
   ];
@@ -369,10 +369,10 @@ function HealthGoals() {
   const [activeTab, setActiveTab] = useState(0);
 
   const goals = [
-    { icon: '🩺', label: 'Diabetes Control',    badge: 'GI Score: 44',   points: ['Low GI (44) prevents blood sugar spikes', 'High fiber slows glucose absorption', 'Zero added sugars', '22g protein helps stabilize blood sugar'], rec: '2 khakhras as mid-morning or evening snack' },
-    { icon: '⚖️', label: 'Weight Loss',          badge: 'High Satiety',   points: ['4.85g fiber keeps you full longer', 'Moderate 516 cal/100g', 'Healthy fats support metabolism', 'Portion controlled snacking'], rec: 'Replace 1 meal with 3 khakhras + veggies' },
+    { icon: '🩺', label: 'Diabetes Control',    badge: 'GI Score: 48',   points: ['Low GI (48) prevents blood sugar spikes', 'High fiber slows glucose absorption', 'Zero added sugars', '22g protein helps stabilize blood sugar'], rec: '2 Thins as mid-morning or evening snack' },
+    { icon: '⚖️', label: 'Weight Loss',          badge: 'High Satiety',   points: ['4.85g fiber keeps you full longer', 'Moderate 516 cal/100g', 'Healthy fats support metabolism', 'Portion controlled snacking'], rec: 'Replace 1 meal with 3 Thins + veggies' },
     { icon: '❤️', label: 'Heart Health',          badge: 'Zero Cholesterol', points: ['Zero cholesterol — lab verified', 'Healthy MUFA and PUFA fat profile', 'Potassium 400mg supports blood pressure', 'Low sodium option available'], rec: 'Daily with green tea for best results' },
-    { icon: '🌿', label: 'Digestive Health',      badge: '4.85g Fiber',   points: ['Prebiotic fiber feeds good gut bacteria', 'Promotes regular bowel movement', 'Easy digestion and lightness', '4.85g fiber per 100g'], rec: '2 khakhras daily + plenty of water' },
+    { icon: '🌿', label: 'Digestive Health',      badge: '4.85g Fiber',   points: ['Prebiotic fiber feeds good gut bacteria', 'Promotes regular bowel movement', 'Easy digestion and lightness', '4.85g fiber per 100g'], rec: '2 Thins daily + plenty of water' },
     { icon: '💪', label: 'Fitness & Performance', badge: '22g Protein',   points: ['22g protein per 100g fuels muscle recovery', 'Sustained slow-release energy from low GI', 'Portable and convenient post-workout snack', 'Pairs perfectly with protein spreads'], rec: 'Post-workout with a protein spread' },
   ];
 
@@ -674,10 +674,10 @@ const rows = [
       },
       {
         name: 'Superfoods',
-        desc: 'Moringa, curry leaf, etc.',
+        desc: 'curry leaf,Garlic.',
         rice:  { icon: 'bad',  text: 'None' },
         other: { icon: 'bad',  text: 'None' },
-        win:   { icon: 'win',  text: 'Yes — 4 superfoods' },
+        win:   { icon: 'win',  text: 'Yes — 2 superfoods' },
       },
     ],
   },

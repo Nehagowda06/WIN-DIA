@@ -8,6 +8,7 @@ import {
   FiHeart,
   FiInfo,
   FiPackage,
+  FiMail,
 } from "react-icons/fi";
 
 import "./MobileBottomNav.css";
@@ -32,6 +33,11 @@ const BOTTOM_NAV_ITEMS = [
     href: "/our-story/about",
     label: "About",
     icon: FiInfo,
+  },
+  {
+    href: "/our-story/contact",
+    label: "Contact",
+    icon: FiMail,
   },
   {
     href: "/profile/orders",

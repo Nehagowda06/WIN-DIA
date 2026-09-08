@@ -1,6 +1,4 @@
 import jeeraImage from "@/src/frontend/assets/images/products/gluten-free/jeera.png";
-import methiImage from "@/src/frontend/assets/images/products/gluten-free/methi.png";
-import moringaImage from "@/src/frontend/assets/images/products/gluten-free/moringa.png";
 import everydayCurryLeafImage from "@/src/frontend/assets/images/products/everyday/curryleaf.png";
 import everydayGarlicImage from "@/src/frontend/assets/images/products/everyday/garlic.png";
 import everydayOnionImage from "@/src/frontend/assets/images/products/everyday/onion.png";
@@ -20,30 +18,8 @@ export const glutenFreeProducts = [
     delivery: "🚚 Free Delivery",
   
   },
-  {
-    id: "methi",
-    title: "Fiber Rich Thins",
-    name: "Methi Flavour",
-    flavour: "Methi",
-    image: methiImage,
-    description: "Earthy, aromatic, and full of homemade warmth.",
-    price: "₹640",
-    offer: "12-Packet Bundle",
-    offerDetails: "🎁 Pay for 10 + Get 2 FREE",
-    delivery: "🚚 Free Delivery",
-  },
-  {
-    id: "moringa",
-    title: "Fiber Rich Thins",
-    name: "Moringa Leaf Flavour",
-    flavour: "Moringa",
-    image: moringaImage,
-    description: "Nature's superleaf, baked into every crisp.",
-    price: "₹640",
-    offer: "12-Packet Bundle",
-    offerDetails: "🎁 Pay for 10 + Get 2 FREE",
-    delivery: "🚚 Free Delivery",
-  },
+
+ 
 ] as const;
 
 export const everydayProducts = [
@@ -89,10 +65,10 @@ export const everydayProducts = [
 export const comboOffer = {
   id: "complete-thins-combo",
   name: "The Complete Thins Combo",
-  title: "6 Flavours · 12 Packets",
-  flavour: "All 6 Flavours",
+  title: "4 Flavours · 12 Packets",
+  flavour: "All 4 Flavours",
   description:
-    "Get 2 packets of every WIN-DIA Thins flavour and pay for only 10 packets.",
+    "Get 3 packets of every WIN-DIA Thins flavour and pay for only 10 packets.",
   flavours: [
     "Moringa",
     "Methi",

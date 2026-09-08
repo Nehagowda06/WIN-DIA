@@ -54,8 +54,9 @@ export default async function ShopPage() {
     <main>
       <Hero />
       <ComboOffer />
-      <GlutenFree products={glutenFreeProducts.length ? glutenFreeProducts : undefined} />
       <Everyday products={traditionalProducts.length ? traditionalProducts : undefined} />
+      <GlutenFree products={glutenFreeProducts.length ? glutenFreeProducts : undefined} />
+      
     </main>
   );
 }
