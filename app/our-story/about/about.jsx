@@ -64,7 +64,7 @@ const founders = [
   {
     id: "teni",
     img: founder2Image,
-    name: "Teni Shridhar",
+    name: "T N Sridhar",
     role: "Chief Executive Officer",
     shortBio:
       "CEO, Kalpavristi Coco Foods, driving WIN-DIA's growth with strategic, quality-focused leadership.",
