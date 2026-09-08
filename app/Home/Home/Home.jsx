@@ -470,15 +470,15 @@ function RangeCategories() {
             <div className="products-split-top">
               <div className="products-split-eyebrow">Crafted from Tradition</div>
               <h2 className="products-split-title">
-                <em>Everyday Classics</em><br />Range
+                <em>Gut-Friendly</em><br />Range
               </h2>
             </div>
             <div className="products-split-bottom">
               <p className="products-split-desc">
-                Wholesome ingredients, authentic flavors, and satisfying crunch for daily enjoyment.
+                Wholesome ingredients, aromatic jeera, and a satisfying crunch crafted for everyday gut-friendly enjoyment.
               </p>
               <a href="/shop?range=regular" className="products-range-btn">
-                Explore Classics Range <span className="btn-arrow">→</span>
+                Explore Gut-Friendly Range <span className="btn-arrow">→</span>
               </a>
             </div>
           </div>
@@ -495,15 +495,15 @@ function RangeCategories() {
             <div className="products-split-top">
               <div className="products-split-eyebrow">Made for Mindful Snacking</div>
               <h2 className="products-split-title">
-                <em>Health & Wellness</em><br />Range
+                <em>Everyday Classics</em><br />Range
               </h2>
             </div>
             <div className="products-split-bottom">
               <p className="products-split-desc">
-                Lighter, easy-to-digest options without compromising on taste and crunch.
+                Wholesome ingredients, authentic flavors, and satisfying crunch for daily enjoyment.
               </p>
               <a href="/shop?range=gluten-free" className="products-range-btn">
-                Explore Health & Wellness Range <span className="btn-arrow">→</span>
+                Explore Everyday Classics Range <span className="btn-arrow">→</span>
               </a>
             </div>
           </div>

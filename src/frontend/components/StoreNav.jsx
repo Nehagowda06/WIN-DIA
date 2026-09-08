@@ -1,8 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { FiHeart, FiShoppingCart, FiMenu, FiX, FiGrid } from "react-icons/fi";
+import { FiHeart, FiShoppingCart, FiGrid } from "react-icons/fi";
 import { useSelector } from "react-redux";
 import { useAuth } from "@/src/frontend/hooks/useAuth";
 import styles from "@/app/storefront.module.css";
@@ -16,7 +15,6 @@ const NAV_LINKS = [
 ];
 
 export default function StoreNav() {
-  const [menuOpen, setMenuOpen] = useState(false);
   const { user, isAdmin, adminChecked } = useAuth();
   const pathname = usePathname();
   const showAdminLink = user && adminChecked && isAdmin;
@@ -61,14 +59,7 @@ export default function StoreNav() {
             </Link>
           ))}
 
-          {/* MOBILE HAMBURGER */}
-          <button
-            className={styles.mobileMenuBtn}
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
-          >
-            {menuOpen ? <FiX /> : <FiMenu />}
-          </button>
+          
 
           {/* WISHLIST */}
           <Link href="/wishlist">
@@ -114,31 +105,7 @@ export default function StoreNav() {
         </div>
       </div>
 
-      {/* MOBILE DROPDOWN MENU */}
-      <div className={`${styles.mobileMenu} ${menuOpen ? styles.mobileMenuOpen : ""}`}>
-        {NAV_LINKS.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            onClick={() => setMenuOpen(false)}
-            className={isLinkActive(link.href) ? styles.activeLink : ""}
-          >
-            {link.label}
-          </Link>
-        ))}
-
-        {/* Mobile admin link (visible only to admin accounts) */}
-        {showAdminLink && (
-          <Link href="/admin" onClick={() => setMenuOpen(false)}>Admin Dashboard</Link>
-        )}
-
-        {/* Mobile Login/Profile */}
-        {user ? (
-          <Link href="/profile" onClick={() => setMenuOpen(false)}>Profile</Link>
-        ) : (
-          <Link href="/login" onClick={() => setMenuOpen(false)}>Login</Link>
-        )}
-      </div>
+      
     </nav>
   );
 }

@@ -14,14 +14,14 @@ export default function BannerStrip({ position = "homepage" }) {
   <div className="bannerStripContent">
     <span>✦ FREE SHIPPING ON ORDERS ABOVE ₹499</span>
     <span>•</span>
-    <span>EXPLORE ALL 6 FLAVOURS</span>
+    <span>EXPLORE ALL 4 FLAVOURS</span>
     <span>•</span>
     <Link href="/shop">SHOP NOW →</Link>
 
     {/* Duplicate for seamless scrolling */}
     <span>✦ FREE SHIPPING ON EVERY ORDER</span>
     <span>•</span>
-    <span>EXPLORE ALL 6 FLAVOURS</span>
+    <span>EXPLORE ALL 4 FLAVOURS</span>
     <span>•</span>
     <Link href="/shop">SHOP NOW →</Link>
 
@@ -30,7 +30,7 @@ export default function BannerStrip({ position = "homepage" }) {
      {/* Duplicate for seamless scrolling */}
     <span>✦ FREE SHIPPING ON EVERY ORDER</span>
     <span>•</span>
-    <span>EXPLORE ALL 6 FLAVOURS</span>
+    <span>EXPLORE ALL 4 FLAVOURS</span>
     <span>•</span>
     <Link href="/shop">SHOP NOW →</Link>
   </div>
@@ -40,7 +40,7 @@ export default function BannerStrip({ position = "homepage" }) {
             <>
               <span>✦ FREE SHIPPING ON EVERY ORDER</span>
               <span>•</span>
-              <span>EXPLORE ALL 6 FLAVOURS</span>
+              <span>EXPLORE ALL 4 FLAVOURS</span>
               <span>•</span>
               <Link href="/shop">SHOP NOW →</Link>
             </>

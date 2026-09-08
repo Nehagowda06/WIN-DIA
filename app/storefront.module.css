@@ -455,6 +455,12 @@
   .brand span {
     font-size: 0.85rem;
   }
+   .logoTrademark {
+    top: 3px;
+    right: 0px;
+    font-size: 7px;
+  }
+  
 
   .mobileMenuBtn {
     display: flex;
