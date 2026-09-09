@@ -78,7 +78,8 @@ export async function PUT(request) {
       .maybeSingle();
 
     if (error) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+      console.error('Profile update error:', error);
+      return NextResponse.json({ success: false, error: 'Could not save changes. Please try again.' }, { status: 400 });
     }
 
     return NextResponse.json({ success: true, profile: updated });

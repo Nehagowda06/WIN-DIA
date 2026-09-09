@@ -21,6 +21,7 @@ export default function ProfilePage() {
         phone: result.profile?.phone || '',
       });
     }
+
     setLoading(false);
   };
 
@@ -32,6 +33,12 @@ export default function ProfilePage() {
     e.preventDefault();
     setError('');
     setSuccess(false);
+    const phoneRegex = /^[6-9]\d{9}$/; // 10-digit Indian mobile number
+    if (!phoneRegex.test(form.phone)) {
+      setError('Please enter a valid 10-digit phone number');
+      return;
+    }
+
     setSaving(true);
 
     const res = await fetch('/api/profile', {
@@ -43,8 +50,11 @@ export default function ProfilePage() {
     const result = await res.json();
     setSaving(false);
 
-    if (!res.ok) {
-      setError(result.error);
+        if (!res.ok) {
+      const message = result.error?.includes('duplicate key') || result.error?.includes('profiles_phone_key')
+        ? 'This phone number is already in use'
+        : result.error || 'Something went wrong. Please try again.';
+      setError(message);
       return;
     }
 
