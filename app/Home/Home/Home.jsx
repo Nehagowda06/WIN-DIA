@@ -33,10 +33,10 @@ import methiImg from './methi (2).png'
 import featProductBg from './feat-product-bg.jpg'
 
 // ── Featured Products — 4 frames per product (base / tilt / opening / open)
-import methiBase    from './methi (2).png'
-import methiTilt    from './methi tilt.png'
-import methiOpening from './methi opening.png'
-import methiOpen    from './methi open.png'
+import onionBase from './onion-base.png'
+import onionTilt from './onion-tilt.png'
+import onionOpening from './onion-opening.png'
+import onionOpen from './onion-open.png'
 
 import jeeraBase    from './jeera (2).png'
 import jeeraTilt    from './jeera tilt.png'
@@ -521,14 +521,14 @@ function RangeCategories() {
    ============================================================ */
 
 const FEATURED_PRODUCTS = [
-  /*{
-    base: methiBase.src,
-    tilt: methiTilt.src,
-    opening: methiOpening.src,
-    open: methiOpen.src,
-    name: 'Methi Thins',
-    price: '₹220',
-  },*/
+ {
+    base: onionBase.src,
+    tilt: onionTilt.src,
+    opening: onionOpening.src,
+    open: onionOpen.src,
+    name: 'Onion Thins',
+    price: '₹___',
+  },
   {
     base: jeeraBase.src,
     tilt: jeeraTilt.src,
