@@ -1,7 +1,7 @@
 import { Result, failure, success } from '../types/result.types';
 import { UserContext } from '../types/common.types';
 import { AuthenticationError } from '../errors/domain-errors';
-import { getServerClient } from '../config/supabase.config';
+import { getServerClient, getAdminClient } from '../config/supabase.config';
 import { UserRole } from '../enums/entity.enums';
 
 /**
@@ -33,11 +33,22 @@ export async function authenticateToken(authHeader?: string | null): Promise<Res
 
     console.log(`[TRACE authenticateToken] auth.getUser SUCCESS! User ID: ${user.id}, Email: ${user.email}`);
 
+    // Fetch role from profiles table using admin client to bypass RLS
+    // This matches the frontend isAdmin() behavior and ensures consistency
+    const adminClient = getAdminClient();
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .select('role, full_name')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    console.log(`[TRACE authenticateToken] Profile lookup: role=${profile?.role || 'NOT_FOUND'}`);
+
     const userContext: UserContext = {
       id: user.id,
       email: user.email ?? '',
-      role: (user.app_metadata?.role as UserRole) || UserRole.CUSTOMER,
-      fullName: user.user_metadata?.full_name || null,
+      role: (profile?.role as UserRole) || UserRole.CUSTOMER,
+      fullName: profile?.full_name || user.user_metadata?.full_name || null,
     };
 
     return success(userContext);

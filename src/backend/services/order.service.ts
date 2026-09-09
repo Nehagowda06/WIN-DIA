@@ -6,6 +6,7 @@ import { OrderStatus, PaymentStatus } from '../enums/entity.enums';
 import { OrderRepository } from '../repositories/order.repository';
 import { OrderItemRepository } from '../repositories/order-item.repository';
 import { OrderStatusHistoryRepository } from '../repositories/order-status-history.repository';
+import { ShipmentRepository } from '../repositories/shipment.repository';
 import { InventoryService } from './inventory.service';
 import { logger } from '../utils/logger.util';
 import { container, RepositoryTokens, ServiceTokens } from '../providers/container.provider';
@@ -56,6 +57,7 @@ export class OrderServiceImpl implements OrderService {
   private orderRepo: OrderRepository;
   private orderItemRepo: OrderItemRepository;
   private statusHistoryRepo: OrderStatusHistoryRepository;
+  private shipmentRepo: ShipmentRepository;
   private inventoryService: InventoryService;
 
   constructor(
@@ -67,6 +69,7 @@ export class OrderServiceImpl implements OrderService {
     this.orderRepo = orderRepo || container.resolve<OrderRepository>(RepositoryTokens.OrderRepository);
     this.orderItemRepo = orderItemRepo || container.resolve<OrderItemRepository>(RepositoryTokens.OrderItemRepository);
     this.statusHistoryRepo = statusHistoryRepo || container.resolve<OrderStatusHistoryRepository>(RepositoryTokens.OrderStatusHistoryRepository);
+    this.shipmentRepo = container.resolve<ShipmentRepository>(RepositoryTokens.ShipmentRepository);
     this.inventoryService = inventoryService || container.resolve<InventoryService>(ServiceTokens.InventoryService);
   }
 
@@ -250,10 +253,32 @@ export class OrderServiceImpl implements OrderService {
    * so an abandoned order doesn't sit forever looking like a live, pending
    * payment — this is what previously showed as "Placed / Pending" with no
    * way to distinguish it from a genuinely in-progress order.
+   * 
+   * CANCELLATION POLICY: Customers can cancel their order ONLY until 2 days
+   * before shipping is assigned. If shipped_at is set, the cutoff is 2 days
+   * before that date at 12:00 PM (noon).
    */
   public async cancelOrder(orderId: string, userId: string, reason?: string): Promise<Result<Order, AppError>> {
     const existing = await this.getOrderById(orderId, userId);
     if (!existing.success) return existing;
+
+    // Check if shipment has been assigned and enforce 2-day cutoff
+    const shipmentRes = await this.shipmentRepo.findByOrderId(orderId);
+    if (shipmentRes.success && shipmentRes.value && shipmentRes.value.shipped_at) {
+      const shippedAt = new Date(shipmentRes.value.shipped_at);
+      const cutoffDate = new Date(shippedAt);
+      cutoffDate.setDate(cutoffDate.getDate() - 2); // 2 days before shipping
+      cutoffDate.setHours(12, 0, 0, 0); // Set to 12:00 PM (noon)
+
+      const now = new Date();
+      if (now > cutoffDate) {
+        return failure(
+          new ValidationError(
+            `Cancellation deadline has passed. Orders must be cancelled at least 2 days before shipping date (by ${cutoffDate.toLocaleDateString('en-IN')} 12:00 PM).`
+          )
+        );
+      }
+    }
 
     const updateRes = await this.updateOrderStatus(
       orderId,

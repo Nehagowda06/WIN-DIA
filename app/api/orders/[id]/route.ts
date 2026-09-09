@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { container, ServiceTokens } from '@/src/backend/providers/container.provider';
+import { container, ServiceTokens, RepositoryTokens } from '@/src/backend/providers/container.provider';
 import { OrderService } from '@/src/backend/services/order.service';
+import { OrderItemRepository } from '@/src/backend/repositories/order-item.repository';
 import { getAuthUserContext, handleServiceResult } from '@/src/backend/utils/route-helper.util';
 import { createErrorResponse } from '@/src/backend/types/api-response.types';
 
@@ -22,9 +23,17 @@ export async function GET(
       return handleServiceResult(result);
     }
 
+    // Fetch order items separately since getOrderById doesn't include them
+    const orderItemRepo = container.resolve<OrderItemRepository>(RepositoryTokens.OrderItemRepository);
+    const itemsRes = await orderItemRepo.findAll({ order_id: id });
+    const order_items = itemsRes.success ? itemsRes.value : [];
+
     return NextResponse.json({
       success: true,
-      order: result.value,
+      order: {
+        ...result.value,
+        order_items,
+      },
       data: result.value,
     });
   } catch (err: any) {

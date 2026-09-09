@@ -91,6 +91,14 @@ export function AuthProvider({ children }) {
   };
 
   const authFetch = (url, options = {}) => {
+    // If no token, redirect to login instead of making the request
+    if (!token) {
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+      return Promise.reject(new Error('Not authenticated'));
+    }
+    
     return fetch(url, {
       ...options,
       headers: {

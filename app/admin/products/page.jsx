@@ -130,7 +130,21 @@ function ProductRow({ product, onUpdate }) {
   return (
     <tr>
       <td>{product.name}</td>
-      <td>₹{Number(product.price || 0).toFixed(0)}</td>
+      <td>
+        <input
+          className={styles.input}
+          style={{ width: 90 }}
+          type="number"
+          step="0.01"
+          defaultValue={product.price || 0}
+          onBlur={(e) => {
+            const newPrice = Number(e.target.value);
+            if (newPrice !== product.price && newPrice > 0) {
+              onUpdate(product, { price: newPrice });
+            }
+          }}
+        />
+      </td>
       <td>
         <input
           className={styles.input}
