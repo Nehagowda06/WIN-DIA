@@ -275,17 +275,36 @@
 
 @media (max-width: 640px) {
   .section {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     padding-bottom: 1.5rem;
+    overflow: hidden;
   }
 
   .headingArea {
+    width: 100%;
     padding: 1.5rem 1rem 1rem;
   }
 
   .grid {
-    grid-template-columns: repeat(3, 1fr);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.4rem;
+
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+
     padding: 0 0.5rem;
+    margin: 0;
+    box-sizing: border-box;
+  }
+
+  .grid .tile {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 }
 

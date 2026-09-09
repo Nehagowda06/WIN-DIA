@@ -90,7 +90,7 @@ export function ProductCard({
                   : ""
               }`}
               fill
-              sizes="(max-width: 768px) 50vw, 33.333vw"
+              sizes="(max-width: 640px) 33.333vw, 33.333vw"
               priority={currentImage === 0}
             />
           </Link>
