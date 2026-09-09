@@ -560,6 +560,15 @@ function FeaturedProducts() {
   const [productFrame, setProductFrame] = useState({}) // { [idx]: 'base'|'tilt'|'opening'|'open' }
   const productTimers = useRef({})
 
+  useEffect(() => {
+    FEATURED_PRODUCTS.forEach(p => {
+      [p.base, p.tilt, p.opening, p.open].forEach(src => {
+        const img = new window.Image()
+        img.src = src
+      })
+    })
+  }, [])
+
   const activateProduct = (i) => {
     clearTimeout(productTimers.current[i])
     setProductFrame(f => ({ ...f, [i]: 'tilt' }))
