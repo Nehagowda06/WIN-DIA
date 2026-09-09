@@ -484,7 +484,7 @@ function RangeCategories() {
           </div>
         </div>
 
-        {/* RIGHT — Gluten-Free Range */}
+        {/* RIGHT — Gut-Healthy Range */}
         <div className="products-split-right">
           <img
             src={methiImg.src}
@@ -502,7 +502,7 @@ function RangeCategories() {
               <p className="products-split-desc">
                 Wholesome ingredients, authentic flavors, and satisfying crunch for daily enjoyment.
               </p>
-              <a href="/shop?range=gluten-free" className="products-range-btn">
+              <a href="/shop?range=gut-healthy" className="products-range-btn">
                 Explore Everyday Classics Range <span className="btn-arrow">→</span>
               </a>
             </div>

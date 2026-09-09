@@ -151,7 +151,7 @@ export default function CartPage() {
 
                       <div className={styles.itemBadges}>
                         {item.isLowGI && <span className={styles.badge}>Low GI</span>}
-                        {item.isGlutenFree && <span className={styles.badge}>Gluten Free</span>}
+                        {item.isGlutenFree && <span className={styles.badge}>Gut Healthy</span>}
                         {item.isVegan && <span className={styles.badge}>Vegan</span>}
                       </div>
 
