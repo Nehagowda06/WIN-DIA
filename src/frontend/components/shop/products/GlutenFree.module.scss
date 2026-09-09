@@ -27,7 +27,7 @@
   list-style: none;
 
   &:has(> :only-child) {
-    grid-template-columns: minmax(260px, 360px);
+    grid-template-columns: minmax(260px, 400px);
     justify-content: start;
   }
 }
@@ -42,13 +42,16 @@
   }
 
   .grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.4rem;
     padding: 0 0.5rem;
+  }
 
-    &:has(> :only-child) {
-      grid-template-columns: 1fr;
-      max-width: 220px;
-    }
+  /* When there is only one product,
+     keep it the same width as one normal product card */
+  .grid:has(> :only-child) {
+    grid-template-columns: calc((100vw - 28.8px) / 3);
+    max-width: 100%;
+    justify-content: start;
   }
 }
