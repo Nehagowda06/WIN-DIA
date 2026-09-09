@@ -26,7 +26,11 @@ async function loadStats() {
       .in("order_status", PENDING_ORDER_STATUSES),
     supabaseAdmin.from("products").select("*", { count: "exact", head: true }),
     supabaseAdmin.from("profiles").select("*", { count: "exact", head: true }),
-    supabaseAdmin.from("orders").select("total_price").eq("payment_status", "paid"),
+    supabaseAdmin
+      .from("orders")
+      .select("total_price")
+      .eq("payment_status", "paid")
+      .neq("order_status", "cancelled"),
     supabaseAdmin
       .from("orders")
       .select("id, order_number, total_price, payment_status, order_status, created_at")
@@ -145,7 +149,7 @@ export default async function AdminDashboardPage() {
       <div className={styles.top}>
         <div>
           <h1>Admin Dashboard</h1>
-          <p className={styles.muted}>Live overview from Supabase orders, products, and profiles.</p>
+          <p className={styles.muted}>Manage orders, products, and users.</p>
         </div>
       </div>
 
