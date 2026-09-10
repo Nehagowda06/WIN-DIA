@@ -1,4 +1,4 @@
-import { Hero } from "@/src/frontend/components/shop/hero/Hero";
+import { Hero } from "@/src/frontend/components/shop/Hero";
 import { GlutenFree } from "@/src/frontend/components/shop/products/GlutenFree";
 import { ComboOffer } from "@/src/frontend/components/shop/products/ComboOffer";
 import type { Product } from "@/src/frontend/components/shop/products/productShared";
