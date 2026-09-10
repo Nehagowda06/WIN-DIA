@@ -26,7 +26,7 @@ const EMPTY_PRODUCT = {
 // Field definitions for the "Add Product" form, driving both layout and state keys.
 const PRODUCT_FORM_FIELDS = [
   { key: "name", label: "Name", type: "text", required: true, span: 2 },
-  { key: "sku", label: "SKU", type: "text", placeholder: "e.g., WIN-ONION-50G" },
+  { key: "sku", label: "Product Code", type: "text", placeholder: "e.g., WIN-ONION-50G" },
   { key: "flavor", label: "Flavor", type: "text", placeholder: "e.g., Onion" },
   { key: "price", label: "Price (₹)", type: "number", step: "0.01", required: true },
   { key: "original_price", label: "Original Price (₹)", type: "number", step: "0.01" },
