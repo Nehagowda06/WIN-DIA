@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/src/frontend/hooks/useAuth";
 import styles from "../admin.module.css";
+import * as XLSX from "xlsx";
 
 const STATUSES = [
   "placed",
@@ -43,6 +44,9 @@ function generateShippingLabel(order) {
   
   // Get order items - REAL DATA
   const items = order.order_items || [];
+  console.log('[DEBUG] Packing slip - Order items:', items);
+  console.log('[DEBUG] Packing slip - Items count:', items.length);
+  
   const totalItems = items.reduce((sum, item) => sum + (item.qty || item.quantity || 1), 0);
   const subtotal = order.items_price || 0;
   const shipping = order.shipping_price || 0;
@@ -291,19 +295,23 @@ function generateShippingLabel(order) {
   <table class="items-table">
     <thead>
       <tr>
-        <th>ITEM</th>
+        <th>ITEM NAME</th>
         <th class="qty-col">QTY</th>
         <th class="price-col">PRICE</th>
       </tr>
     </thead>
     <tbody>
-      ${items.map(item => `
+      ${items.map(item => {
+        const productName = item.name || item.product_name || 'Product';
+        const flavor = item.flavor || '';
+        const displayName = flavor ? `${productName} - ${flavor}` : productName;
+        return `
         <tr>
-          <td>${item.name || item.product_name || 'Product'}</td>
+          <td>${displayName}</td>
           <td class="qty-col">${item.qty || item.quantity || 1}</td>
           <td class="price-col">₹${((item.price || 0) * (item.qty || item.quantity || 1)).toFixed(0)}</td>
         </tr>
-      `).join('')}
+      `}).join('')}
     </tbody>
   </table>
 
@@ -346,7 +354,7 @@ function generateShippingLabel(order) {
 
   <!-- Footer: Company Details -->
   <div class="footer">
-    🌐 www.win-dia.com<br>
+    🌐 www.windiafoods.com<br>
     📞 Customer Support: +91 96861 53413<br>
     📷 @windia.cocofoods
   </div>
@@ -474,7 +482,7 @@ function OrdersTable({ orders, loading }) {
   );
 }
 
-// ─── Excel Export ───────────────────────────────────────────────────────────
+// ─── Excel Export (Real .xlsx format using xlsx library) ────────────────────
 
 function exportToExcel(orders) {
   if (!orders.length) {
@@ -482,21 +490,8 @@ function exportToExcel(orders) {
     return;
   }
 
-  // CSV headers
-  const headers = [
-    "Order Number",
-    "Order Date",
-    "Customer Email",
-    "Total Amount",
-    "Payment Method",
-    "Payment Status",
-    "Order Status",
-    "Shipping Address",
-    "Phone",
-  ];
-
-  // CSV rows - real data from the database
-  const rows = orders.map((order) => {
+  // Prepare data rows for Excel
+  const excelData = orders.map((order) => {
     const addr = order.shipping_address || {};
     const shippingLine = [
       addr.address_line1 || "",
@@ -507,37 +502,43 @@ function exportToExcel(orders) {
       .filter(Boolean)
       .join(", ");
 
-    return [
-      order.order_number || order.id,
-      formatDate(order.created_at),
-      order.user_email || order.email || "",
-      order.total_price || 0,
-      order.payment_method || "online",
-      order.payment_status || "pending",
-      order.order_status || "placed",
-      shippingLine,
-      addr.phone || "",
-    ];
+    return {
+      "Order Number": order.order_number || order.id,
+      "Order Date": formatDate(order.created_at),
+      "Customer Email": order.user_email || order.email || "",
+      "Total Amount": order.total_price || 0,
+      "Payment Method": order.payment_method || "online",
+      "Payment Status": order.payment_status || "pending",
+      "Order Status": order.order_status || "placed",
+      "Shipping Address": shippingLine,
+      "Phone": addr.phone || "",
+    };
   });
 
-  // Build CSV content
-  const csvContent = [
-    headers.join(","),
-    ...rows.map((row) =>
-      row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
-    ),
-  ].join("\n");
+  // Create a new workbook and worksheet
+  const worksheet = XLSX.utils.json_to_sheet(excelData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
 
-  // Trigger download
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `orders-export-${new Date().toISOString().split("T")[0]}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
+  // Set column widths for better readability
+  const columnWidths = [
+    { wch: 20 }, // Order Number
+    { wch: 12 }, // Order Date
+    { wch: 25 }, // Customer Email
+    { wch: 12 }, // Total Amount
+    { wch: 15 }, // Payment Method
+    { wch: 15 }, // Payment Status
+    { wch: 15 }, // Order Status
+    { wch: 40 }, // Shipping Address
+    { wch: 15 }, // Phone
+  ];
+  worksheet['!cols'] = columnWidths;
 
-  toast.success(`Exported ${orders.length} orders`);
+  // Generate Excel file and trigger download
+  const fileName = `orders-export-${new Date().toISOString().split("T")[0]}.xlsx`;
+  XLSX.writeFile(workbook, fileName);
+
+  toast.success(`Exported ${orders.length} orders to Excel`);
 }
 
 // ─── Transaction Details Table (view in browser) ────────────────────────────
@@ -605,7 +606,7 @@ function TransactionDetailsTable({ orders, onClose }) {
         </div>
         <div className={styles.modalFooter}>
           <button className={styles.button} onClick={() => exportToExcel(orders)}>
-            📥 Download CSV
+            📥 Download Excel
           </button>
           <button className={`${styles.button} ${styles.buttonSecondary}`} onClick={onClose}>
             Close
@@ -625,7 +626,7 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [showDetails, setShowDetails] = useState(false);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     authFetch(`/api/admin/orders${filter ? `?status=${filter}` : ""}`)
       .then((res) => res.json())
@@ -637,10 +638,16 @@ export default function AdminOrdersPage() {
           toast.error(data.error || "Could not load orders");
         }
       })
+      .catch((err) => {
+        console.error("Error loading orders:", err);
+        toast.error("Failed to load orders");
+      })
       .finally(() => setLoading(false));
-  };
+  }, [filter, authFetch]);
 
-  useEffect(load, [filter]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   return (
     <>
@@ -664,7 +671,7 @@ export default function AdminOrdersPage() {
             onClick={() => exportToExcel(orders)}
             disabled={loading || !orders.length}
           >
-            📥 Export CSV
+            📥 Export Excel
           </button>
         </div>
       </div>

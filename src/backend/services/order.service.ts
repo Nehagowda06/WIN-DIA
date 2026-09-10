@@ -46,7 +46,7 @@ export interface OrderService {
   createOrderItems(orderId: string, items: Partial<OrderItem>[]): Promise<Result<OrderItem[], AppError>>;
   getOrderById(orderId: string, userId?: string): Promise<Result<Order, AppError>>;
   getOrderByNumber(orderNumber: string, userId?: string): Promise<Result<Order, AppError>>;
-  getUserOrders(userId: string, options?: { page?: number; pageSize?: number }): Promise<Result<{ items: Order[]; total: number }, AppError>>;
+  getUserOrders(userId: string, options?: { page?: number; pageSize?: number; status?: string }): Promise<Result<{ items: Order[]; total: number }, AppError>>;
   updateOrderStatus(orderId: string, status: OrderStatus, note?: string, updatedBy?: string): Promise<Result<Order, AppError>>;
   writeStatusHistory(orderId: string, status: OrderStatus, note?: string, createdBy?: string): Promise<Result<OrderStatusHistory, AppError>>;
   cancelOrder(orderId: string, userId: string, reason?: string): Promise<Result<Order, AppError>>;
@@ -159,11 +159,14 @@ export class OrderServiceImpl implements OrderService {
     return success(res.value);
   }
 
-  public async getUserOrders(userId: string, options?: { page?: number; pageSize?: number }): Promise<Result<{ items: Order[]; total: number }, AppError>> {
+  public async getUserOrders(userId: string, options?: { page?: number; pageSize?: number; status?: string }): Promise<Result<{ items: Order[]; total: number }, AppError>> {
     // If userId is empty, return ALL orders (admin use case)
     const filter: Record<string, unknown> = {};
     if (userId) {
       filter.user_id = userId;
+    }
+    if (options?.status) {
+      filter.order_status = options.status;
     }
     return this.orderRepo.findWithPagination(options?.page || 1, options?.pageSize || 20, filter, 'created_at', 'desc');
   }
