@@ -110,6 +110,12 @@
   transform: translateX(-50%);
   display: flex;
   gap: 6px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.carousel:hover .dots {
+  opacity: 1;
 }
 
 .dot {
@@ -129,18 +135,11 @@
 
 @media (max-width: 768px) {
   .carouselButton {
+    display: none;
+  }
+
+  .dots {
     opacity: 1;
-    width: 32px;
-    height: 32px;
-    font-size: 24px;
-  }
-
-  .previousButton {
-    left: 6px;
-  }
-
-  .nextButton {
-    right: 6px;
   }
 }
 
