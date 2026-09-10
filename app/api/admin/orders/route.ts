@@ -14,10 +14,11 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
     const pageSize = parseInt(searchParams.get('pageSize') || '50', 10);
+    const status = searchParams.get('status') || undefined;
 
     const orderService = adminRes.value.scope.resolve<OrderService>(ServiceTokens.OrderService);
     // Empty userId = list ALL orders (admin view)
-    const result = await orderService.getUserOrders('', { page, pageSize });
+    const result = await orderService.getUserOrders('', { page, pageSize, status });
 
     return handleServiceResult(result);
   } catch (err: any) {
