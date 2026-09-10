@@ -3,9 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState, useMemo, type TouchEvent } from "react";
+import { useRef, useState, type TouchEvent } from "react";
 import toast from "react-hot-toast";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 
 import { addToCart } from "@/src/frontend/redux/slices/cartSlice";
 import {
@@ -77,19 +77,13 @@ function ProductDetailContent({
 }) {
   const dispatch = useDispatch();
   const router = useRouter();
-  const wishlistItems = useSelector((s: any) => s.wishlist.wishlistItems);
 
   /* -----------------------------
      Main product state
   ----------------------------- */
 
   const [quantity, setQuantityState] = useState(0);
-  
-  const storeProduct = useMemo(() => toStoreProduct(product, theme), [product, theme]);
-  const isWishlisted = useMemo(() => 
-    wishlistItems.some((item: any) => (item.id || item._id) === storeProduct.id),
-    [wishlistItems, storeProduct.id]
-  );
+  const [isWishlisted, setIsWishlisted] = useState(false);
 
   /* -----------------------------
      Product image carousel
@@ -149,10 +143,8 @@ function ProductDetailContent({
   const [recQuantities, setRecQuantities] =
     useState<Record<string, number>>({});
 
-  const recWishlistedIds = useMemo(() => 
-    new Set(wishlistItems.map((item: any) => item.id || item._id)),
-    [wishlistItems]
-  );
+  const [recWishlisted, setRecWishlisted] =
+    useState<Record<string, boolean>>({});
 
   /* -----------------------------
      Authentication
@@ -203,6 +195,8 @@ function ProductDetailContent({
 
     if (next && !(await requireAuth())) return;
 
+    const storeProduct = toStoreProduct(product, theme);
+
     if (next) {
       dispatch(addToWishlist(storeProduct));
       toast.success("Saved to wishlist");
@@ -210,6 +204,8 @@ function ProductDetailContent({
       dispatch(removeFromWishlist(storeProduct.id));
       toast("Removed from wishlist");
     }
+
+    setIsWishlisted(next);
   };
 
   /* -----------------------------
@@ -284,10 +280,16 @@ function ProductDetailContent({
     recProduct: Product,
     recTheme: ProductTheme
   ) => {
-    const storeProduct = toStoreProduct(recProduct, recTheme);
-    const next = !recWishlistedIds.has(storeProduct.id);
+    const next =
+      !recWishlisted[recRouteId];
 
     if (next && !(await requireAuth())) return;
+
+    const storeProduct =
+      toStoreProduct(
+        recProduct,
+        recTheme
+      );
 
     if (next) {
       dispatch(addToWishlist(storeProduct));
@@ -299,6 +301,11 @@ function ProductDetailContent({
 
       toast("Removed from wishlist");
     }
+
+    setRecWishlisted((w) => ({
+      ...w,
+      [recRouteId]: next,
+    }));
   };
 
   /* -----------------------------
@@ -536,9 +543,9 @@ function ProductDetailContent({
                     ] ?? 0
                   }
                   isWishlisted={
-                    recWishlistedIds.has(
-                      toStoreProduct(recProduct, recTheme).id
-                    )
+                    !!recWishlisted[
+                      recRouteId
+                    ]
                   }
                   onQuantityChange={(q) =>
                     setRecQuantity(
