@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   FiHome,
   FiShoppingBag,
-  FiActivity,
+  FiHeart,
   FiInfo,
   FiPackage,
   FiMail,
@@ -27,7 +27,7 @@ const BOTTOM_NAV_ITEMS = [
   {
     href: "/health-benefits",
     label: "Health",
-    icon: FiActivity,
+    icon: FiHeart,
   },
   {
     href: "/our-story/about",

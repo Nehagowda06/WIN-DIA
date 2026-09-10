@@ -99,7 +99,7 @@ export function toStoreProduct(
     }
   }
 
-  const storeProduct: any = {
+  return {
     id,
     _id: id,
     slug: id,
@@ -118,13 +118,4 @@ export function toStoreProduct(
     countInStock: 100,
     netWeight: 200,
   };
-
-  // Preserve the real database UUID if available (from API products)
-  if ((product as any).dbId) {
-    storeProduct.dbId = (product as any).dbId;
-    storeProduct.productId = (product as any).dbId;
-    storeProduct.product_id = (product as any).dbId;
-  }
-
-  return storeProduct;
 }

@@ -16,7 +16,7 @@ export class SupabaseWishlistRepository
   extends BaseRepository<Wishlist, string, Partial<Wishlist>, Partial<Wishlist>>
   implements WishlistRepository {
   constructor(clientOrGetter?: SupabaseClient | (() => SupabaseClient)) {
-    super('wishlist', clientOrGetter || (() => getServerClient()));
+    super('wishlists', clientOrGetter || (() => getServerClient()));
   }
 
   public async findByUserId(userId: string): Promise<Result<Wishlist[], AppError>> {
