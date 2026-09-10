@@ -42,6 +42,7 @@ export interface PaymentService {
   verifySignature(dto: VerifyPaymentDTO): Promise<Result<boolean, AppError>>;
   processSuccessfulPayment(paymentId: string, transactionId: string, rawPayload?: Record<string, unknown>): Promise<Result<Payment, AppError>>;
   processFailedPayment(paymentId: string, reason?: string, rawPayload?: Record<string, unknown>): Promise<Result<Payment, AppError>>;
+  processRefund(orderId: string, reason?: string): Promise<Result<Payment, AppError>>;
   logPaymentEvent(paymentId: string, eventType: string, payload: Record<string, unknown>): Promise<Result<PaymentEvent, AppError>>;
   handleWebhook(payload: Record<string, unknown>, signature: string): Promise<Result<boolean, AppError>>;
 }
@@ -178,6 +179,87 @@ export class PaymentServiceImpl implements PaymentService {
     });
 
     return success(updateRes.value);
+  }
+
+  /**
+   * Process refund for a cancelled order.
+   * Initiates a Razorpay refund and updates payment status to REFUNDED.
+   */
+  public async processRefund(orderId: string, reason?: string): Promise<Result<Payment, AppError>> {
+    logger.info(`[PaymentService.processRefund] Processing refund for order ${orderId}`);
+
+    // Find the payment record
+    const paymentRes = await this.paymentRepo.findByOrderId(orderId);
+    if (!paymentRes.success || !paymentRes.value || paymentRes.value.length === 0) {
+      return failure(new ValidationError('Payment record not found for this order'));
+    }
+
+    const payment = paymentRes.value[0]; // Get the first (should be only one)
+
+    // Only refund if payment was successful
+    if (payment.status !== PaymentStatus.PAID) {
+      logger.warn(`[PaymentService.processRefund] Payment ${payment.id} is not in PAID status (current: ${payment.status}), skipping refund`);
+      return success(payment);
+    }
+
+    // Check if already refunded
+    if (payment.status === PaymentStatus.REFUNDED) {
+      logger.info(`[PaymentService.processRefund] Payment ${payment.id} already refunded`);
+      return success(payment);
+    }
+
+    try {
+      // Initiate Razorpay refund
+      const razorpay = getRazorpayClient();
+      const refundResponse = await razorpay.payments.refund(payment.transaction_id!, {
+        amount: Math.round(payment.amount * 100), // Full refund in paise
+        notes: {
+          reason: reason || 'Order cancelled by customer',
+          order_id: orderId,
+        },
+      });
+
+      logger.info(`[PaymentService.processRefund] Razorpay refund created: ${refundResponse.id}`);
+
+      // Update payment status to REFUNDED
+      const updateRes = await this.paymentRepo.update(payment.id, {
+        status: PaymentStatus.REFUNDED,
+        raw_response: {
+          ...(payment.raw_response || {}),
+          refund: refundResponse,
+          refund_id: refundResponse.id,
+          refunded_at: new Date().toISOString(),
+        },
+      });
+
+      if (!updateRes.success) return updateRes;
+
+      // Log refund event
+      await this.logPaymentEvent(payment.id, 'payment.refunded', {
+        refund_id: refundResponse.id,
+        amount: payment.amount,
+        reason: reason || 'Order cancelled by customer',
+        razorpay_response: refundResponse,
+      });
+
+      // Update order payment_status to REFUNDED
+      await this.orderRepo.update(orderId, {
+        payment_status: PaymentStatus.REFUNDED,
+      } as any);
+
+      logger.info(`[PaymentService.processRefund] Refund successful for order ${orderId}, payment ${payment.id}`);
+      return success(updateRes.value);
+    } catch (error: any) {
+      logger.error(`[PaymentService.processRefund] Razorpay refund failed for order ${orderId}:`, error);
+      
+      // Log the failure
+      await this.logPaymentEvent(payment.id, 'payment.refund_failed', {
+        error: error.message,
+        reason: reason || 'Order cancelled by customer',
+      });
+
+      return failure(new PaymentError(`Refund failed: ${error.message || 'Unknown error'}`));
+    }
   }
 
   public async logPaymentEvent(
