@@ -42,15 +42,15 @@
   }
 
   .grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.4rem;
-    padding: 0 0.5rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    padding: 0 0.75rem;
   }
 
   /* When there is only one product,
      keep it the same width as one normal product card */
   .grid:has(> :only-child) {
-    grid-template-columns: calc((100vw - 28.8px) / 3);
+    grid-template-columns: calc((100vw - 1.5rem) / 2);
     max-width: 100%;
     justify-content: start;
   }

@@ -75,17 +75,6 @@ export default function ProfileOrdersPage() {
         alert(data.error || "Could not cancel order.");
         return;
       }
-      
-      // Show success message with refund info
-      const order = data.data || data.order;
-      if (order && order.payment_status === 'refunded') {
-        alert("Order cancelled successfully! Your payment has been refunded and will be credited to your account within 5-7 business days.");
-      } else if (order && order.payment_status === 'paid') {
-        alert("Order cancelled successfully! Refund is being processed and will be credited to your account within 5-7 business days.");
-      } else {
-        alert("Order cancelled successfully!");
-      }
-      
       loadOrders();
     } catch {
       alert("Could not cancel order. Please try again.");
@@ -117,10 +106,7 @@ export default function ProfileOrdersPage() {
               <StatusBadge status={order.order_status} />
             </div>
             <p className="order-meta-line">
-              {formatDate(order.created_at)} &nbsp;·&nbsp; 
-              Payment: <strong>{order.payment_status}</strong>
-              {order.payment_status === 'refunded' && <span className="refund-badge"> (Refunded)</span>}
-              &nbsp;·&nbsp; {formatCurrency(order.total_price)}
+              {formatDate(order.created_at)} &nbsp;·&nbsp; Payment: {order.payment_status} &nbsp;·&nbsp; {formatCurrency(order.total_price)}
             </p>
             <div className="order-actions">
               <Link href={`/order-confirmation?orderId=${order.id}`} className="order-action-link">

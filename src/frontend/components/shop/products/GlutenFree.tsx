@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useDispatch } from "react-redux";
 
-import { glutenFreeProducts } from "@/src/frontend/data/products";
+import { glutenFreeProducts, everydayProducts } from "@/src/frontend/data/products";
 import { addToCart } from "@/src/frontend/redux/slices/cartSlice";
 import { addToWishlist, removeFromWishlist } from "@/src/frontend/redux/slices/wishlistSlice";
 import { supabase } from "@/src/frontend/lib/supabase/client";
@@ -23,17 +23,11 @@ type ProductRangeProps = {
 };
 
 /**
- * Same public shape as before: ProductRange is shared by GlutenFree,
- * Everyday, and ComboOffer, each rendering their own <section> one after
- * another wherever your page already places them. No shared nav or filter
- * bar lives in here — that stays out of this component on purpose, so each
- * range keeps working as a standalone drop-in.
+ * ProductRange component displays a section of products.
+ * Each product is a 12-pack bundle (12 × 40g = 480g) priced at ₹640.
  *
- * Clicking a card now takes you to a full /product/[id] page (see
- * ProductDetail.tsx) instead of opening a modal.
- *
- * Adding to cart/wishlist requires a logged-in Supabase session — if
- * there's no user, the click redirects to /login instead of dispatching.
+ * Clicking a card takes you to /product/[id] page.
+ * Adding to cart/wishlist requires a logged-in Supabase session.
  */
 export function ProductRange({ heading, headingId, products, theme }: ProductRangeProps) {
   const dispatch = useDispatch();
@@ -100,18 +94,21 @@ export function ProductRange({ heading, headingId, products, theme }: ProductRan
   );
 }
 
+// Combine all products for fallback
+const allProducts = [...glutenFreeProducts, ...everydayProducts];
+
 type GlutenFreeProps = {
   readonly products?: readonly Product[];
 };
 
-/** Gluten-free product range — accepts an optional products override, falls back to the default list. */
+/** Product range component — falls back to all static products if no products provided. */
 export function GlutenFree({ products }: GlutenFreeProps) {
   return (
     <ProductRange
-      heading="Gut Health Range"
-      headingId="gluten-free-heading"
-      products={products ?? glutenFreeProducts}
-      theme="gluten-free"
+      heading="Our Products"
+      headingId="products-heading"
+      products={products ?? allProducts}
+      theme="everyday"
     />
   );
 }

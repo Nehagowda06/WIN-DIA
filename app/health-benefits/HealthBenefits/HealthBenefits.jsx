@@ -433,7 +433,7 @@ function Ingredients() {
   const [focusedIndex, setFocusedIndex] = useState(null); // FIX: keyboard support
 
   const items = [
-    { n: '01', name: 'Coconut Flour',  tag: 'Base',         tint: '#2D6A4F', desc: 'High-fibre, low-carb foundation. Naturally gluten-free and rich in prebiotic fibre that nourishes your gut.', img: coconutFlour },
+    { n: '01', name: 'Coconut Flour',  tag: 'Base',         tint: '#2D6A4F', desc: 'High-fibre, low-carb foundation. Naturally gut-healthy and rich in prebiotic fibre that nourishes your gut.', img: coconutFlour },
     { n: '02', name: 'Whole Wheat',    tag: 'Binding Agent', tint: '#D4A373', desc: 'A wholesome protein source that binds every thin — adding density and keeping you fuller for longer.', img: wholeWheat },
     { n: '03', name: 'Sunflower Oil',  tag: 'Healthy Fat',  tint: '#E86A4A', desc: 'Rich in Vitamin E and heart-friendly unsaturated fats. Gives WIN-DIA its signature light, crisp texture.', img: sunflowerOil },
     { n: '04', name: 'Pink Salt',      tag: 'Mineral-Rich', tint: '#5C3D2E', desc: '84 trace minerals in every grain. Supports electrolyte balance the smarter, more natural way.', img: pinkSalt },
@@ -730,7 +730,7 @@ const HighlightSection = ({ group }) => {
       <div className="win-ct-col-labels win-ct-desktop-only">
         <div className="win-ct-col-label-empty" />
         <div className="win-ct-col-label-item">Plain rice</div>
-        <div className="win-ct-col-label-item win-ct-col-label-item--win">Win Thins</div>
+        <div className="win-ct-col-label-item win-ct-col-label-item--win">WIN-DIA Thins</div>
         <div className="win-ct-col-label-item">Other biscuits</div>
       </div>
       <div className="win-ct-hl-body">
@@ -743,7 +743,7 @@ const HighlightSection = ({ group }) => {
             <div className="win-ct-cells-grid">
               {/* Mobile col headers */}
               <div className="win-ct-mobile-col-label">Plain rice</div>
-              <div className="win-ct-mobile-col-label win-ct-mobile-col-label--win">Win Thins</div>
+              <div className="win-ct-mobile-col-label win-ct-mobile-col-label--win">WIN-DIA Thins</div>
               <div className="win-ct-mobile-col-label">Other</div>
               <Cell data={metric.rice} />
               <Cell data={metric.win} isWin />
@@ -763,7 +763,7 @@ const PlainSection = ({ group }) => (
     <div className="win-ct-col-labels win-ct-col-labels--plain win-ct-desktop-only">
       <div className="win-ct-col-label-empty" />
       <div className="win-ct-col-label-plain">Plain rice</div>
-      <div className="win-ct-col-label-plain win-ct-col-label-plain--win">Win Thins</div>
+      <div className="win-ct-col-label-plain win-ct-col-label-plain--win">WIN-DIA Thins</div>
       <div className="win-ct-col-label-plain">Other biscuits</div>
     </div>
     {group.metrics.map((metric) => (
@@ -774,7 +774,7 @@ const PlainSection = ({ group }) => (
         </div>
         <div className="win-ct-cells-grid">
           <div className="win-ct-mobile-col-label">Plain rice</div>
-          <div className="win-ct-mobile-col-label win-ct-mobile-col-label--win">Win Thins</div>
+          <div className="win-ct-mobile-col-label win-ct-mobile-col-label--win">WIN-DIA Thins</div>
           <div className="win-ct-mobile-col-label">Other</div>
           <Cell data={metric.rice} />
           <Cell data={metric.win} isWin />
@@ -795,7 +795,7 @@ function ComparisonTable() {
         <div className="win-ct-header">
           <span className="win-ct-overline">Why Win wins</span>
           <h2 className="win-ct-heading">Your everyday rice vs our Thins</h2>
-          <p className="win-ct-sub">Per 100g · independently lab tested · cooked rice vs Win Thins</p>
+          <p className="win-ct-sub">Per 100g · independently lab tested · cooked rice vs WIN-DIA Thins</p>
         </div>
 
         {/* Desktop product headers */}
@@ -809,7 +809,7 @@ function ComparisonTable() {
           <div className="win-ct-prod-card win-ct-prod-card--win">
             <span className="win-ct-prod-icon">🌿</span>
             <span className="win-ct-prod-eye win-ct-prod-eye--win">Our product</span>
-            <span className="win-ct-prod-name win-ct-prod-name--win">Win Thins</span>
+            <span className="win-ct-prod-name win-ct-prod-name--win">WIN-DIA Thins</span>
             <span className="win-ct-prod-badge">✦ Best choice</span>
           </div>
           <div className="win-ct-prod-card">
@@ -823,7 +823,7 @@ function ComparisonTable() {
         <div className="win-ct-mobile-prod-strip win-ct-mobile-only">
           <div className="win-ct-mobile-prod"><span>🍚</span><span>Plain rice</span></div>
           <div className="win-ct-mobile-prod win-ct-mobile-prod--win">
-            <span>🌿</span><span>Win Thins</span>
+            <span>🌿</span><span>WIN-DIA Thins</span>
             <span className="win-ct-prod-badge">Best choice</span>
           </div>
           <div className="win-ct-mobile-prod"><span>🍟</span><span>Other snacks</span></div>

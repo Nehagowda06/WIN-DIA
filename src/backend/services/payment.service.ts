@@ -42,7 +42,6 @@ export interface PaymentService {
   verifySignature(dto: VerifyPaymentDTO): Promise<Result<boolean, AppError>>;
   processSuccessfulPayment(paymentId: string, transactionId: string, rawPayload?: Record<string, unknown>): Promise<Result<Payment, AppError>>;
   processFailedPayment(paymentId: string, reason?: string, rawPayload?: Record<string, unknown>): Promise<Result<Payment, AppError>>;
-  processRefund(orderId: string, reason?: string): Promise<Result<Payment, AppError>>;
   logPaymentEvent(paymentId: string, eventType: string, payload: Record<string, unknown>): Promise<Result<PaymentEvent, AppError>>;
   handleWebhook(payload: Record<string, unknown>, signature: string): Promise<Result<boolean, AppError>>;
 }
@@ -261,7 +260,6 @@ export class PaymentServiceImpl implements PaymentService {
       return failure(new PaymentError(`Refund failed: ${error.message || 'Unknown error'}`));
     }
   }
-
   public async logPaymentEvent(
     paymentId: string,
     eventType: string,

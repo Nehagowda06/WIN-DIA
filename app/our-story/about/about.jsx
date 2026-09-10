@@ -27,12 +27,12 @@ const tabs = {
     title: "Bridge the growing fibre gap.",
     highlight: "Through mindful nutrition.",
     body:
-      "Our mission is to create innovative coconut flour-based foods that are low-carb, high in fibre and protein, gluten-free, and supportive of better gut health — without compromising on authentic Indian taste and texture.",
+      "Our mission is to create innovative coconut flour-based foods that are low-carb, high in fibre and protein, gut-healthy, and supportive of better gut health — without compromising on authentic Indian taste and texture.",
 
     stats: [
       { value: "LOW CARB", sub: "MINDFUL NUTRITION" },
       { value: "HIGH FIBRE", sub: "GUT FRIENDLY" },
-      { value: "GLUTEN FREE", sub: "MODERN LIFESTYLES" },
+      { value: "GUT HEALTHY", sub: "MODERN LIFESTYLES" },
       { value: "PROTEIN RICH", sub: "AUTHENTIC TASTE" },
     ],
   },

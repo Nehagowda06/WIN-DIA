@@ -2,21 +2,19 @@ import { comboOffer, everydayProducts, glutenFreeProducts } from "@/src/frontend
 
 import { toRouteId, type Product, type ProductTheme } from "./productShared";
 
-// One "entry" pairs a product with the range it belongs to, plus the
-// route id built from both (see toRouteId in productShared.ts).
+// One "entry" pairs a product with its theme and route id
 type Entry = { readonly theme: ProductTheme; readonly product: Product; readonly routeId: string };
 
 /**
- * Flattens all three product collections (gluten-free, everyday, combo)
- * into a single list of { theme, product, routeId } entries, so the rest
- * of this file can search/filter across all of them at once instead of
- * writing three separate lookups.
+ * Flattens all product collections into entries.
+ * All products are now displayed with theme="everyday" on the shop page.
  */
 function allEntries(): readonly Entry[] {
+  // Combine all flavour products - they're all displayed with theme="everyday" now
+  const allFlavourProducts = [...glutenFreeProducts, ...everydayProducts];
+  
   const collections: { theme: ProductTheme; products: readonly Product[] }[] = [
-    { theme: "gluten-free", products: glutenFreeProducts },
-    { theme: "everyday", products: everydayProducts },
-    // comboOffer is a single product, not an array, so wrap it in one.
+    { theme: "everyday", products: allFlavourProducts },
     { theme: "combo", products: [comboOffer] },
   ];
 
@@ -26,9 +24,9 @@ function allEntries(): readonly Entry[] {
 }
 
 /**
- * Finds a product (and which range it's from) by its /product/[id] route
- * id. Used by ProductDetail.tsx to turn the URL param into an actual
- * product. Returns null if nothing matches (shown as a "not found" state).
+ * Finds a product by its /product/[id] route id.
+ * Used by ProductDetail.tsx to turn the URL param into an actual product.
+ * Returns null if nothing matches (shown as a "not found" state).
  */
 export function findProductByRouteId(routeId: string): { product: Product; theme: ProductTheme } | null {
   const match = allEntries().find((entry) => entry.routeId === routeId);
@@ -36,11 +34,8 @@ export function findProductByRouteId(routeId: string): { product: Product; theme
 }
 
 /**
- * Picks a handful of OTHER products to show as "You might also like" on
- * the detail page. Strategy: same-range products first (e.g. more
- * everyday items if you're viewing an everyday product), then fills any
- * remaining slots from the rest of the shop. Always excludes the product
- * currently being viewed.
+ * Picks other products to show as "You might also like" on the detail page.
+ * Excludes the product currently being viewed.
  */
 export function getRecommendations(excludeRouteId: string, theme: ProductTheme, count = 4): readonly Entry[] {
   const others = allEntries().filter((entry) => entry.routeId !== excludeRouteId);
