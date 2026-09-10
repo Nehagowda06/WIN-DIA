@@ -5,13 +5,14 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   FiCheckCircle, FiPackage, FiMapPin, FiCreditCard,
-  FiArrowRight, FiShoppingBag, FiTruck, FiClock
+  FiArrowRight, FiShoppingBag, FiTruck, FiClock, FiXCircle
 } from "react-icons/fi";
 import { useAuth } from "@/src/frontend/hooks/useAuth";
 import styles from "./OrderConfirmationPage.module.css";
 
 const STATUS_STEPS = ["placed", "confirmed", "processing", "shipped", "out_for_delivery", "delivered"];
 const STATUS_LABELS = { placed: "Order Placed", confirmed: "Confirmed", processing: "Processing", shipped: "Shipped", out_for_delivery: "Out for Delivery", delivered: "Delivered" };
+const CANCELLABLE_STATUSES = ["placed", "confirmed", "processing"];
 
 export default function OrderConfirmationPage() {
   const searchParams = useSearchParams();
@@ -19,6 +20,7 @@ export default function OrderConfirmationPage() {
   const { authFetch, user } = useAuth();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (!orderId || !authFetch) return;
@@ -28,6 +30,41 @@ export default function OrderConfirmationPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [orderId, authFetch]);
+
+  const handleCancelOrder = async () => {
+    if (!confirm("Are you sure you want to cancel this order?")) return;
+    setCancelling(true);
+    try {
+      const res = await authFetch(`/api/orders/${orderId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ action: "cancel", reason: "Cancelled by customer from order details page" }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        alert(data.error || "Could not cancel order.");
+        return;
+      }
+      
+      // Show success message with refund info
+      const updatedOrder = data.data || data.order;
+      if (updatedOrder && updatedOrder.payment_status === 'refunded') {
+        alert("Order cancelled successfully! Your payment has been refunded and will be credited to your account within 5-7 business days.");
+      } else if (updatedOrder && updatedOrder.payment_status === 'paid') {
+        alert("Order cancelled successfully! Refund is being processed and will be credited to your account within 5-7 business days.");
+      } else {
+        alert("Order cancelled successfully!");
+      }
+      
+      // Refresh order data
+      const refreshRes = await authFetch(`/api/orders/${orderId}`);
+      const refreshData = await refreshRes.json();
+      if (refreshData.success) setOrder(refreshData.order);
+    } catch {
+      alert("Could not cancel order. Please try again.");
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   if (loading) return (
     <div className={styles.loadWrap}>
@@ -79,17 +116,36 @@ export default function OrderConfirmationPage() {
             {/* Status tracker */}
             <motion.div className={styles.card} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
               <h2><FiTruck style={{ color: "var(--gold)" }} /> Order Status</h2>
-              <div className={styles.tracker}>
-                {STATUS_STEPS.map((s, i) => (
-                  <div key={s} className={styles.trackerStep}>
-                    <div className={`${styles.trackerDot} ${i <= statusIdx ? styles.trackerDotDone : ""} ${i === statusIdx ? styles.trackerDotActive : ""}`}>
-                      {i < statusIdx ? <FiCheckCircle /> : i + 1}
+              
+              {order.order_status === 'cancelled' ? (
+                <div style={{
+                  padding: "20px",
+                  background: "#fef2f2",
+                  border: "2px solid #ef4444",
+                  borderRadius: "12px",
+                  textAlign: "center"
+                }}>
+                  <FiXCircle size={48} style={{ color: "#ef4444", marginBottom: "12px" }} />
+                  <h3 style={{ color: "#dc2626", marginBottom: "8px" }}>Order Cancelled</h3>
+                  <p style={{ fontSize: "14px", color: "#991b1b" }}>
+                    This order has been cancelled.
+                    {order.payment_status === 'refunded' && <><br />Your payment has been refunded.</>}
+                    {order.payment_status === 'paid' && <><br />Refund is being processed.</>}
+                  </p>
+                </div>
+              ) : (
+                <div className={styles.tracker}>
+                  {STATUS_STEPS.map((s, i) => (
+                    <div key={s} className={styles.trackerStep}>
+                      <div className={`${styles.trackerDot} ${i <= statusIdx ? styles.trackerDotDone : ""} ${i === statusIdx ? styles.trackerDotActive : ""}`}>
+                        {i < statusIdx ? <FiCheckCircle /> : i + 1}
+                      </div>
+                      <p className={`${styles.trackerLabel} ${i <= statusIdx ? styles.trackerLabelDone : ""}`}>{STATUS_LABELS[s]}</p>
+                      {i < STATUS_STEPS.length - 1 && <div className={`${styles.trackerLine} ${i < statusIdx ? styles.trackerLineDone : ""}`} />}
                     </div>
-                    <p className={`${styles.trackerLabel} ${i <= statusIdx ? styles.trackerLabelDone : ""}`}>{STATUS_LABELS[s]}</p>
-                    {i < STATUS_STEPS.length - 1 && <div className={`${styles.trackerLine} ${i < statusIdx ? styles.trackerLineDone : ""}`} />}
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </motion.div>
 
             {/* Order items */}
@@ -177,11 +233,43 @@ export default function OrderConfirmationPage() {
 
             {/* CTA buttons */}
             <motion.div className={styles.ctaCard} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }}>
-              <Link href="/shop" className={styles.shopBtn}>
-                <FiShoppingBag /> Continue Shopping
-              </Link>
+              {CANCELLABLE_STATUSES.includes(order.order_status) && (
+                <button
+                  onClick={handleCancelOrder}
+                  disabled={cancelling}
+                  className={styles.ordersBtn}
+                  style={{
+                    width: "100%",
+                    marginBottom: "12px",
+                    cursor: cancelling ? "not-allowed" : "pointer",
+                    opacity: cancelling ? 0.6 : 1
+                  }}
+                >
+                  <FiXCircle /> {cancelling ? "Cancelling..." : "Cancel Order"}
+                </button>
+              )}
+              
+              {order.payment_status === 'refunded' && (
+                <div style={{
+                  padding: "12px",
+                  marginBottom: "12px",
+                  background: "#10b98126",
+                  border: "1px solid #10b981",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  color: "#059669",
+                  textAlign: "center"
+                }}>
+                  <strong>Refunded</strong><br />
+                  Your payment has been refunded and will be credited within 5-7 business days.
+                </div>
+              )}
+              
               <Link href="/profile/orders" className={styles.ordersBtn}>
                 View All Orders <FiArrowRight />
+              </Link>
+              <Link href="/shop" className={styles.ordersBtn}>
+                <FiShoppingBag /> Continue Shopping
               </Link>
             </motion.div>
           </div>
