@@ -6,6 +6,7 @@ import { setCart } from "@/src/frontend/redux/slices/cartSlice";
 import { setWishlist } from "@/src/frontend/redux/slices/wishlistSlice";
 import { AuthProvider, useAuth } from "@/src/frontend/hooks/useAuth";
 import { useCartSync } from "@/src/frontend/hooks/useCartSync";
+import { useWishlistSync } from "@/src/frontend/hooks/useWishlistSync";
 import { Toaster } from "react-hot-toast";
 
 function Persistence() {
@@ -16,8 +17,9 @@ function Persistence() {
   const wishlistItems = useSelector((s) => s.wishlist.wishlistItems);
   const prevUserId = useRef(null);
 
-  // Sync cart with backend Supabase when logged in
+  // Sync cart and wishlist with backend Supabase when logged in
   useCartSync();
+  useWishlistSync();
 
   // Hydrate from localStorage only when user is confirmed logged in
   useEffect(() => {
