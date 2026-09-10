@@ -145,14 +145,3 @@
     flex-wrap: wrap;
   }
 }
-
-/* Refund badge styling */
-.refund-badge {
-  background: #10b981;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  margin-left: 4px;
-}

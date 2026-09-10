@@ -8,7 +8,6 @@ import { OrderItemRepository } from '../repositories/order-item.repository';
 import { OrderStatusHistoryRepository } from '../repositories/order-status-history.repository';
 import { ShipmentRepository } from '../repositories/shipment.repository';
 import { InventoryService } from './inventory.service';
-import { PaymentService } from './payment.service';
 import { logger } from '../utils/logger.util';
 import { container, RepositoryTokens, ServiceTokens } from '../providers/container.provider';
 
@@ -60,7 +59,6 @@ export class OrderServiceImpl implements OrderService {
   private statusHistoryRepo: OrderStatusHistoryRepository;
   private shipmentRepo: ShipmentRepository;
   private inventoryService: InventoryService;
-  private paymentService: PaymentService;
 
   constructor(
     orderRepo?: OrderRepository,
@@ -73,7 +71,6 @@ export class OrderServiceImpl implements OrderService {
     this.statusHistoryRepo = statusHistoryRepo || container.resolve<OrderStatusHistoryRepository>(RepositoryTokens.OrderStatusHistoryRepository);
     this.shipmentRepo = container.resolve<ShipmentRepository>(RepositoryTokens.ShipmentRepository);
     this.inventoryService = inventoryService || container.resolve<InventoryService>(ServiceTokens.InventoryService);
-    this.paymentService = container.resolve<PaymentService>(ServiceTokens.PaymentService);
   }
 
   public async createOrder(userId: string, orderData: Partial<Order>): Promise<Result<Order, AppError>> {
@@ -260,9 +257,6 @@ export class OrderServiceImpl implements OrderService {
    * CANCELLATION POLICY: Customers can cancel their order ONLY until 2 days
    * before shipping is assigned. If shipped_at is set, the cutoff is 2 days
    * before that date at 12:00 PM (noon).
-   * 
-   * AUTOMATIC REFUND: If the order was paid via online payment (Razorpay),
-   * a refund is automatically initiated and processed back to customer's account.
    */
   public async cancelOrder(orderId: string, userId: string, reason?: string): Promise<Result<Order, AppError>> {
     const existing = await this.getOrderById(orderId, userId);
@@ -294,33 +288,16 @@ export class OrderServiceImpl implements OrderService {
     );
     if (!updateRes.success) return updateRes;
 
-    // Handle payment status based on current state
+    // If payment never completed, reflect that explicitly instead of leaving
+    // it stuck on "pending" indefinitely. If it was already paid, leave the
+    // payment_status as PAID — refunding is a separate admin-initiated step.
     if (updateRes.value.payment_status === PaymentStatus.PENDING) {
-      // Payment never completed - mark as failed
       const paymentUpdateRes = await this.orderRepo.update(orderId, { payment_status: PaymentStatus.FAILED });
       if (paymentUpdateRes.success) {
         return success(paymentUpdateRes.value);
       }
       // Non-fatal: the order is cancelled either way, just log and return what we have.
       logger.error(`[OrderService.cancelOrder] Could not update payment_status for order ${orderId}: ${paymentUpdateRes.error.message}`);
-    } else if (updateRes.value.payment_status === PaymentStatus.PAID) {
-      // Payment was completed - initiate automatic refund
-      logger.info(`[OrderService.cancelOrder] Order ${orderId} was paid, initiating automatic refund`);
-      
-      const refundRes = await this.paymentService.processRefund(
-        orderId,
-        reason || 'Order cancelled by customer'
-      );
-
-      if (!refundRes.success) {
-        // Log the refund failure but don't block the cancellation
-        logger.error(
-          `[OrderService.cancelOrder] Refund failed for order ${orderId}: ${refundRes.error.message}. Order is still cancelled, admin needs to manually process refund.`
-        );
-        // Note: Order remains cancelled even if refund fails - admin can manually process later
-      } else {
-        logger.info(`[OrderService.cancelOrder] Refund successful for order ${orderId}`);
-      }
     }
 
     return success(updateRes.value);
