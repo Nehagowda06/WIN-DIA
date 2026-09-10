@@ -61,12 +61,14 @@
   padding: 0 12px;
   color: rgba(253, 246, 236, .78);
   font-weight: 800;
+  text-decoration: none;
 }
 
 .navLink:hover,
 .active {
   background: rgba(255, 255, 255, .1);
   color: var(--cream);
+  text-decoration: none;
 }
 
 .adminEmail {
@@ -332,6 +334,7 @@
   background: var(--gold);
   color: var(--coco);
   font-weight: 900;
+  text-decoration: none;
 }
 
 /* =========================================================

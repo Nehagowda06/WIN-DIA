@@ -46,3 +46,14 @@ next-env.d.ts
 # Local Supabase handoff SQL files
 supabase/rls-and-triggers.sql
 supabase/auth-otp.sql
+
+# Backup files
+backup_files_*/
+*.patch
+
+# IDE
+.vscode/
+
+# Test files
+public/check-auth.html
+scripts/

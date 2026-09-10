@@ -10,21 +10,39 @@ const EMPTY_PRODUCT = {
   price: "",
   original_price: "",
   image: "",
-  category: "Snacks",
+  short_description: "",
+  description: "",
+  flavor: "",
   count_in_stock: "",
   net_weight: "",
-  description: "",
+  sku: "",
+  gi_value: "",
+  is_low_gi: false,
+  is_gluten_free: false,
+  is_vegan: false,
+  is_featured: false,
 };
 
 // Field definitions for the "Add Product" form, driving both layout and state keys.
 const PRODUCT_FORM_FIELDS = [
   { key: "name", label: "Name", type: "text", required: true, span: 2 },
-  { key: "price", label: "Price", type: "number", required: true },
-  { key: "original_price", label: "Original Price", type: "number" },
-  { key: "count_in_stock", label: "Stock", type: "number", required: true },
-  { key: "net_weight", label: "Net Weight (g)", type: "number" },
-  { key: "image", label: "Image URL", type: "text", span: 2, placeholder: "/images/product-methi.jpg" },
-  { key: "category", label: "Category", type: "text" },
+  { key: "sku", label: "SKU", type: "text", placeholder: "e.g., WIN-ONION-50G" },
+  { key: "flavor", label: "Flavor", type: "text", placeholder: "e.g., Onion" },
+  { key: "price", label: "Price (₹)", type: "number", step: "0.01", required: true },
+  { key: "original_price", label: "Original Price (₹)", type: "number", step: "0.01" },
+  { key: "count_in_stock", label: "Stock Quantity", type: "number", required: true },
+  { key: "net_weight", label: "Net Weight", type: "text", placeholder: "e.g., 50g or 100g" },
+  { key: "gi_value", label: "GI Value", type: "number", placeholder: "e.g., 55" },
+  { key: "image", label: "Image Path", type: "text", span: 2, placeholder: "/images/product-onion.jpg" },
+  { key: "short_description", label: "Short Description", type: "text", span: 2, placeholder: "Brief product tagline" },
+];
+
+// Checkbox fields for product attributes
+const CHECKBOX_FIELDS = [
+  { key: "is_low_gi", label: "Low GI" },
+  { key: "is_gluten_free", label: "Gluten Free" },
+  { key: "is_vegan", label: "Vegan" },
+  { key: "is_featured", label: "Featured Product" },
 ];
 
 // ---- Data hook: encapsulates all product API calls (list / create / update) ----
@@ -89,16 +107,18 @@ function useAdminProducts() {
 // ---- Add Product form ----
 function ProductForm({ form, onChange, onSubmit }) {
   const setField = (key) => (e) => onChange({ ...form, [key]: e.target.value });
+  const setCheckbox = (key) => (e) => onChange({ ...form, [key]: e.target.checked });
 
   return (
     <form className={`${styles.panel} ${styles.form}`} onSubmit={onSubmit}>
       <div className={styles.formGrid}>
-        {PRODUCT_FORM_FIELDS.map(({ key, label, type, required, span, placeholder }) => (
+        {PRODUCT_FORM_FIELDS.map(({ key, label, type, required, span, placeholder, step }) => (
           <label key={key} className={`${styles.field} ${span ? styles[`span${span}`] : ""}`}>
             {label}
             <input
               className={styles.input}
               type={type}
+              step={step}
               value={form[key]}
               onChange={setField(key)}
               required={required}
@@ -106,13 +126,30 @@ function ProductForm({ form, onChange, onSubmit }) {
             />
           </label>
         ))}
+        
+        {/* Checkboxes for product attributes */}
+        <div className={styles.span4} style={{ display: "flex", gap: "20px", alignItems: "center", padding: "10px 0" }}>
+          {CHECKBOX_FIELDS.map(({ key, label }) => (
+            <label key={key} style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={form[key]}
+                onChange={setCheckbox(key)}
+                style={{ width: "18px", height: "18px", cursor: "pointer" }}
+              />
+              <span style={{ fontSize: "14px", fontWeight: 600 }}>{label}</span>
+            </label>
+          ))}
+        </div>
+        
         <label className={`${styles.field} ${styles.span4}`}>
           Description
           <textarea
             className={styles.textarea}
-            rows={3}
+            rows={4}
             value={form.description}
             onChange={setField("description")}
+            placeholder="Detailed product description"
           />
         </label>
       </div>
@@ -129,7 +166,9 @@ function ProductRow({ product, onUpdate }) {
 
   return (
     <tr>
-      <td>{product.name}</td>
+      <td style={{ fontWeight: 600 }}>{product.name}</td>
+      <td style={{ fontSize: "13px", color: "var(--coco-light)" }}>{product.flavor || "—"}</td>
+      <td style={{ fontSize: "13px", color: "var(--coco-light)" }}>{product.sku || "—"}</td>
       <td>
         <input
           className={styles.input}
@@ -148,11 +187,18 @@ function ProductRow({ product, onUpdate }) {
       <td>
         <input
           className={styles.input}
-          style={{ width: 90 }}
+          style={{ width: 80 }}
           type="number"
           defaultValue={product.count_in_stock || 0}
           onBlur={(e) => onUpdate(product, { count_in_stock: Number(e.target.value) })}
         />
+      </td>
+      <td style={{ textAlign: "center" }}>
+        {product.is_featured ? (
+          <span className={styles.badge} style={{ padding: "4px 8px", fontSize: "14px", background: "var(--gold)", color: "var(--coco)" }}>★</span>
+        ) : (
+          <span style={{ color: "var(--coco-faint)" }}>—</span>
+        )}
       </td>
       <td>
         <span className={styles.status}>{isInactive ? "inactive" : "active"}</span>
@@ -160,6 +206,7 @@ function ProductRow({ product, onUpdate }) {
       <td>
         <button
           className={`${styles.button} ${styles.buttonSecondary}`}
+          style={{ fontSize: "13px", padding: "6px 12px", minHeight: "32px" }}
           onClick={() => onUpdate(product, { is_active: isInactive })}
         >
           {isInactive ? "Activate" : "Deactivate"}
@@ -179,8 +226,11 @@ function ProductsTable({ products, loading, onUpdate }) {
         <thead>
           <tr>
             <th>Name</th>
+            <th>Flavor</th>
+            <th>SKU</th>
             <th>Price</th>
             <th>Stock</th>
+            <th>Featured</th>
             <th>Status</th>
             <th>Actions</th>
           </tr>
@@ -191,7 +241,7 @@ function ProductsTable({ products, loading, onUpdate }) {
           ))}
           {!products.length && (
             <tr>
-              <td colSpan="5">No products found.</td>
+              <td colSpan="8">No products found.</td>
             </tr>
           )}
         </tbody>
