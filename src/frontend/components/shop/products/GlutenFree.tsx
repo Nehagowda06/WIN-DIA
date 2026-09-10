@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import { glutenFreeProducts, everydayProducts } from "@/src/frontend/data/products";
 import { addToCart } from "@/src/frontend/redux/slices/cartSlice";
@@ -32,10 +32,16 @@ type ProductRangeProps = {
 export function ProductRange({ heading, headingId, products, theme }: ProductRangeProps) {
   const dispatch = useDispatch();
   const router = useRouter();
+  const wishlistItems = useSelector((s: any) => s.wishlist.wishlistItems);
   const [quantities, setQuantities] = useState<Record<string, number>>(() =>
     Object.fromEntries(products.map((p) => [p.id, 0]))
   );
-  const [wishlisted, setWishlisted] = useState<Record<string, boolean>>({});
+  
+  // Create a Set of wishlisted IDs from Redux store for efficient lookup
+  const wishlistedIds = useMemo(() => 
+    new Set(wishlistItems.map((item: any) => item.id || item._id)),
+    [wishlistItems]
+  );
 
   const requireAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -58,17 +64,18 @@ export function ProductRange({ heading, headingId, products, theme }: ProductRan
   };
 
   const toggleWishlist = async (product: Product) => {
-    const next = !wishlisted[product.id];
-    if (next && !(await requireAuth())) return;
     const storeProduct = toStoreProduct(product, theme);
-    if (next) {
+    const isCurrentlyWishlisted = wishlistedIds.has(storeProduct.id);
+    
+    if (!isCurrentlyWishlisted && !(await requireAuth())) return;
+    
+    if (!isCurrentlyWishlisted) {
       dispatch(addToWishlist(storeProduct));
       toast.success("Saved to wishlist");
     } else {
       dispatch(removeFromWishlist(storeProduct.id));
       toast("Removed from wishlist");
     }
-    setWishlisted((w) => ({ ...w, [product.id]: next }));
   };
 
   return (
@@ -78,17 +85,20 @@ export function ProductRange({ heading, headingId, products, theme }: ProductRan
       </div>
 
       <ul className={styles.grid}>
-        {products.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            theme={theme}
-            quantity={quantities[product.id] ?? 0}
-            isWishlisted={!!wishlisted[product.id]}
-            onQuantityChange={(q) => setQuantity(product, q)}
-            onToggleWishlist={() => toggleWishlist(product)}
-          />
-        ))}
+        {products.map((product) => {
+          const storeProductId = toStoreProduct(product, theme).id;
+          return (
+            <ProductCard
+              key={product.id}
+              product={product}
+              theme={theme}
+              quantity={quantities[product.id] ?? 0}
+              isWishlisted={wishlistedIds.has(storeProductId)}
+              onQuantityChange={(q) => setQuantity(product, q)}
+              onToggleWishlist={() => toggleWishlist(product)}
+            />
+          );
+        })}
       </ul>
     </section>
   );
