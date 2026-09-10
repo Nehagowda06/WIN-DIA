@@ -272,10 +272,6 @@ function generateShippingLabel(order) {
       <span class="info-label">Order Date</span>
       <span class="info-value">: ${orderDate}</span>
     </div>
-    <div class="info-row">
-      <span class="info-label">Payment</span>
-      <span class="info-value">: ${paymentStatus}</span>
-    </div>
   </div>
 
   <div class="divider"></div>
@@ -424,7 +420,25 @@ function StatusFilter({ filter, setFilter }) {
   );
 }
 
-function OrderRow({ order }) {
+function OrderRow({ order, authFetch }) {
+  const handleGenerateLabel = async () => {
+    try {
+      // Fetch full order details WITH items
+      const response = await authFetch(`/api/admin/orders/${order.id}`);
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        console.log('[DEBUG] Full order data:', data.data);
+        generateShippingLabel(data.data);
+      } else {
+        toast.error("Could not load order details");
+      }
+    } catch (err) {
+      console.error("Error fetching order details:", err);
+      toast.error("Failed to load order details");
+    }
+  };
+
   return (
     <tr>
       <td>
@@ -443,7 +457,7 @@ function OrderRow({ order }) {
         <button
           className={`${styles.button} ${styles.buttonSecondary}`}
           style={{ fontSize: "12px", padding: "6px 12px" }}
-          onClick={() => generateShippingLabel(order)}
+          onClick={handleGenerateLabel}
         >
           📦 Label
         </button>
@@ -452,7 +466,7 @@ function OrderRow({ order }) {
   );
 }
 
-function OrdersTable({ orders, loading }) {
+function OrdersTable({ orders, loading, authFetch }) {
   if (loading) return <div className={styles.empty}>Loading orders...</div>;
 
   return (
@@ -469,7 +483,7 @@ function OrdersTable({ orders, loading }) {
         </thead>
         <tbody>
           {orders.map((order) => (
-            <OrderRow key={order.id} order={order} />
+            <OrderRow key={order.id} order={order} authFetch={authFetch} />
           ))}
           {!orders.length && (
             <tr>
@@ -679,7 +693,7 @@ export default function AdminOrdersPage() {
       <StatusFilter filter={filter} setFilter={setFilter} />
 
       <section className={styles.panel}>
-        <OrdersTable orders={orders} loading={loading} />
+        <OrdersTable orders={orders} loading={loading} authFetch={authFetch} />
       </section>
 
       {showDetails && <TransactionDetailsTable orders={orders} onClose={() => setShowDetails(false)} />}
