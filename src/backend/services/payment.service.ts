@@ -196,15 +196,15 @@ export class PaymentServiceImpl implements PaymentService {
 
     const payment = paymentRes.value[0]; // Get the first (should be only one)
 
-    // Only refund if payment was successful
-    if (payment.status !== PaymentStatus.PAID) {
-      logger.warn(`[PaymentService.processRefund] Payment ${payment.id} is not in PAID status (current: ${payment.status}), skipping refund`);
-      return success(payment);
-    }
-
     // Check if already refunded
     if (payment.status === PaymentStatus.REFUNDED) {
       logger.info(`[PaymentService.processRefund] Payment ${payment.id} already refunded`);
+      return success(payment);
+    }
+
+    // Only refund if payment was successful
+    if (payment.status !== PaymentStatus.PAID) {
+      logger.warn(`[PaymentService.processRefund] Payment ${payment.id} is not in PAID status (current: ${payment.status}), skipping refund`);
       return success(payment);
     }
 
