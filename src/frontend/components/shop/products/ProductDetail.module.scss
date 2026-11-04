@@ -58,6 +58,13 @@
   z-index: 1;
 }
 
+/* Combo product detail page: gallery box is a true 1:1 square
+   (the shop card for it is a 4:3 landscape tile, this page is not). */
+.section[data-navbar-theme="combo"] .detailImage {
+  height: auto;
+  aspect-ratio: 1 / 1;
+}
+
 /* =========================================
    BUNDLE BADGE
 ========================================= */

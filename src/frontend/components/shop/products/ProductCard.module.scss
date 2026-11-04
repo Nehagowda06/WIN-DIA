@@ -17,6 +17,12 @@
   background: #f2e2d2;
 }
 
+/* Shop page only: the combo offer is a compact 4:3 landscape tile.
+   Every other product tile (and the detail page gallery) stays 1:1. */
+.tile[data-theme="combo"] .imageWrap {
+  aspect-ratio: 4 / 3;
+}
+
 .imageLink {
   position: absolute;
   inset: 0;

@@ -32,6 +32,15 @@
   }
 }
 
+/* Combo offer: one compact landscape tile (max 560px wide) instead of
+   the narrow 400px square card. Its image is 4:3 (ProductCard.module
+   .scss); every other tile and the product detail page stay 1:1. */
+.section[data-navbar-theme="combo"] .grid,
+.section[data-navbar-theme="combo"] .grid:has(> :only-child) {
+  grid-template-columns: minmax(260px, 560px);
+  justify-content: start;
+}
+
 @media (max-width: 640px) {
   .section {
     padding-bottom: 1.5rem;

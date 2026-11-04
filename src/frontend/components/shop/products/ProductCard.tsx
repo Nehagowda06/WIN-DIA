@@ -73,7 +73,7 @@ export function ProductCard({
   };
 
   return (
-    <li className={styles.tile}>
+    <li className={styles.tile} data-theme={theme}>
       <div className={styles.imageWrap}>
         <div
           className={styles.carousel}
@@ -90,7 +90,11 @@ export function ProductCard({
                   : ""
               }`}
               fill
-              sizes="(max-width: 640px) 33.333vw, 33.333vw"
+              sizes={
+                theme === "combo"
+                  ? "(max-width: 640px) 100vw, 560px"
+                  : "(max-width: 640px) 33.333vw, 33.333vw"
+              }
               priority={currentImage === 0}
             />
           </Link>

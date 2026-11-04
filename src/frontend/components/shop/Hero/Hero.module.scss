@@ -4,7 +4,7 @@
   display: grid;
   min-height: 100svh;
   overflow: hidden;
-  color: #fff3e9;
+  color: #fff8f1;
   background: #a7733d;
 }
 
@@ -20,9 +20,28 @@
   z-index: -2;
   object-fit: cover;
   object-position: center;
+
+  /* Colour grade: pull the exposure down and deepen the midtones so the
+     footage reads as a backdrop instead of competing with the type. */
+  filter: brightness(0.76) contrast(1.1) saturate(0.95);
 }
 
 .overlay {
   z-index: -1;
-  background: rgba(67, 37, 14, 0.02);
+
+  /* Warm brown scrim: a soft pool of shade behind the heading, a light
+     wash over the whole frame and a vignette at the edges. */
+  background:
+    radial-gradient(
+      78% 62% at 50% 52%,
+      rgba(28, 16, 6, 0.55) 0%,
+      rgba(28, 16, 6, 0.26) 55%,
+      rgba(28, 16, 6, 0) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(32, 18, 7, 0.45) 0%,
+      rgba(32, 18, 7, 0.16) 40%,
+      rgba(32, 18, 7, 0.55) 100%
+    );
 }
