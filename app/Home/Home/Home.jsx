@@ -9,11 +9,6 @@ import BannerStrip from "@/src/frontend/components/BannerStrip/BannerStrip";
 import WhatsAppButton from "@/src/frontend/components/WhatsAppButton/WhatsAppButton";
 import { SOCIAL_LINKS } from "@/src/frontend/lib/constants";
 
-import jeeraBg  from './jeera-bg.png'
-import garlicBg  from './garlic-bg.png'
-import curryBg  from './curry-bg.png'
-import onionBg   from './onion-bg.png'
-import all4 from './all-4.jpg'
 
 // ── Why Us — wood background
 import woodBg from './bg-image-wood.png'
@@ -35,25 +30,17 @@ import methiImg from './methi (2).png'
 import featProductBg from './feat-product-bg.jpg'
 
 // ── Featured Products — 4 frames per product (base / tilt / opening / open)
-import onionBase from './onion-base.png'
-import onionTilt from './onion-tilt.png'
-import onionOpening from './onion-opening.png'
-import onionOpen from './onion-open.png'
 
-import jeeraBase    from './jeera (2).png'
-import jeeraTilt    from './jeera tilt.png'
-import jeeraOpening from './jeera opening.png'
-import jeeraOpen    from './jeera open.png'
 
-import curryBase    from './curry leaves (2).png'
-import curryTilt    from './curry leaf tilt.png'
-import curryOpening from './curry leaf opening.png'
-import curryOpen    from './curry leaf open.png'
+import curryBase    from './curry(3).png'
+import onionBase    from './onion(3).png'
+import garlicBase   from './garlic(3).png'
+import jeeraBase    from './jeera(3).png'
 
-import garlicBase    from './garlic (2).png'
-import garlicTilt    from './garlic tilt.png'
-import garlicOpening from './garlic opening.png'
-import garlicOpen    from './garlic open.png'
+import onionPhoto  from './onion-photo.jpg'
+import jeeraPhoto  from './jeera-photo.jpg'
+import curryPhoto  from './curry-photo.jpg'
+import garlicPhoto from './garlic-photo.jpg'
 
 import recognition1 from './recognition-1.jpeg';
 import recognition2 from './recognition-2.jpeg';
@@ -77,7 +64,10 @@ import story1 from './story1.jpeg'
 import story5 from './story5.jpeg'
 import videoBg from './video-bg.png'
 
-
+const onionPacket  = onionBase
+const jeeraPacket  = jeeraBase
+const curryPacket  = curryBase
+const garlicPacket = garlicBase
 function SafeImage({ src, alt, ...props }) {
   return <Image src={src} alt={alt} {...props} />;
 }
@@ -97,11 +87,10 @@ const SLIDES = [
     announceMsg: 'Free delivery on orders above ₹299 · 100% Natural · FSSAI Certified',
     heroBg: '#1a0f05',
   },
-  { type: 'flavour', flavour: 'Jeera',    background: jeeraBg.src,   bg: '#6F4A2D', accent: '#f5deb3', textColor: '#fff8f0', tagline: 'Earthy & Warm',     headline: 'Jeera\nFlavour Thins',   sub: 'The classic Indian spice — bold, aromatic and guilt-free.',       badge: 'High Fibre · 0% Maida · Low GI', imgPlaceholderColor: '#d4873a' },
-  { type: 'flavour', flavour: 'Garlic',    background: garlicBg.src,  bg: '#E1ACAC', accent: '#f4c89a', textColor: '#fff5f0', tagline: 'Bold & Punchy',      headline: 'Garlic\nFlavour Thins',  sub: 'Intense roasted garlic in every crisp, wholesome bite.',         badge: 'High Fibre · 0% Maida · Low GI', imgPlaceholderColor: '#a03535' },
-  { type: 'flavour', flavour: 'Onion',    background: onionBg.src,   bg: '#A888B5', accent: '#f0c4f0', textColor: '#fff0ff', tagline: 'Sweet & Savoury',    headline: 'Onion\nFlavour Thins',   sub: 'Caramelised onion warmth baked into every thin crisp.',          badge: 'High Fibre · 0% Maida · Low GI', imgPlaceholderColor: '#8c4f8c' },
-  { type: 'flavour', flavour: 'Curry',    background: curryBg.src,   bg: '#468432', accent: '#d4e89a', textColor: '#f5fff0', tagline: 'Distinctly Desi',    headline: 'Curry\nFlavour Thins',   sub: 'Aromatic curry flavour in every crunchy bite.',                  badge: 'High Fibre · 0% Maida · Low GI', imgPlaceholderColor: '#637d25' },
-  { type: 'flavour', flavour: 'All Flavours', background: all4.src,  bg: '#637d25', accent: '#d4e89a', textColor: '#f5fff0', tagline: 'The Complete Collection', headline: 'All\nFlavours', sub: 'Discover every delicious WIN-DIA Thins flavour.', badge: 'High Fibre · 0% Maida · Low GI', imgPlaceholderColor: '#637d25' }
+  { type: 'flavour', flavour: 'Jeera',  bgVideo: '/video/jeera-bg.mp4',  bg: '#6F4A2D', accent: '#f5deb3', textColor: '#fff8f0', tagline: 'Earthy & Warm',   headline: 'Jeera\nFlavour Thins',  sub: 'The classic Indian spice — bold, aromatic and guilt-free.', badge: 'High Fibre · 0% Maida · Low GI', imgPlaceholderColor: '#d4873a' },
+  { type: 'flavour', flavour: 'Garlic', bgVideo: '/video/garlic-bg.mp4', bg: '#E1ACAC', accent: '#f4c89a', textColor: '#fff5f0', tagline: 'Bold & Punchy',   headline: 'Garlic\nFlavour Thins', sub: 'Intense roasted garlic in every crisp, wholesome bite.',   badge: 'High Fibre · 0% Maida · Low GI', imgPlaceholderColor: '#a03535' },
+  { type: 'flavour', flavour: 'Onion',  bgVideo: '/video/onion-bg.mp4',  bg: '#A888B5', accent: '#f0c4f0', textColor: '#fff0ff', tagline: 'Sweet & Savoury', headline: 'Onion\nFlavour Thins',  sub: 'Caramelised onion warmth baked into every thin crisp.',    badge: 'High Fibre · 0% Maida · Low GI', imgPlaceholderColor: '#8c4f8c' },
+  { type: 'flavour', flavour: 'Curry',  bgVideo: '/video/curry-bg.mp4',  bg: '#468432', accent: '#d4e89a', textColor: '#f5fff0', tagline: 'Distinctly Desi', headline: 'Curry\nFlavour Thins',  sub: 'Aromatic curry flavour in every crunchy bite.',            badge: 'High Fibre · 0% Maida · Low GI', imgPlaceholderColor: '#637d25' },
 ]
 
 const DURATION = 5000
@@ -169,9 +158,9 @@ useEffect(() => {
   return () => clearInterval(progressRef.current)
 }, [current, isPaused])
 
-  return (
+    return (
     <section className="hero" style={{ '--hero-bg': slide.bg, '--hero-accent': slide.accent }}>
-      {/* Progress bar */} 
+      {/* Progress bar */}
       <div className="hero-progress">
         <div className="hero-progress-fill" style={{ width: `${progress}%` }} />
       </div>
@@ -181,146 +170,137 @@ useEffect(() => {
 
       <div className="hero-inner" key={animKey} onClick={handleSlideClick}>
         {isPaused && (
-  <div className="hero-pause-badge">
-    <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
-      <rect x="6" y="4" width="4" height="16" rx="1"/>
-      <rect x="14" y="4" width="4" height="16" rx="1"/>
-    </svg>
-    Paused
-  </div>
-)}
+          <div className="hero-pause-badge">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+              <rect x="6" y="4" width="4" height="16" rx="1"/>
+              <rect x="14" y="4" width="4" height="16" rx="1"/>
+            </svg>
+            Paused
+          </div>
+        )}
+
         {slide.type === 'video' ? (
-  /* ── VIDEO SLIDE — full background ── */
-  <div className="hero-video-slide"><video
-  className="hero-video-bg"
-  autoPlay
-  muted
-  loop = {false}
-  playsInline
-  ref={videoRef} 
-  onEnded={handleVideoEnd}
->
-  <source src="/video/hero_vdo.mp4" type="video/mp4" />
-</video>
+          /* ── VIDEO SLIDE ── */
+          <div className="hero-video-slide">
+            <video
+              className="hero-video-bg"
+              autoPlay
+              muted
+              loop={false}
+              playsInline
+              ref={videoRef}
+              onEnded={handleVideoEnd}
+            >
+              <source src="/video/hero_vdo.mp4" type="video/mp4" />
+            </video>
 
-    {/* Dark overlay so text is readable */}
-    <div className="hero-video-overlay" />
+            <div className="hero-video-overlay" />
 
-    {/* Centered content over video */}
-    <div className="hero-video-content">
-      <p className="hero-eyebrow">{getContent('hero.eyebrow', 'WIN-DIA · FIBRERICH')}</p>
-      <h1 className="hero-title video-title">
-        Coconut Flour<br /><em>Thins</em>
-      </h1>
-      <div className="hero-stats">
-        <div className="stat">
-          <span className="stat-num">0 mg</span>
-          <span className="stat-label">Cholestrol</span>
-        </div>
-        <div className="stat-divider" />
-        <div className="stat">
-          <span className="stat-num">48</span>
-          <span className="stat-label">Glycaemic Index</span>
-        </div>
-        <div className="stat-divider" />
-        <div className="stat">
-          <span className="stat-num">22</span>
-          <span className="stat-label">Protein</span>
-        </div>
-      </div>
-      <Link href="/shop" className="hero-cta" onClick={(e) => e.stopPropagation()}>Shop Now</Link>
-    </div>
+            <div className="hero-video-content">
+              <p className="hero-eyebrow">{getContent('hero.eyebrow', 'WIN-DIA · FIBRERICH')}</p>
+              <h1 className="hero-title video-title">
+                Coconut Flour<br /><em>Thins</em>
+              </h1>
+              <div className="hero-stats">
+                <div className="stat">
+                  <span className="stat-num">0 mg</span>
+                  <span className="stat-label">Cholestrol</span>
+                </div>
+                <div className="stat-divider" />
+                <div className="stat">
+                  <span className="stat-num">48</span>
+                  <span className="stat-label">Glycaemic Index</span>
+                </div>
+                <div className="stat-divider" />
+                <div className="stat">
+                  <span className="stat-num">22</span>
+                  <span className="stat-label">Protein</span>
+                </div>
+              </div>
+              <Link href="/shop" className="hero-cta" onClick={(e) => e.stopPropagation()}>Shop Now</Link>
+            </div>
+          </div>
+        ) : (
+          /* ── FLAVOUR SLIDE ── */
+          <div className="hero-flavour-slide">
+            <video
+              key={slide.bgVideo}
+              className="hero-flavour-video"
+              autoPlay
+              muted
+              loop
+              playsInline
+            >
+              <source src={slide.bgVideo} type="video/mp4" />
+            </video>
+            <div className="hero-flavour-overlay" />
 
+            <div className="hero-content" style={{ color: slide.textColor }}>
+              <p className="hero-eyebrow" style={{ color: slide.accent }}>
+                {slide.tagline}
+              </p>
 
-  </div>
-) : (
-  /* ── FLAVOUR SLIDE ── */
-<div
-  className="hero-flavour-slide"
-  style={{
-    backgroundImage: `linear-gradient(
-      rgba(0,0,0,0.28),
-      rgba(0,0,0,0.28)
-    ), url(${slide.background})`,
-    backgroundSize: "cover",
-    backgroundPosition: "center ",
-    backgroundRepeat: "no-repeat",
-  }}
->
-  <div className="hero-content" style={{ color: slide.textColor }}>
-    <p className="hero-eyebrow" style={{ color: slide.accent }}>
-      {slide.tagline}
-    </p>
+              <h1 className="hero-title flavour-title">
+                {slide.headline.split("\n").map((line, i) => (
+                  <span key={i} className={i === 0 ? "title-small" : "title-big"}>
+                    {line}
+                    <br />
+                  </span>
+                ))}
+              </h1>
 
-    <h1 className="hero-title flavour-title">
-      {slide.headline.split("\n").map((line, i) => (
-        <span key={i} className={i === 0 ? "title-small" : "title-big"}>
-          {line}
-          <br />
-        </span>
-      ))}
-    </h1>
+              {slide.comingSoon ? (
+                <div className="hero-coming-soon">COMING SOON</div>
+              ) : (
+                <>
+                  <div className="hero-badge-pill">{slide.badge}</div>
+                  <div className="hero-actions">
+                    <Link href="/shop" className="hero-cta">Shop Now</Link>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
-    {slide.comingSoon ? (
-  <div className="hero-coming-soon">
-    COMING SOON
-  </div>
-) : (
-  <>
-    <div className="hero-badge-pill">
-      {slide.badge}
-    </div>
-
-    <div className="hero-actions">
-      <Link href="/shop" className="hero-cta">
-        Shop Now
-      </Link>
-    </div>
-  </>
-)}
-  </div>
-</div>
-)} 
-
-    
-      {/* Navigation Arrows */}
-<div className="hero-nav-arrows">
-  <button
-    className="hero-arrow-btn hero-arrow-prev"
-    onClick={(e) => { e.stopPropagation(); goPrev() }}
-    aria-label="Previous slide"
-  >
-    <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
-      <polyline points="15,18 9,12 15,6" strokeWidth="2" stroke="currentColor" fill="none"/>
-    </svg>
-  </button>
-
-  <button
-    className="hero-arrow-btn hero-arrow-next"
-    onClick={(e) => { e.stopPropagation(); goNext() }}
-    aria-label="Next slide"
-  >
-    <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
-      <polyline points="9,18 15,12 9,6" strokeWidth="2" stroke="currentColor" fill="none"/>
-    </svg>
-  </button>
-</div>
-
-      {/* Dots */}
-      {slide.type !== 'video' && (
-      <div className="hero-dots">
-        {SLIDES.map((s, i) => (
+        {/* Navigation Arrows */}
+        <div className="hero-nav-arrows">
           <button
-            key={i}
-            className={`hero-dot${i === current ? ' active' : ''}`}
-            onClick={(e) => { e.stopPropagation(); goTo(i) }}
-            aria-label={s.type === 'video' ? 'Video slide' : s.flavour}
-            style={i === current ? { background: slide.accent } : {}}
-          />
-        ))}
+            className="hero-arrow-btn hero-arrow-prev"
+            onClick={(e) => { e.stopPropagation(); goPrev() }}
+            aria-label="Previous slide"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+              <polyline points="15,18 9,12 15,6" strokeWidth="2" stroke="currentColor" fill="none"/>
+            </svg>
+          </button>
+
+          <button
+            className="hero-arrow-btn hero-arrow-next"
+            onClick={(e) => { e.stopPropagation(); goNext() }}
+            aria-label="Next slide"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+              <polyline points="9,18 15,12 9,6" strokeWidth="2" stroke="currentColor" fill="none"/>
+            </svg>
+          </button>
+        </div>
+
+        {/* Dots */}
+        {slide.type !== 'video' && (
+          <div className="hero-dots">
+            {SLIDES.map((s, i) => (
+              <button
+                key={i}
+                className={`hero-dot${i === current ? ' active' : ''}`}
+                onClick={(e) => { e.stopPropagation(); goTo(i) }}
+                aria-label={s.type === 'video' ? 'Video slide' : s.flavour}
+                style={i === current ? { background: slide.accent } : {}}
+              />
+            ))}
+          </div>
+        )}
       </div>
-      )}
-      </div> 
     </section>
   )
 }
@@ -501,71 +481,13 @@ function RangeCategories() {
    ============================================================ */
 
 const FEATURED_PRODUCTS = [
- {
-    base: onionBase.src,
-    tilt: onionTilt.src,
-    opening: onionOpening.src,
-    open: onionOpen.src,
-    name: 'Onion Thins',
-    href: '/product/everyday-onion',
-  },
-  {
-    base: jeeraBase.src,
-    tilt: jeeraTilt.src,
-    opening: jeeraOpening.src,
-    open: jeeraOpen.src,
-    name: 'Jeera Thins',
-    href: '/product/everyday-jeera',
-  },
-  {
-    base: curryBase.src,
-    tilt: curryTilt.src,
-    opening: curryOpening.src,
-    open: curryOpen.src,
-    name: 'Curry Leaf Thins',
-    href: '/product/everyday-curry-leaf',
-  },
-  {
-    base: garlicBase.src,
-    tilt: garlicTilt.src,
-    opening: garlicOpening.src,
-    open: garlicOpen.src,
-    name: 'Garlic Thins',
-    href: '/product/everyday-garlic',
-  },
+  { photo: onionPhoto.src,  packet: onionPacket.src,  name: 'Onion Thins',      href: '/product/everyday-onion' },
+  { photo: jeeraPhoto.src,  packet: jeeraPacket.src,  name: 'Jeera Thins',      href: '/product/everyday-jeera' },
+  { photo: curryPhoto.src,  packet: curryPacket.src,  name: 'Curry Leaf Thins', href: '/product/everyday-curry-leaf' },
+  { photo: garlicPhoto.src, packet: garlicPacket.src, name: 'Garlic Thins',     href: '/product/everyday-garlic' },
 ]
 
 function FeaturedProducts() {
-  const [activeProduct, setActiveProduct] = useState(null)
-  const [productFrame, setProductFrame] = useState({}) // { [idx]: 'base'|'tilt'|'opening'|'open' }
-  const productTimers = useRef({})
-
-  useEffect(() => {
-    FEATURED_PRODUCTS.forEach(p => {
-      [p.base, p.tilt, p.opening, p.open].forEach(src => {
-        const img = new window.Image()
-        img.src = src
-      })
-    })
-  }, [])
-
-  const activateProduct = (i) => {
-    clearTimeout(productTimers.current[i])
-    setProductFrame(f => ({ ...f, [i]: 'tilt' }))
-    productTimers.current[i] = setTimeout(() => {
-      setProductFrame(f => ({ ...f, [i]: 'opening' }))
-      productTimers.current[i] = setTimeout(() => {
-        setProductFrame(f => ({ ...f, [i]: 'open' }))
-      }, 600)
-    }, 600)
-  }
-
-  const deactivateProduct = (i) => {
-    clearTimeout(productTimers.current[i])
-    setProductFrame(f => ({ ...f, [i]: 'base' }))
-    setActiveProduct(null)
-  }
-
   return (
     <section
       className="recipes-banner"
@@ -575,52 +497,28 @@ function FeaturedProducts() {
         backgroundRepeat: 'repeat',
         backgroundSize: 'cover',
       }}
-      onClick={() => {
-        Object.keys(productTimers.current).forEach(k => clearTimeout(productTimers.current[k]))
-        setProductFrame({})
-        setActiveProduct(null)
-      }}
     >
-      {/* Title */}
       <div className="featured-eyebrow">OUR FEATURED PRODUCTS</div>
 
-      {/* Product grid */}
       <div className="featured-grid">
-        {FEATURED_PRODUCTS.map((p, i) => {
-          const frame = productFrame[i] || 'base'
-          const src = p[frame]
-          return (
-            <div
-              key={i}
-              className="featured-item"
-              onMouseEnter={() => { setActiveProduct(i); activateProduct(i) }}
-              onMouseLeave={() => deactivateProduct(i)}
-              onClick={(e) => {
-                e.stopPropagation()
-                if (activeProduct === i) deactivateProduct(i)
-                else { setActiveProduct(i); activateProduct(i) }
-              }}
-            >
-              <div className="featured-img-wrap">
-                <img src={src} alt={p.name} className="featured-frame" />
+        {FEATURED_PRODUCTS.map((p, i) => (
+          <div key={i} className="featured-item">
+            <div className="featured-img-wrap" tabIndex={0}>
+              <div className="featured-photo">
+                <img src={p.photo} alt={p.name} className="featured-frame" />
               </div>
-              <div className="featured-info">
-                <div className="featured-name">{p.name}</div>
-                
-                <Link
-                  href={p.href}
-                  className="featured-add"
-                  onClick={e => e.stopPropagation()}
-                >
-                  View {p.name}
-                </Link>
-              </div>
+              <img src={p.packet} alt="" aria-hidden="true" className="featured-packet" />
             </div>
-          )
-        })}
+            <div className="featured-info">
+              <div className="featured-name">{p.name}</div>
+              <Link href={p.href} className="featured-add">
+                View {p.name}
+              </Link>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Explore CTA */}
       <div className="featured-explore-wrap">
         <div className="featured-explore-rule">
           <span className="featured-explore-line" />
@@ -635,7 +533,6 @@ function FeaturedProducts() {
     </section>
   )
 }
-
 /* ============================================================
    TESTIMONIALS
    ============================================================ */
