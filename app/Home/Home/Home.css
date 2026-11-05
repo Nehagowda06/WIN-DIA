@@ -219,6 +219,13 @@ main {
   gap: 5rem;
   flex: 1;
 }
+.hero-flavour-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
 .hero-flavour-video {
   position: absolute;
   inset: 0;
@@ -226,8 +233,10 @@ main {
   height: 100%;
   object-fit: cover;
   object-position: center;
-  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.4s ease;
 }
+.hero-flavour-video.is-active { opacity: 1; }
 
 /* same 28% dark tint the old background image had */
 .hero-flavour-overlay {

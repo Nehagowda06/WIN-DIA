@@ -95,6 +95,54 @@ const SLIDES = [
 
 const DURATION = 5000
 
+function FlavourVideoLayer({ current, paused }) {
+  const refs = useRef({})
+  const flavours = SLIDES
+    .map((s, i) => ({ ...s, index: i }))
+    .filter(s => s.type === 'flavour')
+
+  // when the slide changes: restart the active video, stop the others
+  useEffect(() => {
+    flavours.forEach(({ index }) => {
+      const v = refs.current[index]
+      if (!v) return
+      if (index === current) {
+        v.currentTime = 0
+        v.play().catch(() => {})
+      } else {
+        v.pause()
+      }
+    })
+  }, [current])
+
+  // click-to-pause / resume
+  useEffect(() => {
+    const v = refs.current[current]
+    if (!v) return
+    if (paused) v.pause()
+    else v.play().catch(() => {})
+  }, [paused])
+
+  return (
+    <div className="hero-flavour-layer">
+      {flavours.map(({ index, bgVideo }) => (
+        <video
+          key={bgVideo}
+          ref={el => (refs.current[index] = el)}
+          className={`hero-flavour-video${index === current ? ' is-active' : ''}`}
+          muted
+          loop
+          playsInline
+          preload="auto"
+        >
+          <source src={bgVideo} type="video/mp4" />
+        </video>
+      ))}
+    </div>
+  )
+}
+
+
 function HeroSection() {
   const getContent = (_, fallback) => fallback;
   const [current, setCurrent] = useState(0)
@@ -165,6 +213,7 @@ useEffect(() => {
         <div className="hero-progress-fill" style={{ width: `${progress}%` }} />
       </div>
 
+      <FlavourVideoLayer current={current} paused={isPaused} />
       <div className="hero-bg-layer" key={`bg-${current}`} />
       <div className="hero-grain" />
 
@@ -223,16 +272,6 @@ useEffect(() => {
         ) : (
           /* ── FLAVOUR SLIDE ── */
           <div className="hero-flavour-slide">
-            <video
-              key={slide.bgVideo}
-              className="hero-flavour-video"
-              autoPlay
-              muted
-              loop
-              playsInline
-            >
-              <source src={slide.bgVideo} type="video/mp4" />
-            </video>
             <div className="hero-flavour-overlay" />
 
             <div className="hero-content" style={{ color: slide.textColor }}>
