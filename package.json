@@ -13,6 +13,9 @@
         "backend:dev": "node --watch src/backend/server.js",
         "backend:install": "cd src/backend && npm install"
     },
+    "engines": {
+  "node": ">=20.9.0"
+},
     "dependencies": {
         "@reduxjs/toolkit": "^2.5.0",
         "@supabase/ssr": "^0.12.4",
