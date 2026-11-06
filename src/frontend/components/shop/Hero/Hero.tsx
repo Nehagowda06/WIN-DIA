@@ -18,12 +18,13 @@ export function Hero() {
         className={styles.video}
         autoPlay
         muted
+        loop
         playsInline
         poster="/images/hero/hero-poster.jpeg"
-        preload="metadata"
+        preload="auto"
         aria-hidden="true"
       >
-         <source src="/video/shop-hero_vdo.mp4" type="video/mp4" />
+        <source src="/video/shop-hero_vdo.mp4" type="video/mp4" />
       </video>
       <div className={styles.overlay} aria-hidden="true" />
 
