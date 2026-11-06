@@ -8,30 +8,27 @@ import { UserRole } from '../enums/entity.enums';
  * Extracts and verifies JWT bearer token or session header for Next.js Serverless requests
  */
 export async function authenticateToken(authHeader?: string | null): Promise<Result<UserContext, AuthenticationError>> {
-  console.log(`[TRACE authenticateToken] Received authHeader:`, authHeader ? `${authHeader.substring(0, 15)}...` : 'MISSING/NULL');
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    console.log(`[TRACE authenticateToken] FAILURE: Missing or invalid Authorization bearer token`);
+    console.warn("[auth] Missing or invalid Authorization header");
     return failure(new AuthenticationError('Missing or invalid Authorization bearer token'));
   }
 
   const token = authHeader.substring(7).trim();
   if (!token) {
-    console.log(`[TRACE authenticateToken] FAILURE: Bearer token payload is empty`);
+    console.warn("[auth] Bearer token payload is empty");
     return failure(new AuthenticationError('Bearer token payload is empty'));
   }
 
   try {
     const supabase = getServerClient(authHeader);
-    console.log(`[TRACE authenticateToken] Calling auth.getUser(token)`);
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
-      console.log(`[TRACE authenticateToken] auth.getUser FAILURE:`, error);
+      console.error("[auth] getUser failed:", error?.message);
       return failure(new AuthenticationError('Invalid or expired authentication token', error?.message));
     }
 
-    console.log(`[TRACE authenticateToken] auth.getUser SUCCESS! User ID: ${user.id}, Email: ${user.email}`);
 
     // Fetch role from profiles table using admin client to bypass RLS
     // This matches the frontend isAdmin() behavior and ensures consistency
@@ -42,7 +39,6 @@ export async function authenticateToken(authHeader?: string | null): Promise<Res
       .eq('id', user.id)
       .maybeSingle();
 
-    console.log(`[TRACE authenticateToken] Profile lookup: role=${profile?.role || 'NOT_FOUND'}`);
 
     const userContext: UserContext = {
       id: user.id,
@@ -53,7 +49,7 @@ export async function authenticateToken(authHeader?: string | null): Promise<Res
 
     return success(userContext);
   } catch (err) {
-    console.log(`[TRACE authenticateToken] Exception:`, err);
+    console.error("[auth] Unexpected error:", err);
     return failure(new AuthenticationError('Authentication failed', err));
   }
 }
