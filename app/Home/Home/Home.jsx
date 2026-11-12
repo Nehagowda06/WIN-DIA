@@ -149,12 +149,14 @@ function HeroSection() {
   const [animKey, setAnimKey] = useState(0)
   const [progress, setProgress] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
+  const [introReady, setIntroReady] = useState(false)
   const intervalRef = useRef(null)
   const progressRef = useRef(null)
   const videoRef = useRef(null)
 
   const goTo = (index) => {
   setCurrent(index)
+  setIntroReady(false)
   setProgress(0)
   pausedProgressRef.current = 0  
   setIsPaused(false)             
@@ -187,6 +189,17 @@ useEffect(() => {
   }
   return () => clearTimeout(intervalRef.current)
 }, [current, isPaused])
+
+useEffect(() => {
+  if (slide.type !== 'video') return
+  const v = videoRef.current
+  // video may already be playing before React attached the handler
+  if (v && v.readyState >= 3) setIntroReady(true)
+  // safety: if the video never starts, show the content after 5s
+  const t = setTimeout(() => setIntroReady(true), 5000)
+  return () => clearTimeout(t)
+}, [current, animKey])
+
 useEffect(() => {
   clearInterval(progressRef.current)
   if (isPaused) {
