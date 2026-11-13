@@ -29,11 +29,15 @@ const navigationItems: readonly NavigationItem[] = [
   { href: "/our-story/contact", label: "Contact" },
 ];
 
+// Guests have no Orders page in their profile, so they get a direct Track Order link.
+const guestNavigationItem: NavigationItem = { href: "/track-order", label: "Track Order" };
+
 /** Fixed site navigation whose theme follows the visible page section. */
 export function Navbar() {
   const [theme, setTheme] = useState("brown");
   const { user } = useAuth();
   const utilityIconVariant = theme === "off-white" ? "off-white" : "brown";
+  const visibleNavigationItems = user ? navigationItems : [...navigationItems, guestNavigationItem];
 
   const utilityLinks = [
     {
@@ -112,7 +116,7 @@ export function Navbar() {
       </Link>
 
       <nav className={styles.navigation} aria-label="Primary navigation">
-        {navigationItems.map(({ href, label, isActive }) => (
+        {visibleNavigationItems.map(({ href, label, isActive }) => (
           <Link
             key={href}
             className={styles.navigationLink}

@@ -89,6 +89,16 @@
   background: var(--coco);
 }
 
+/* Text nav links (Home, Shop, ...). Hidden on mobile in the media query below. */
+.navTextLink {
+  white-space: nowrap;
+}
+
+/* Track Order icon for guests. Hidden on desktop, shown on mobile. */
+.trackIcon {
+  display: none;
+}
+
 /* ── BUTTONS ── */
 .pill,
 .ghost,
@@ -473,9 +483,16 @@
     justify-content: center;
   }
 
-  /* Hide text nav links */
-  .links > a:not(:nth-last-child(-n+3)) {
+  /* Hide the text nav links (Home, Shop, About, Health Benefits, Contact, Track Order) */
+  .links > a.navTextLink {
     display: none;
+  }
+
+  /* Show the Track Order icon for guests */
+  .links > a.trackIcon {
+    display: inline-flex;
+    align-items: center;
+    font-size: 18px;
   }
 
   .pill {
