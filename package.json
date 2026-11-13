@@ -14,8 +14,8 @@
         "backend:install": "cd src/backend && npm install"
     },
     "engines": {
-  "node": ">=20.9.0"
-},
+        "node": ">=20.9.0"
+    },
     "dependencies": {
         "@reduxjs/toolkit": "^2.5.0",
         "@supabase/ssr": "^0.12.4",
@@ -46,7 +46,7 @@
         "eslint": "^9",
         "eslint-config-next": "^16.4.5",
         "jest": "^30.5.2",
-        "ts-jest": "^29.4.14",
+        "ts-jest": "^29.4.15",
         "ts-node": "^10.9.2",
         "typescript": "^5"
     }

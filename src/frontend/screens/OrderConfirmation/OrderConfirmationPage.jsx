@@ -36,6 +36,7 @@ export default function OrderConfirmationPage() {
   const { authFetch, user, token, loading: authLoading } = useAuth();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [track, setTrack] = useState(null);
 
   useEffect(() => {
     // Wait for the session to resolve — authFetch redirects to /login when
@@ -74,6 +75,18 @@ export default function OrderConfirmationPage() {
     return () => { cancelled = true; };
   }, [orderId, authFetch, token, authLoading]);
 
+  // Live courier status. Must stay above the early returns below (hooks rule).
+  // If the fetch fails, `track` stays null and the page behaves exactly as before.
+  useEffect(() => {
+    if (!order?.tracking_token || order.order_status === "cancelled") return;
+    let cancelled = false;
+    fetch(`/api/track?token=${encodeURIComponent(order.tracking_token)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled && d) setTrack(d); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [order?.tracking_token, order?.order_status]);
+
   if (loading) return (
     <div className={styles.loadWrap}>
       <div className={styles.loadCard}>
@@ -107,8 +120,17 @@ export default function OrderConfirmationPage() {
     displayStatus = 'payment_collected'; // COD final step
   }
   
-  const statusIdx = STATUS_STEPS.indexOf(displayStatus);
+  const baseIdx = STATUS_STEPS.indexOf(displayStatus);
+  // DTDC "confirmed" (pickup scheduled) has no step of its own for online orders,
+  // so it maps to "paid", which is already step 2 there.
+  const dtdcKey = !isCOD && track?.step === "confirmed" ? "paid" : track?.step;
+  const dtdcIdx = track ? STATUS_STEPS.indexOf(dtdcKey) : -1;
+  // Only ever moves the tracker forward; "Payment Collected" still comes from our own payment_status.
+  const statusIdx = Math.max(baseIdx, dtdcIdx);
   const addr = order.shipping_address || {};
+
+  // Events come newest first, so the first one is the latest update.
+  const lastUpdated = track?.events?.[0]?.time;
 
   return (
     <div className={styles.page}>
@@ -166,6 +188,25 @@ export default function OrderConfirmationPage() {
                       {i < STATUS_STEPS.length - 1 && <div className={`${styles.trackerLine} ${i < statusIdx ? styles.trackerLineDone : ""}`} />}
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* Live courier status */}
+              {track && order.order_status !== "cancelled" && (
+                <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid rgba(201,168,76,0.25)" }}>
+                  <p style={{ fontWeight: 700, color: "#3B1F0F", marginBottom: 4 }}>
+                    Status: {track.label}
+                  </p>
+                  {lastUpdated && (
+                    <p style={{ color: "#6B5948", fontSize: 13, margin: 0 }}>
+                      Last updated: {lastUpdated}
+                    </p>
+                  )}
+                  {track.issue && (
+                    <p style={{ color: "#b45309", fontSize: 13, marginTop: 8 }}>
+                      There is an issue with this delivery. Please contact customer support.
+                    </p>
+                  )}
                 </div>
               )}
             </motion.div>
@@ -374,5 +415,3 @@ export default function OrderConfirmationPage() {
     </div>
   );
 }
-
-

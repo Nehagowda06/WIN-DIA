@@ -142,6 +142,7 @@ export interface CartItem extends BaseEntity {
 export interface Order extends BaseEntity {
   order_number: string;
   user_id: Nullable<string>;
+  customer_name: Nullable<string>;
   customer_email: Nullable<string>;
   customer_phone: Nullable<string>;
   order_status: OrderStatus;
@@ -160,6 +161,9 @@ export interface Order extends BaseEntity {
   courier_name: Nullable<string>;
   shipping_provider: Nullable<string>;
   delivered_at: Nullable<string>;
+  tracking_token: Nullable<string>;
+  confirmation_email_sent_at: Nullable<string>;
+  confirmation_email_error: Nullable<string>;
 }
 
 export interface OrderItem extends BaseEntity {
@@ -218,10 +222,14 @@ export interface PaymentEvent extends BaseEntity {
 
 export interface Shipment extends BaseEntity {
   order_id: string;
+  provider: string;
+  awb_code: Nullable<string>;
   courier_name: Nullable<string>;
   tracking_number: Nullable<string>;
   shipping_label_url: Nullable<string>;
+  tracking_url: Nullable<string>;
   status: ShipmentStatus;
+  raw_response: Nullable<Record<string, unknown>>;
   shipped_at: Nullable<string>;
   delivered_at: Nullable<string>;
 }
@@ -229,6 +237,8 @@ export interface Shipment extends BaseEntity {
 export interface ShipmentTrackingEvent extends BaseEntity {
   order_id: string;
   status: ShipmentStatus;
+  location: Nullable<string>;
+  description: Nullable<string>;
 }
 
 // ── Support & Content ────────────────────────────────────────────────────────

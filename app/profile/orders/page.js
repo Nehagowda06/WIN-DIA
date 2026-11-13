@@ -81,10 +81,10 @@ export default function ProfileOrdersPage() {
             </div>
             <p className="order-meta-line">
               {formatDate(order.created_at)} &nbsp;·&nbsp; Payment: {
-                order.payment_status === "paid" 
-                  ? "Paid" 
-                  : order.payment_status === "cod_pending" 
-                  ? "COD (Pending)" 
+                order.payment_status === "paid"
+                  ? "Paid"
+                  : order.payment_status === "cod_pending"
+                  ? "COD (Pending)"
                   : order.payment_status === "cod_collected"
                   ? "COD (Collected)"
                   : order.payment_status === "refund_initiated"
@@ -95,6 +95,11 @@ export default function ProfileOrdersPage() {
               } &nbsp;·&nbsp; {formatCurrency(order.total_price)}
             </p>
             <div className="order-actions">
+              {order.order_status !== 'cancelled' && (
+                <Link href={`/order-confirmation?orderId=${order.id}`} className="order-action-link">
+                  Track order
+                </Link>
+              )}
               <Link href={`/order-confirmation?orderId=${order.id}`} className="order-action-link">
                 View details
               </Link>

@@ -24,7 +24,7 @@ export class ShipmentServiceImpl implements ShipmentService {
     this.eventRepo = eventRepo || container.resolve<ShipmentTrackingEventRepository>(RepositoryTokens.ShipmentTrackingEventRepository);
   }
 
-    public async createShipmentPlaceholder(orderId: string, courierName?: string): Promise<Result<Shipment, AppError>> {
+  public async createShipmentPlaceholder(orderId: string, courierName?: string): Promise<Result<Shipment, AppError>> {
     logger.info(`[ShipmentService.createShipmentPlaceholder] Creating shipment placeholder for order ${orderId}`);
     return this.shipmentRepo.create({
       order_id: orderId,
@@ -51,7 +51,8 @@ export class ShipmentServiceImpl implements ShipmentService {
       return failure(new NotFoundError(`Shipment ID ${shipmentId} not found`));
     }
 
-    const eventsRes = await this.eventRepo.findByShipmentId(shipmentId);
+    // shipment_tracking_events is keyed by order_id, not shipment id
+    const eventsRes = await this.eventRepo.findByShipmentId(shipmentRes.value.order_id);
     if (!eventsRes.success) return failure(eventsRes.error);
 
     return success({
