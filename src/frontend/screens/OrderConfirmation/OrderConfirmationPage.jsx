@@ -9,26 +9,7 @@ import {
 } from "react-icons/fi";
 import { useAuth } from "@/src/frontend/hooks/useAuth";
 import styles from "./OrderConfirmationPage.module.css";
-
-// Status steps differ based on payment method
-const getCODStatusSteps = () => ["placed", "confirmed", "shipped", "out_for_delivery", "delivered", "payment_collected"];
-const getCODStatusLabels = () => ({ 
-  placed: "Order Placed", 
-  confirmed: "Confirmed", 
-  shipped: "Shipped", 
-  out_for_delivery: "Out for Delivery", 
-  delivered: "Delivered",
-  payment_collected: "Payment Collected"
-});
-
-const getOnlineStatusSteps = () => ["placed", "paid", "shipped", "out_for_delivery", "delivered"];
-const getOnlineStatusLabels = () => ({ 
-  placed: "Order Placed", 
-  paid: "Payment Confirmed", 
-  shipped: "Shipped", 
-  out_for_delivery: "Out for Delivery", 
-  delivered: "Delivered"
-});
+import { getCODStatusSteps, getCODStatusLabels, getOnlineStatusSteps, getOnlineStatusLabels } from "./orderStatusHelpers";
 
 export default function OrderConfirmationPage() {
   const searchParams = useSearchParams();
