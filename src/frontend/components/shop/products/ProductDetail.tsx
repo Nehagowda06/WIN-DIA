@@ -26,6 +26,7 @@ import {
   type ProductTheme,
 } from "./productShared";
 import { ComboSelector } from "./ComboSelector";
+import { comboFlavors, handleComboConfirm } from "./comboHelpers";
 
 import styles from "./ProductDetail.module.scss";
 
@@ -102,34 +103,9 @@ function ProductDetailContent({
   const [isComboModalOpen, setIsComboModalOpen] = useState(false);
 
   // Define available flavors for combo
-  const comboFlavors = [
-    { id: 'curry-leaves', name: 'Curry Leaves', available: true, stock: 100 },
-    { id: 'garlic', name: 'Garlic', available: true, stock: 100 },
-    { id: 'jeera', name: 'Jeera', available: true, stock: 100 },
-    { id: 'onion', name: 'Onion', available: true, stock: 100 },
-  ];
 
-  const handleComboConfirm = async (selections: Record<string, number>) => {
-    // No auth required for adding combo to cart
-    // Add combo with user's flavor selections
-    const comboProduct = {
-      ...storeProduct,
-      flavorSelections: selections,
-      customNote: `Combo: ${Object.entries(selections)
-        .filter(([_, count]) => count > 0)
-        .map(([id, count]) => {
-          const flavor = comboFlavors.find(f => f.id === id);
-          return `${flavor?.name} (${count})`;
-        })
-        .join(', ')}`
-    };
-
-    dispatch(addToCart(comboProduct, 1));
-    toast.success("Combo added to cart with your flavor selection!");
-    // Only update the on-screen counter. Calling setQuantity() here would
-    // dispatch a second addToCart (a plain combo with no flavour selection).
-    setQuantityState(quantity + 1);
-  };
+  const handleComboConfirmCallback = (selections: Record<string, number>) =>
+    handleComboConfirm(selections, storeProduct, dispatch, quantity, setQuantityState, toast);
 
   /* -----------------------------
      Product image carousel
@@ -650,7 +626,7 @@ function ProductDetailContent({
         <ComboSelector
           isOpen={isComboModalOpen}
           onClose={() => setIsComboModalOpen(false)}
-          onConfirm={handleComboConfirm}
+          onConfirm={handleComboConfirmCallback}
           availableFlavors={comboFlavors}
         />
       )}
