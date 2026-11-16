@@ -18,6 +18,7 @@ import { container, RepositoryTokens, ServiceTokens } from '../providers/contain
 import { BundlePricing, calculateOrderBundlePricing, calculateOrderTotal } from '../constants/bundle-pricing.constants';
 import { parseComboSelections } from '../constants/combo-flavors.constants';
 import { autoBookShipment } from './auto-shipment.util';
+import { sendOrderConfirmationEmail, sendAdminNewOrderAlert } from '../lib/email.js';
 
 export interface CheckoutResult {
   order: Order;
@@ -860,6 +861,24 @@ export class CheckoutServiceImpl implements CheckoutService {
         console.log(`[CheckoutService] ✅ COD order detected - calling autoBookShipment for order ${createdOrder.order_number}`);
         await autoBookShipment(createdOrder.id, '[CheckoutService.processCheckout:COD]');
         console.log(`[CheckoutService] ✅ autoBookShipment call completed for order ${createdOrder.order_number}`);
+
+        // Send customer confirmation email — non-fatal, must not interrupt checkout.
+        const codCustomerEmail = createdOrder.customer_email;
+        if (codCustomerEmail) {
+          sendOrderConfirmationEmail(
+            { ...createdOrder, order_items: preparedOrderItems },
+            codCustomerEmail
+          ).catch((err) =>
+            console.error(`[CheckoutService] COD confirmation email failed for order ${createdOrder.order_number}:`, err?.message)
+          );
+        }
+
+        // Send owner notification — non-fatal, must not interrupt checkout.
+        sendAdminNewOrderAlert(
+          { ...createdOrder, order_items: preparedOrderItems }
+        ).catch((err) =>
+          console.error(`[CheckoutService] COD admin alert failed for order ${createdOrder.order_number}:`, err?.message)
+        );
       } else {
         console.log(`[CheckoutService] ⏭️ Skipping auto-shipment for online payment (will trigger after payment confirmation)`);
       }

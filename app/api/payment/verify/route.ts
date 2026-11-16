@@ -8,6 +8,8 @@ import { OrderItemRepository } from '@/src/backend/repositories/order-item.repos
 import { getAuthUserContext, handleServiceResult } from '@/src/backend/utils/route-helper.util';
 import { createErrorResponse } from '@/src/backend/types/api-response.types';
 import { autoBookShipment } from '@/src/backend/services/auto-shipment.util';
+import { sendOrderConfirmationEmail, sendAdminNewOrderAlert } from '@/src/backend/lib/email.js';
+import { OrderRepository } from '@/src/backend/repositories/order.repository';
 
 export const runtime = 'nodejs';
 
@@ -120,6 +122,29 @@ export async function POST(request: Request) {
     // booking hiccup must not fail this response. If it fails, the admin's
     // "Retry shipment" button (app/admin/orders) is the manual fallback.
     await autoBookShipment(orderId, '[payment/verify]');
+
+    // Send customer confirmation email — non-fatal, must not change the response.
+    const orderRepo = container.resolve<OrderRepository>(RepositoryTokens.OrderRepository);
+    const orderWithItemsRes = await orderRepo.findWithDetails(orderId);
+    if (orderWithItemsRes.success && orderWithItemsRes.value) {
+      const orderWithItems = orderWithItemsRes.value as any;
+      const customerEmail = orderWithItems.customer_email as string | null;
+      if (customerEmail) {
+        sendOrderConfirmationEmail(
+          { ...orderWithItems, order_items: orderWithItems.items ?? [] },
+          customerEmail
+        ).catch((err: any) =>
+          console.error(`[payment/verify] Confirmation email failed for order ${orderId}:`, err?.message)
+        );
+      }
+      sendAdminNewOrderAlert(
+        { ...orderWithItems, order_items: orderWithItems.items ?? [] }
+      ).catch((err: any) =>
+        console.error(`[payment/verify] Admin alert email failed for order ${orderId}:`, err?.message)
+      );
+    } else {
+      console.error(`[payment/verify] Could not fetch order details for confirmation email, order ${orderId}`);
+    }
 
     return NextResponse.json({
       success: true,

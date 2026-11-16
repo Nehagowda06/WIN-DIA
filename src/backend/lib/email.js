@@ -52,10 +52,13 @@ const formatDate = (dateString) =>
     year: "numeric",
   });
 
-const formatAddress = (address) =>
-  address
-    ? `${address.name}, ${address.street}, ${address.city}, ${address.state} – ${address.pincode}`
-    : "";
+const formatAddress = (address) => {
+  if (!address) return "";
+  const name = address.full_name || address.name || "";
+  const line1 = address.address_line1 || address.street || "";
+  const line2 = address.address_line2 ? `, ${address.address_line2}` : "";
+  return `${name}, ${line1}${line2}, ${address.city}, ${address.state} – ${address.pincode}`;
+};
 
 // --- Template shell ------------------------------------------------------
 
@@ -83,6 +86,13 @@ export async function sendOrderConfirmationEmail(order, to) {
   if (!to) return { sent: false, reason: "no_email_provided" };
 
   const itemsHtml = (order.order_items || []).map(orderItemsRow).join("");
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://windia.in";
+  const trackingUrl = order.tracking_token
+    ? `${siteUrl}/track?token=${encodeURIComponent(order.tracking_token)}`
+    : `${siteUrl}/track-order`;
+  const receiptUrl = order.tracking_token
+    ? `${siteUrl}/receipt?token=${encodeURIComponent(order.tracking_token)}`
+    : null;
 
   const html = wrap(`
     <p style="color:#84766f;font-size:15px">Thanks for your order! Here's your confirmation.</p>
@@ -97,6 +107,14 @@ export async function sendOrderConfirmationEmail(order, to) {
     <p style="color:#84766f;font-size:14px;margin-top:24px">
       Delivering to: ${formatAddress(order.shipping_address)}
     </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:24px">
+      <tr>
+        <td style="padding-right:10px">
+          <a href="${trackingUrl}" style="display:inline-block;padding:12px 24px;background:#c56a3d;color:#fff;text-decoration:none;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif">Track your order</a>
+        </td>
+        ${receiptUrl ? `<td><a href="${receiptUrl}" style="display:inline-block;padding:12px 24px;background:#fff;color:#c56a3d;text-decoration:none;border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;border:1px solid #c56a3d">View / Download Receipt</a></td>` : ""}
+      </tr>
+    </table>
   `);
 
   return sendMail({ to, subject: `Order Confirmed – #${order.order_number}`, html });
@@ -141,11 +159,31 @@ export async function sendAdminNewOrderAlert(order) {
   const paymentLabel =
     order.payment_method === "cod" ? "Cash on Delivery" : "Razorpay (Prepaid)";
 
+  const addr = order.shipping_address || {};
+  const customerName =
+    order.customer_name || addr.full_name || addr.name || "—";
+  const customerEmail = order.customer_email || addr.email || "—";
+  const customerPhone = order.customer_phone || addr.phone || null;
+
+  const itemsHtml = (order.order_items || []).map(orderItemsRow).join("");
+
   const html = wrap(`
     <h2 style="font-family:'Cormorant Garamond',serif;font-size:24px;color:#3a2a1e;margin:0 0 16px">New Order Received</h2>
     <p style="color:#3a2a1e"><strong>Order #${order.order_number}</strong> – ${money(order.total_price)}</p>
-    <p style="color:#6b5d55;font-size:14px">${order.shipping_address?.name} · ${order.shipping_address?.city}, ${order.shipping_address?.state}</p>
     <p style="color:#6b5d55;font-size:14px">Payment: ${paymentLabel}</p>
+    <div style="margin:16px 0;padding:16px;background:#fff9f4;border-radius:8px">
+      <p style="margin:0 0 6px;font-weight:700;color:#3a2a1e">Customer</p>
+      <p style="margin:0 0 4px;color:#6b5d55;font-size:14px">${customerName}</p>
+      <p style="margin:0 0 4px;color:#6b5d55;font-size:14px">${customerEmail}</p>
+      ${customerPhone ? `<p style="margin:0;color:#6b5d55;font-size:14px">${customerPhone}</p>` : ""}
+    </div>
+    <table style="width:100%;border-collapse:collapse">${itemsHtml}</table>
+    <div style="border-top:2px solid #3a2a1e;margin-top:12px;padding-top:12px">
+      <strong style="color:#3a2a1e">Total: ${money(order.total_price)}</strong>
+    </div>
+    <p style="color:#84766f;font-size:13px;margin-top:16px">
+      Ship to: ${formatAddress(addr)}
+    </p>
   `);
 
   return sendMail({

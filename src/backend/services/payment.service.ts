@@ -15,6 +15,7 @@ import { container, RepositoryTokens, ServiceTokens } from '../providers/contain
 import { getRazorpayClient } from '../lib/razorpay.js';
 import { PaymentError } from '../errors/domain-errors';
 import { autoBookShipment } from './auto-shipment.util';
+import { sendOrderConfirmationEmail, sendAdminNewOrderAlert } from '../lib/email.js';
 
 const RAZORPAY_CURRENCY = 'INR';
 
@@ -466,5 +467,23 @@ export class PaymentServiceImpl implements PaymentService {
     // is idempotent (checks order.tracking_number first), so this is safe even if
     // payment/verify already booked it.
     await autoBookShipment(orderId, '[PaymentService.handleWebhook]');
+
+    // Send customer and owner emails — non-fatal, must not interrupt webhook processing.
+    const orderWithItemsRes = await this.orderRepo.findWithDetails(orderId);
+    if (orderWithItemsRes.success && orderWithItemsRes.value) {
+      const orderWithItems = orderWithItemsRes.value as any;
+      const orderPayload = { ...orderWithItems, order_items: orderWithItems.items ?? [] };
+      const customerEmail = orderWithItems.customer_email as string | null;
+      if (customerEmail) {
+        sendOrderConfirmationEmail(orderPayload, customerEmail).catch((err: any) =>
+          logger.error(`[PaymentService.handleWebhook] Confirmation email failed for order ${orderId}:`, err?.message)
+        );
+      }
+      sendAdminNewOrderAlert(orderPayload).catch((err: any) =>
+        logger.error(`[PaymentService.handleWebhook] Admin alert email failed for order ${orderId}:`, err?.message)
+      );
+    } else {
+      logger.error(`[PaymentService.handleWebhook] Could not fetch order details for emails, order ${orderId}`);
+    }
   }
 }
